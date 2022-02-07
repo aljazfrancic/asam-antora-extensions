@@ -1,0 +1,94 @@
+= ASAM Antora Extensions
+
+This repository contains the ASAM Antora extensions.
+These are a collection of features that can be added to the Antora pipeline through the playbook and/or the CLI.
+
+TIP: For more information on how to write an Antora extension, see https://docs.antora.org/antora/latest/extend/extensions/[the official extension guide] and check out the relevant https://gitlab.com/antora/antora/-/tree/main/packages[package repositories], particularly their `devdocs` folders.
+
+
+== Motivation
+Antora and Asciidoctor already provide a rich set of features and macros.
+However, not all functions that ASAM requires for an efficient and partially automated content structuring are present by default.
+For this reason, an Antora extension was created.
+
+== ASAM extension features
+The ASAM Antora extension adds the following features to Antora:
+
+* Support for the <<ASAM Antora macros>>
+* Identifying and (optional) listing <<Orphan pages>>
+* Creating a <<Keyword-overview page>>
+
+NOTE: All following examples assume the extension is located under "./antora_extensions", where "." is the location of the "site.yml" file (the Antora playbook).
+
+== General configuration
+The following table describes general configuration on using the extension:
+
+|===
+|Attribute |Description |Default |Example
+
+|id
+|Defines an id by witch the extension can be specifically called from the CLI.
+|none
+|`id: asam-extension`
+
+|enabled
+|De-/activates this extension by default.
+If deactivated, the extension must be explicitely called from the CLI.
+Only relevant in combination with `id`.
+|true
+|`enabled: false`
+|===
+
+.Example
+====
+[source,yaml]
+----
+- id: asam-extensions
+  enabled: false
+  require: './antora_extensions/asam-extension.js'
+----
+====
+
+== Orphan pages
+The ASAM Antora extension finds all pages not listed in any nav.adoc and puts a warning in the console output.
+If configured, these pages can also automatically be listed under a separated navigation entry (e.g. "orphans") at the end of the Antora document.
+
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/special-macros.html#_orphan_pages[ASAM Project Guide^]
+
+== Keyword-overview page
+The ASAM Antora extension generates an overview page that lists all keywords used in the Antora pages.
+The location and the (virtual) filename can be configured in the site.yml (Antora playbook).
+
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/special-macros.html#_keyword_overview_page[ASAM Project Guide^]
+
+== ASAM Antora macros
+IMPORTANT: ASAM macros are not supported in partials as they are replaced through Antora rather than Asciidoctor, but partials are included by Asciidoctor at a later stage.
+
+=== The "related" macro
+Creates a subsection called "Related Topics" and filles it automatically with cross-references to (other) pages containing the listed keywords.
+Works similar to the macro `reference`, but adds said subsection.
+
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/macros/macro-related.html[ASAM Project Guide^]
+
+== The "reference" macro
+Creates an automatically generated list with cross-references to (other) pages containing the listed keywords.
+Works similar to the macro `related` but does not add a subsection.
+
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/macros/macro-reference.html[ASAM Project Guide^]
+
+== The "pages" macro
+Creates an automatically generated list under a new section "Pages" with cross-references to (other) pages in the defined folder.
+If no folder is defined, the file's folder is used instead.
+
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/macros/macro-pages.html[ASAM Project Guide^]
+
+== The "role_related" macro
+Creates an automatically generated list under a new section "Role-related topics" with cross-references to (other) pages containing the relevant role.
+
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/macros/macro-role_related.html[ASAM Project Guide^]
+
+== The "autonav" macro
+If added as a comment line to a nav.adoc file, replaces the files content with an automatically generated pages summary containing all pages and folders in the module.
+The path structure is preserved.
+
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/macros/macro-autonav.html[ASAM Project Guide^]
