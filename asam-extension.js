@@ -36,7 +36,7 @@ module.exports.register = function ({ config }) {
                 let keywordOverviewPageRequested = config.keywords && config.keywords.createOverview && useKeywords ? true : false
 
                 let pages = contentCatalog.findBy({ component, version, family: 'page'})
-                const navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
+                let navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
                 let keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
                 const rolePageMap = getRolePageMapForPages(pages)
 
@@ -45,6 +45,12 @@ module.exports.register = function ({ config }) {
                 pages = findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywordPageMap, rolePageMap, macrosRegEx, macrosHeadings, logger, component, version )
                 keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
                 pages = createKeywordsOverviewPage(keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, targetPath, targetName, targetModule, component, version)
+
+                navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
+
+                if (numberedTitles) {
+                    generatePageNumberBasedOnNavigation(pages, navFiles)
+                }
             })
         })
       })
@@ -53,10 +59,6 @@ module.exports.register = function ({ config }) {
         console.log("Reacting on navigationBuild")
         contentCatalog.getComponents().forEach(({ versions }) => {
           versions.forEach(({ name: component, version, navigation: nav, url: defaultUrl }) => {
-            if (numberedTitles) {
-                console.log(nav)
-                console.log(getNavEntriesByUrl(nav))
-            }
             const navEntriesByUrl = getNavEntriesByUrl(nav)
             const unlistedPages = contentCatalog
               .findBy({ component, version, family: 'page' })
@@ -617,4 +619,42 @@ function replaceAutonavMacro( contentCatalog, pages, nav, component, version, fi
 
 function isPublishableFile( page ) {
     return (page.src.relative.indexOf("/_") < 0 && page.src.relative.indexOf("/.") < 0 && !page.src.relative.startsWith("_") && !page.src.relative.startsWith("."))
+}
+
+function generatePageNumberBasedOnNavigation(pages, navFiles) {
+    let chapterIndex = "0."
+    navFiles.forEach(nav => {
+        for (let line of nav._contents.toString().split("\n")) {
+            const indexOfXref = line.indexOf("xref:")
+            if (indexOfXref > 0) {
+                const endOfXref = line.indexOf("[")
+                const targetFile = line.slice(indexOfXref+5,endOfXref)
+                let foundPage = pages.filter(x => x.src.relative === targetFile)
+                if (foundPage) {
+                    const level = line.lastIndexOf("*",indexOfXref) + 1
+                    let chapterElements = chapterIndex.split(".")
+                    const currentChapterIndexLength = chapterElements.length - 1
+
+                    if (currentChapterIndexLength < level) {
+                        for (let i in [...Array(level-currentChapterIndexLength)]) {
+                            chapterElements.splice(-1,0,"1")
+                        }
+                    }
+                    else {
+                        chapterElements[level-1] = (parseInt(chapterElements[level-1]) + 1).toString()
+                        if (currentChapterIndexLength > level) {
+                            chapterElements = chapterElements.slice(0,level).concat([""])
+                        }
+                    }
+                    chapterIndex = chapterElements.join(".")
+
+                    let newContent = foundPage[0]._contents.toString().split("\n")
+                    newContent.splice(1,0,":titleoffset: "+ chapterIndex)
+                    foundPage[0]._contents = Buffer.from(newContent.join("\n"))
+
+                }
+            }
+
+        }
+    })
 }
