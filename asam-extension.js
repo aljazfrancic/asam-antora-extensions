@@ -3,7 +3,7 @@ const File = require('./file')
 // const classifyContent = require('@antora/content-classifier')
 
 module.exports.register = function ({ config }) {
-    const { addToNavigation, unlistedPagesHeading = 'Unlisted Pages' } = config
+    const { numberedTitles, addToNavigation, unlistedPagesHeading = 'Unlisted Pages' } = config
     const logger = this.require('@antora/logger').get('unlisted-pages-extension')
     const macrosRegEx = new Array(
         { macro: "role", re: /^\s*role_related::(.*)\[(.*)\]\n?/ },
@@ -53,6 +53,10 @@ module.exports.register = function ({ config }) {
         console.log("Reacting on navigationBuild")
         contentCatalog.getComponents().forEach(({ versions }) => {
           versions.forEach(({ name: component, version, navigation: nav, url: defaultUrl }) => {
+            if (numberedTitles) {
+                console.log(nav)
+                console.log(getNavEntriesByUrl(nav))
+            }
             const navEntriesByUrl = getNavEntriesByUrl(nav)
             const unlistedPages = contentCatalog
               .findBy({ component, version, family: 'page' })
