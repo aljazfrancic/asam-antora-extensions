@@ -31,10 +31,7 @@ module.exports.register = function ({ config }) {
                 let targetPath = config.keywords && config.keywords.path ? config.keywords.path : ""
                 let targetModule = config.keywords && config.keywords.module ? config.keywords.module : "ROOT"
                 let targetName = config.keywords && config.keywords.filename ? config.keywords.filename : "0_used-keywords.adoc"
-
                 let useKeywords = config.keywords ? true : false
-
-                console.log("usedKeywords",useKeywords)
 
                 let keywordOverviewPageRequested = config.keywords && config.keywords.createOverview && useKeywords ? true : false
 
