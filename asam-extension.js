@@ -624,17 +624,20 @@ function isPublishableFile( page ) {
 
 function generatePageNumberBasedOnNavigation(pages, navFiles) {
     let chapterIndex = "0."
+    navFiles.sort((a,b) => {
+        return a.nav.index - b.nav.index
+    })
     navFiles.forEach(nav => {
         for (let line of nav._contents.toString().split("\n")) {
             const indexOfXref = line.indexOf("xref:")
             if (indexOfXref > 0) {
                 const endOfXref = line.indexOf("[")
                 const targetFile = line.slice(indexOfXref+5,endOfXref)
-                let foundPage = pages.filter(x => x.src.relative === targetFile)
+                let foundPage = pages.filter(x => x.src.relative === targetFile && x.src.module === nav.src.module)
                 if (foundPage) {
                     const level = line.lastIndexOf("*",indexOfXref) + 1
                     let chapterElements = chapterIndex.split(".")
-                    const currentChapterIndexLength = chapterElements.length - 1
+                    const currentChapterIndexLength = Math.max(1,chapterElements.length - 1)
 
                     if (currentChapterIndexLength < level) {
                         for (let i in [...Array(level-currentChapterIndexLength)]) {
@@ -650,7 +653,15 @@ function generatePageNumberBasedOnNavigation(pages, navFiles) {
                     chapterIndex = chapterElements.join(".")
 
                     let newContent = foundPage[0]._contents.toString().split("\n")
-                    newContent.splice(1,0,":titleoffset: "+ chapterIndex)
+                    let indexOfTitle = 0
+                    for(let line of newContent) {
+
+                        if (line.startsWith("= ")) {
+                            indexOfTitle = newContent.indexOf(line)
+                            break;
+                        }
+                    }
+                    newContent.splice(indexOfTitle+1,0,":titleoffset: "+ chapterIndex)
                     foundPage[0]._contents = Buffer.from(newContent.join("\n"))
 
                 }
