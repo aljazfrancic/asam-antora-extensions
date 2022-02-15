@@ -649,7 +649,7 @@ function generatePageNumberBasedOnNavigation(pages, navFiles) {
                     let foundPage = pages.filter(x => x.src.relative === targetFile && x.src.module === nav.src.module)
 
                     // Only execute if at least one matching page was found
-                    if (foundPage) {
+                    if (foundPage.length > 0) {
 
                         chapterIndex = determineNextChapterIndex(level, chapterIndex)
                         let newContent = foundPage[0]._contents.toString().split("\n")
