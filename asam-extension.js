@@ -630,43 +630,88 @@ function generatePageNumberBasedOnNavigation(pages, navFiles) {
     navFiles.forEach(nav => {
         for (let line of nav._contents.toString().split("\n")) {
             const indexOfXref = line.indexOf("xref:")
-            if (indexOfXref > 0) {
-                const endOfXref = line.indexOf("[")
-                const targetFile = line.slice(indexOfXref+5,endOfXref)
-                let foundPage = pages.filter(x => x.src.relative === targetFile && x.src.module === nav.src.module)
-                if (foundPage) {
-                    const level = line.lastIndexOf("*",indexOfXref) + 1
-                    let chapterElements = chapterIndex.split(".")
-                    const currentChapterIndexLength = Math.max(1,chapterElements.length - 1)
+            const level = indexOfXref > 0 ? line.lastIndexOf("*",indexOfXref) + 1 : line.lastIndexOf("*") + 1
 
-                    if (currentChapterIndexLength < level) {
-                        for (let i in [...Array(level-currentChapterIndexLength)]) {
-                            chapterElements.splice(-1,0,"1")
-                        }
-                    }
-                    else {
-                        chapterElements[level-1] = (parseInt(chapterElements[level-1]) + 1).toString()
-                        if (currentChapterIndexLength > level) {
-                            chapterElements = chapterElements.slice(0,level).concat([""])
-                        }
-                    }
-                    chapterIndex = chapterElements.join(".")
-
-                    let newContent = foundPage[0]._contents.toString().split("\n")
-                    let indexOfTitle = 0
-                    for(let line of newContent) {
-
-                        if (line.startsWith("= ")) {
-                            indexOfTitle = newContent.indexOf(line)
-                            break;
-                        }
-                    }
-                    newContent.splice(indexOfTitle+1,0,":titleoffset: "+ chapterIndex)
-                    foundPage[0]._contents = Buffer.from(newContent.join("\n"))
-
+            // Execute only if either a cross reference or a bullet point was found
+            if (indexOfXref > 0 || level > 0) {
+                // Execute if no xref was found
+                if (indexOfXref <= 0) {
+                    chapterIndex = determineNextChapterIndex(level, chapterIndex)
+                    const changedLine = line.slice(0,level) + " " + chapterIndex + line.slice(level)
+                    let content = nav._contents.toString().split("\n")
+                    content[content.indexOf(line)] = changedLine
+                    nav._contents = Buffer.from(content.join("\n"))
                 }
+                // Execute if xref was found
+                else {
+                    const endOfXref = line.indexOf("[")
+                    const targetFile = line.slice(indexOfXref+5,endOfXref)
+                    let foundPage = pages.filter(x => x.src.relative === targetFile && x.src.module === nav.src.module)
+
+                    // Only execute if at least one matching page was found
+                    if (foundPage) {
+
+                        chapterIndex = determineNextChapterIndex(level, chapterIndex)
+                        let newContent = foundPage[0]._contents.toString().split("\n")
+                        let indexOfTitle = 0
+                        let indexOfNavtitle = -1
+                        let indexOfReftext = -1
+                        let numberOfLevelTwoSections = 0
+                        for(let line of newContent) {
+                            // Find title
+                            if (line.startsWith("= ")) {
+                                indexOfTitle = newContent.indexOf(line)
+                            }
+                            // Find level 2 sections
+                            else if (line.startsWith("== ")) {
+                                numberOfLevelTwoSections += 1
+                            }
+                            // Find optional attribute :navtitle:
+                            else if (line.startsWith(":navtitle:")) {
+                                indexOfNavtitle = newContent.indexOf(line)
+                            }
+                            // Find optional attribute :reftext:
+                            else if (line.startsWith(":reftext:")) {
+                                indexOfReftext = newContent.indexOf(line)
+                            }
+                        }
+                        newContent.splice(indexOfTitle+1,0,":titleoffset: "+ chapterIndex)
+                        indexOfNavtitle += 1
+                        indexOfReftext += 1
+                        if (indexOfNavtitle > 0) {
+                            const index = newContent[indexOfNavtitle].indexOf(":navtitle:") + ":navtitle:".length + 1
+                            newContent[indexOfNavtitle] = newContent[indexOfNavtitle].slice(0,index) + chapterIndex + " " + newContent[indexOfNavtitle].slice(index)
+                        }
+                        if (indexOfReftext > 0) {
+                            const index = newContent[indexOfReftext].indexOf(":reftext:") + ":reftext:".length + 1
+                            newContent[indexOfReftext] = newContent[indexOfReftext].slice(0,index) + chapterIndex + " " + newContent[indexOfReftext].slice(index)
+                        }
+                        foundPage[0]._contents = Buffer.from(newContent.join("\n"))
+                        chapterIndex = chapterIndex + numberOfLevelTwoSections + "."
+                    }
+                }
+
             }
 
         }
     })
+}
+
+function determineNextChapterIndex( level, chapterIndex="0." ) {
+    let chapterElements = chapterIndex.split(".")
+    const currentChapterIndexLength = Math.max(1,chapterElements.length - 1)
+
+    if (currentChapterIndexLength < level) {
+        for (let i in [...Array(level-currentChapterIndexLength)]) {
+            chapterElements.splice(-1,0,"1")
+        }
+    }
+    else {
+        chapterElements[level-1] = (parseInt(chapterElements[level-1]) + 1).toString()
+        if (currentChapterIndexLength > level) {
+            chapterElements = chapterElements.slice(0,level).concat([""])
+        }
+    }
+    chapterIndex = chapterElements.join(".")
+    return chapterIndex
 }
