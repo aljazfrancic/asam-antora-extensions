@@ -49,17 +49,26 @@ Only relevant in combination with `id`.
 ----
 ====
 
-== Orphan pages
+== Pipeline features
+This section describes the features of the extensions that work directly through the pipeline without using macros in .adoc files.
+
+=== Orphan pages
 The ASAM Antora extension finds all pages not listed in any nav.adoc and puts a warning in the console output.
 If configured, these pages can also automatically be listed under a separated navigation entry (e.g. "orphans") at the end of the Antora document.
 
-For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/special-macros.html#_orphan_pages[ASAM Project Guide^]
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-orphan_pages.html[ASAM Project Guide^]
 
-== Keyword-overview page
+=== Keyword-overview page
 The ASAM Antora extension generates an overview page that lists all keywords used in the Antora pages.
 The location and the (virtual) filename can be configured in the site.yml (Antora playbook).
 
-For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/special-macros.html#_keyword_overview_page[ASAM Project Guide^]
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-keyword_overview.html[ASAM Project Guide^]
+
+=== Sequential numbering
+The ASAM Antora extension adds a title number (`titleoffset`) to each page based on the order in the navigation tree (per component and version).
+Afterwards, the "sectnumsoffset_antora" extensions for Asciidoctor then uses the title offset as well as an optional (manually defined) `sectnumoffset` attribute on the page to re-number all level 2 sections within each page.
+
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-sequential_sectnums.html[ASAM Project Guide^]
 
 == ASAM Antora macros
 IMPORTANT: ASAM macros are not supported in partials as they are replaced through Antora rather than Asciidoctor, but partials are included by Asciidoctor at a later stage.
