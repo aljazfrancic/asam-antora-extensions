@@ -631,6 +631,10 @@ function generatePageNumberBasedOnNavigation(pages, navFiles) {
         const navContentSum = nav._contents.toString()
         let content = navContentSum.split("\n")
         const reStartLevel = /:start-level: ([0-9]*)/;
+        const reResetLevelOffset = /:reset-level-offset:/;
+        if (navContentSum.match(reResetLevelOffset)) {
+            chapterIndex = "0."
+        }
         let startLevel = navContentSum.match(reStartLevel) && navContentSum.match(reStartLevel)[1] ? navContentSum.match(reStartLevel)[1] : 1
         for (let line of nav._contents.toString().split("\n")) {
             const indexOfXref = line.indexOf("xref:")
