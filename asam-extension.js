@@ -635,12 +635,13 @@ function generatePageNumberBasedOnNavigation(pages, navFiles) {
         for (let line of nav._contents.toString().split("\n")) {
             const indexOfXref = line.indexOf("xref:")
             const level = indexOfXref > 0 ? line.lastIndexOf("*",indexOfXref) + 1 : line.lastIndexOf("*") + 1
+            const targetLevel = level - startLevel + 1
 
             // Execute only if either a cross reference or a bullet point was found
             if (indexOfXref > 0 || level >= startLevel) {
                 // Execute if no xref was found
                 if (indexOfXref <= 0) {
-                    chapterIndex = determineNextChapterIndex(level, chapterIndex)
+                    chapterIndex = determineNextChapterIndex(targetLevel, chapterIndex)
                     const changedLine = line.slice(0,level) + " " + chapterIndex + line.slice(level)
                     content[content.indexOf(line)] = changedLine
                     nav._contents = Buffer.from(content.join("\n"))
@@ -654,7 +655,7 @@ function generatePageNumberBasedOnNavigation(pages, navFiles) {
                     // Only execute if at least one matching page was found
                     if (foundPage.length > 0) {
 
-                        chapterIndex = determineNextChapterIndex(level, chapterIndex)
+                        chapterIndex = determineNextChapterIndex(targetLevel, chapterIndex)
                         let newContent = foundPage[0]._contents.toString().split("\n")
                         let indexOfTitle = 0
                         let indexOfNavtitle = -1
@@ -700,19 +701,19 @@ function generatePageNumberBasedOnNavigation(pages, navFiles) {
     })
 }
 
-function determineNextChapterIndex( level, chapterIndex="0." ) {
+function determineNextChapterIndex( targetLevel, chapterIndex="0." ) {
     let chapterElements = chapterIndex.split(".")
     const currentChapterIndexLength = Math.max(1,chapterElements.length - 1)
 
-    if (currentChapterIndexLength < level) {
-        for (let i in [...Array(level-currentChapterIndexLength)]) {
+    if (currentChapterIndexLength < targetLevel) {
+        for (let i in [...Array(targetLevel-currentChapterIndexLength)]) {
             chapterElements.splice(-1,0,"1")
         }
     }
     else {
-        chapterElements[level-1] = (parseInt(chapterElements[level-1]) + 1).toString()
-        if (currentChapterIndexLength > level) {
-            chapterElements = chapterElements.slice(0,level).concat([""])
+        chapterElements[targetLevel-1] = (parseInt(chapterElements[targetLevel-1]) + 1).toString()
+        if (currentChapterIndexLength > targetLevel) {
+            chapterElements = chapterElements.slice(0,targetLevel).concat([""])
         }
     }
     chapterIndex = chapterElements.join(".")
