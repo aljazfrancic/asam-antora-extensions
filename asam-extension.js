@@ -628,22 +628,25 @@ function generatePageNumberBasedOnNavigation(pages, navFiles) {
         return a.nav.index - b.nav.index
     })
     navFiles.forEach(nav => {
+        const navContentSum = nav._contents.toString()
+        let content = navContentSum.split("\n")
+        const reStartLevel = /:start-level: ([0-9]*)/;
+        let startLevel = navContentSum.match(reStartLevel) && navContentSum.match(reStartLevel)[1] ? navContentSum.match(reStartLevel)[1] : 1
         for (let line of nav._contents.toString().split("\n")) {
             const indexOfXref = line.indexOf("xref:")
             const level = indexOfXref > 0 ? line.lastIndexOf("*",indexOfXref) + 1 : line.lastIndexOf("*") + 1
 
             // Execute only if either a cross reference or a bullet point was found
-            if (indexOfXref > 0 || level > 0) {
+            if (indexOfXref > 0 || level >= startLevel) {
                 // Execute if no xref was found
                 if (indexOfXref <= 0) {
                     chapterIndex = determineNextChapterIndex(level, chapterIndex)
                     const changedLine = line.slice(0,level) + " " + chapterIndex + line.slice(level)
-                    let content = nav._contents.toString().split("\n")
                     content[content.indexOf(line)] = changedLine
                     nav._contents = Buffer.from(content.join("\n"))
                 }
                 // Execute if xref was found
-                else {
+                else if (level >= startLevel) {
                     const endOfXref = line.indexOf("[")
                     const targetFile = line.slice(indexOfXref+5,endOfXref)
                     let foundPage = pages.filter(x => x.src.relative === targetFile && x.src.module === nav.src.module)
