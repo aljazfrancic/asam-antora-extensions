@@ -44,7 +44,9 @@ module.exports.register = function ({ config }) {
                 pages = createKeywordsOverviewPage(keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, targetPath, targetName, targetModule, component, version)
                 keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
                 pages = findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywordPageMap, rolePageMap, macrosRegEx, macrosHeadings, logger, component, version )
-                pages = findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
+                if (anchorPageMap) {
+                    pages = findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
+                }
                 keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
                 pages = createKeywordsOverviewPage(keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, targetPath, targetName, targetModule, component, version)
 
