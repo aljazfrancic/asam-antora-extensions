@@ -767,11 +767,13 @@ function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
         let content = page.contents.toString()
         const reference = [...content.matchAll(re)]
         reference.forEach(ref => {
-            const referencePage = [...anchorMap.get(ref[1])][0]
-            if (page !== referencePage) {
-                const altText = ref[3] ? ref[3] : getPageNameFromSource( referencePage )
-                const replacementXref = "xref:"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+ref[1]+"["+altText+"]"
-                content = content.replace(ref[0],replacementXref)
+            if (anchorMap.get(ref[1])) {
+                const referencePage = [...anchorMap.get(ref[1])][0]
+                if (page !== referencePage) {
+                    const altText = ref[3] ? ref[3] : getPageNameFromSource( referencePage )
+                    const replacementXref = "xref:"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+ref[1]+"["+altText+"]"
+                    content = content.replace(ref[0],replacementXref)
+                }
             }
         })
         page.contents = Buffer.from(content)
