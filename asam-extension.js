@@ -760,6 +760,8 @@ function getAnchorPageMapForPages( pages ) {
 }
 
 function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
+    console.log(anchorMap.size)
+    if (anchorMap.size === 0) {return 0}
     const re = /<<([^>,]+)(,\s*([^>]+))?>>/g
     pages.forEach(page => {
         let content = page.contents.toString()
