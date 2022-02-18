@@ -70,6 +70,9 @@ Afterwards, the "sectnumsoffset_antora" extensions for Asciidoctor then uses the
 
 For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-sequential_sectnums.html[ASAM Project Guide^]
 
+== Global anchor link replacement
+NOTE: Currently in the process of being developed.
+
 == ASAM Antora macros
 IMPORTANT: ASAM macros are not supported in partials as they are replaced through Antora rather than Asciidoctor, but partials are included by Asciidoctor at a later stage.
 
