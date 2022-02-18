@@ -39,6 +39,7 @@ module.exports.register = function ({ config }) {
                 let navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
                 let keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
                 const rolePageMap = getRolePageMapForPages(pages)
+                let anchorPageMap = getAnchorPageMapForPages(pages)
 
                 pages = createKeywordsOverviewPage(keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, targetPath, targetName, targetModule, component, version)
                 keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
@@ -722,4 +723,40 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0." ) {
     }
     chapterIndex = chapterElements.join(".")
     return chapterIndex
+}
+
+function getAnchorPageMapForPages( pages ) {
+    var re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)\]|anchor:([^\[]+)\[/
+
+    var anchorMap = new Map;
+    for (let page of pages.filter((page) => page.out)) {
+        var results = []
+        for (var line of page.contents.toString().split("\n")) {
+            const result = re.exec(line);
+            if (result) {
+                results.push(result)
+            }
+        }
+        if (results) {
+            for (let entry of results) {
+                const e1 = entry[1]
+                const e2 = entry[4]
+                const e3 = entry[5]
+
+                const resultValue = e1 ? e1 : e2 ? e2 : e3
+                if (anchorMap.has(resultValue)) {
+                    anchorMap = updateMapEntry(anchorMap,resultValue,page)
+                }
+                else {
+                    anchorMap.set(resultValue, new Set([page]))
+                }
+            }
+
+        }
+    }
+    return anchorMap
+}
+
+function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, page ) {
+
 }
