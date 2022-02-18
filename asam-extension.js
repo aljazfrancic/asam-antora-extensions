@@ -44,6 +44,7 @@ module.exports.register = function ({ config }) {
                 pages = createKeywordsOverviewPage(keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, targetPath, targetName, targetModule, component, version)
                 keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
                 pages = findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywordPageMap, rolePageMap, macrosRegEx, macrosHeadings, logger, component, version )
+                pages = findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
                 keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
                 pages = createKeywordsOverviewPage(keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, targetPath, targetName, targetModule, component, version)
 
@@ -751,12 +752,33 @@ function getAnchorPageMapForPages( pages ) {
                     anchorMap.set(resultValue, new Set([page]))
                 }
             }
-
         }
     }
     return anchorMap
 }
 
-function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, page ) {
+function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
+    const re = /<<([^>,]+)(,\s*([^>]+))?>>/g
+    pages.forEach(page => {
+        let content = page.contents.toString()
+        const reference = [...content.matchAll(re)]
+        reference.forEach(ref => {
+            const referencePage = [...anchorMap.get(ref[1])][0]
+            if (page !== referencePage) {
+                const altText = ref[3] ? ref[3] : getPageNameFromSource( referencePage )
+                const replacementXref = "xref:"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+ref[1]+"["+altText+"]"
+                content = content.replace(ref[0],replacementXref)
+            }
+        })
+        page.contents = Buffer.from(content)
+    })
+    return pages
+}
 
+function getPageNameFromSource( page ) {
+    let re = /^=\s+([^\n\r]+)/m
+    let content =page.contents.toString()
+    let result = content.match(re)
+    const returnValue = result && result.length > 1 ? result[1] : page.src.stem
+    return (returnValue)
 }
