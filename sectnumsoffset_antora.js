@@ -8,6 +8,8 @@ module.exports = function (registry) {
             let pageTitle = doc.getTitle()
             let titleOffset = doc.getAttribute("titleoffset",null)
             let titlePrefix = doc.getAttribute("titleprefix","")
+            let imageOffset = doc.getAttribute("imageoffset",0)
+            let tableOffset = doc.getAttribute("tableoffset",0)
 
             if (titlePrefix) {
                 pageTitle = doc.setTitle(titlePrefix + " " + pageTitle)
@@ -19,6 +21,19 @@ module.exports = function (registry) {
             doc.getSections().filter(s => s.getLevel() === 1).forEach(sect => {
                 offsetValue = 1 + offsetValue
                 sect.setNumeral(titleOffset+offsetValue)
+            })
+            // console.log(doc.getBlocks().filter(x=>x.getNodeName() === "image"))
+            doc.getBlocks().filter(x=>x.getNodeName() === "image").forEach(image => {
+                imageOffset = 1 + imageOffset
+                const oldNumeral = image.getNumeral()
+                image.setNumeral(imageOffset)
+                image.setCaption(image.getCaption().replace(oldNumeral,imageOffset))
+            })
+            doc.getBlocks().filter(x=>x.getNodeName() === "table").forEach(table => {
+                tableOffset = 1+ tableOffset
+                const oldNumeral = table.getNumeral()
+                table.setNumeral(tableOffset)
+                table.setCaption(table.getCaption().replace(oldNumeral,tableOffset))
             })
         }
       })
