@@ -7,15 +7,15 @@ module.exports = function (registry) {
             let offsetValue = Math.abs(doc.getAttribute("sectnumoffset",0))
             let pageTitle = doc.getTitle()
             let titleOffset = doc.getAttribute("titleoffset",null)
+            let titlePrefix = doc.getAttribute("titleprefix","")
 
-            if (titleOffset) {
-                titleOffset = titleOffset.endsWith(".") ? titleOffset : titleOffset+"."
+            if (titlePrefix) {
+                pageTitle = doc.setTitle(titlePrefix + " " + pageTitle)
+            }
+            else if (titleOffset) {
                 pageTitle = doc.setTitle(titleOffset+" "+pageTitle)
             }
-
-            // console.log("pageTitle", pageTitle)
-            // console.log("offsetValue",offsetValue)
-            // console.log("titleOffset", titleOffset)
+            titleOffset = titleOffset.endsWith(".") ? titleOffset : titleOffset+"."
             doc.getSections().filter(s => s.getLevel() === 1).forEach(sect => {
                 offsetValue = 1 + offsetValue
                 sect.setNumeral(titleOffset+offsetValue)
