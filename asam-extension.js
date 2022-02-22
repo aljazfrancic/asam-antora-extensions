@@ -713,7 +713,7 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
                 }
                 foundPage[0]._contents = Buffer.from(newContent.join("\n"))
                 const newIndex = style === "iso" ? chapterIndex +"."+ (numberOfLevelTwoSections-1) : chapterIndex + (numberOfLevelTwoSections-1) +"."
-                chapterIndex = determineNextChapterIndex(targetLevel+1, newIndex, style)
+                chapterIndex = determineNextChapterIndex(targetLevel+1, newIndex, style, appendixCaption)
             }
         }
     }
