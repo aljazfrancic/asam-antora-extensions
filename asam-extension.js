@@ -733,6 +733,7 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appen
     const currentChapterIndexLength = Math.max(1,chapterElements.length)
     if (appendixCaption) {
         console.log("current chapter: ", chapterElements)
+        console.log("targetLevel",targetLevel)
         if (targetLevel === 1) {
             if (isNaN(parseInt(chapterElements[0]))) {
                 chapterElements[0] = String.fromCharCode(chapterElements[0].charCodeAt(0) + 1)
@@ -763,6 +764,7 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appen
         chapterElements.push("")
     }
     chapterIndex = chapterElements.join(".")
+    if(appendixCaption){console.log("final index", chapterElements)}
     return chapterIndex
 }
 
