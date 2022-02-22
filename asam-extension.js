@@ -894,6 +894,8 @@ function handlePreface( nav, pages,line ) {
 }
 
 function handleAppendix( nav, pages, content, line, generateNumbers, startLevel, chapterIndex, style, appendixCaption, appendixOffset ) {
+    console.log("found appendix in ",line)
+    console.log(content)
     const appendixStartLevel = startLevel+appendixOffset
     return tryApplyingPageAndSectionNumberValuesToPage(nav, pages,content, line, generateNumbers, appendixStartLevel, chapterIndex, style, "appendix", appendixCaption)
 }
