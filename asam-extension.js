@@ -630,7 +630,7 @@ function generatePageNumberBasedOnNavigation(pages, navFiles, styleSettings, app
                     currentRole = "default";
                     break;
                 case "appendix":
-                    currentRole = handleAppendix(nav, pages,content, line, generateNumbers, startLevel, chapterIndex, style, appendixCaption, appendixOffset);
+                    [content, chapterIndex, generateNumbers,currentRole] = handleAppendix(nav, pages,content, line, generateNumbers, startLevel, chapterIndex, style, appendixCaption, appendixOffset);
                     break;
                 case "glossary":
                     currentRole = "default";
@@ -665,7 +665,7 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
     // Execute only if either a cross reference or a bullet point was found
     if (indexOfXref > 0 || level >= startLevel) {
         // Execute if no xref was found
-        if(appendixCaption){console.log("indexOfXref, level, startLevel, targetLevel, generateNumbers", indexOfXref, level, startLevel, targetLevel, generateNumbers)}
+        // if(appendixCaption){console.log("indexOfXref, level, startLevel, targetLevel, generateNumbers", indexOfXref, level, startLevel, targetLevel, generateNumbers)}
         if (indexOfXref <= 0) {
             if (!generateNumbers) {
                 return [content, chapterIndex, !generateNumbers,"default"]
@@ -681,18 +681,18 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
             let foundPage = determinePageForXrefInLine(line, indexOfXref, pages, nav)
             // let newContent,indexOfTitle,indexOfNavtitle,indexOfReftext,numberOfLevelTwoSections;
             // Only execute if at least one matching page was found
-            if(appendixCaption && foundPage.length > 0){console.log("foundPage",foundPage[0])}
+            // if(appendixCaption && foundPage.length > 0){console.log("foundPage",foundPage[0])}
             if (foundPage.length > 0) {
                 if (!generateNumbers) {
                     unsetSectnumsAttributeInFile(foundPage[0])
                     return [content, chapterIndex, !generateNumbers, "default"]
                 }
                 chapterIndex = determineNextChapterIndex(targetLevel, chapterIndex, style, appendixCaption)
-                if(appendixCaption){console.log("chapterIndex", chapterIndex)}
+                // if(appendixCaption){console.log("chapterIndex", chapterIndex)}
                 let [newContent,indexOfTitle,indexOfNavtitle,indexOfReftext,numberOfLevelTwoSections] = getPageContentForSectnumsFunction(foundPage[0])
                 newContent.splice(indexOfTitle+1,0,":titleoffset: "+ chapterIndex)
                 if (appendixCaption) {
-                    console.log(foundPage[0].src.relative, appendixCaption, chapterIndex)
+                    // console.log(foundPage[0].src.relative, appendixCaption, chapterIndex)
                     newContent.splice(indexOfTitle+2,0,":titleprefix: "+ appendixCaption+" "+chapterIndex+":")
                 }
                 if (option !== "default") {
@@ -732,8 +732,6 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appen
     if (style !== "iso") {chapterElements.pop()}
     const currentChapterIndexLength = Math.max(1,chapterElements.length)
     if (appendixCaption) {
-        console.log("current chapter: ", chapterElements)
-        console.log("targetLevel",targetLevel)
         if (targetLevel === 1) {
             if (isNaN(parseInt(chapterElements[0]))) {
                 chapterElements[0] = String.fromCharCode(chapterElements[0].charCodeAt(0) + 1)
@@ -741,7 +739,6 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appen
             else {
                 chapterElements[0] = "A"
             }
-        console.log("changed chapter: ", chapterElements)
         }
     }
     // Add 1s to the end if the current number is shorter than the target number
@@ -764,7 +761,6 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appen
         chapterElements.push("")
     }
     chapterIndex = chapterElements.join(".")
-    if(appendixCaption){console.log("final index", chapterElements)}
     return chapterIndex
 }
 
@@ -901,8 +897,6 @@ function handlePreface( nav, pages,line ) {
 }
 
 function handleAppendix( nav, pages, content, line, generateNumbers, startLevel, chapterIndex, style, appendixCaption, appendixOffset ) {
-    console.log("found appendix in ",line)
-    console.log(content)
     const appendixStartLevel = isNaN(parseInt(startLevel)+parseInt(appendixOffset)) ? startLevel : (parseInt(startLevel)+parseInt(appendixOffset)).toString()
     return tryApplyingPageAndSectionNumberValuesToPage(nav, pages,content, line, generateNumbers, appendixStartLevel, chapterIndex, style, "appendix", appendixCaption)
 }
