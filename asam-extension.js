@@ -838,7 +838,7 @@ function checkForSectnumsAttribute( content, line, previousValue=true ) {
 }
 
 function checkForRoleInLine( content, line, currentRole ) {
-    const reRoles = /^s*\[([^\]]+)\]/;
+    const reRoles = /^\s*\[([^\]]+)\]/;
     const result = line.match(reRoles)
     const returnValue = result ? result[1] : currentRole
     const hasChanged = result ? true : false
