@@ -732,6 +732,7 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appen
     if (style !== "iso") {chapterElements.pop()}
     const currentChapterIndexLength = Math.max(1,chapterElements.length)
     if (appendixCaption) {
+        console.log("current chapter: ", chapterElements)
         if (targetLevel === 1) {
             if (isNaN(parseInt(chapterElements[0]))) {
                 chapterElements[0] = String.fromCharCode(chapterElements[0].charCodeAt(0) + 1)
@@ -739,6 +740,7 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appen
             else {
                 chapterElements[0] = "A"
             }
+        console.log("changed chapter: ", chapterElements)
         }
     }
     // Add 1s to the end if the current number is shorter than the target number

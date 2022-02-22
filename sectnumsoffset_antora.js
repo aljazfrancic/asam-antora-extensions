@@ -3,7 +3,7 @@ module.exports = function (registry) {
       var self = this
       self.process(function (doc) {
         // Check if sectnums and sectnumoffset is found. Only act if true
-        if (doc.hasAttribute("sectnums") && (doc.hasAttribute("sectnumoffset") || doc.hasAttribute("titleoffset"))) {
+        if (doc.hasAttribute("sectnums") && (doc.hasAttribute("sectnumoffset") || doc.hasAttribute("titleoffset") || doc.hasAttribute("imageoffset") || doc.hasAttribute("tableoffset"))) {
             let offsetValue = Math.abs(doc.getAttribute("sectnumoffset",0))
             let pageTitle = doc.getTitle()
             let titleOffset = doc.getAttribute("titleoffset",null)
@@ -27,13 +27,20 @@ module.exports = function (registry) {
                 imageOffset = 1 + imageOffset
                 const oldNumeral = image.getNumeral()
                 image.setNumeral(imageOffset)
-                image.setCaption(image.getCaption().replace(oldNumeral,imageOffset))
+                if(image.getCaption()) {
+                    image.setCaption(image.getCaption().replace(oldNumeral,imageOffset))
+                }
             })
             doc.getBlocks().filter(x=>x.getNodeName() === "table").forEach(table => {
                 tableOffset = 1+ tableOffset
                 const oldNumeral = table.getNumeral()
+                console.log(table.getCaption())
                 table.setNumeral(tableOffset)
-                table.setCaption(table.getCaption().replace(oldNumeral,tableOffset))
+                if (table.getCaption())
+                {
+                    console.log(table.getCaption())
+                    // table.setCaption(table.getCaption().replace(oldNumeral,tableOffset))
+                }
             })
         }
       })
