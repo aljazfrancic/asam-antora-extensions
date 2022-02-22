@@ -31,15 +31,13 @@ module.exports = function (registry) {
                     image.setCaption(image.getCaption().replace(oldNumeral,imageOffset))
                 }
             })
-            doc.getBlocks().filter(x=>x.getNodeName() === "table").forEach(table => {
+            doc.getBlocks().filter(x=>x.getNodeName() === "table" && x.getStyle() === "table").forEach(table => {
                 tableOffset = 1+ tableOffset
                 const oldNumeral = table.getNumeral()
-                console.log(table.getCaption())
                 table.setNumeral(tableOffset)
                 if (table.getCaption())
                 {
-                    console.log(table.getCaption())
-                    // table.setCaption(table.getCaption().replace(oldNumeral,tableOffset))
+                    table.setCaption("Table "+tableOffset+". ")
                 }
             })
         }
