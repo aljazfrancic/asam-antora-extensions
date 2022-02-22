@@ -689,6 +689,7 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
                 let [newContent,indexOfTitle,indexOfNavtitle,indexOfReftext,numberOfLevelTwoSections] = getPageContentForSectnumsFunction(foundPage[0])
                 newContent.splice(indexOfTitle+1,0,":titleoffset: "+ chapterIndex)
                 if (appendixCaption) {
+                    console.log(foundPage[0].src.relative, appendixCaption, chapterIndex)
                     newContent.splice(indexOfTitle+2,0,":titleprefix: "+ appendixCaption+" "+chapterIndex+":")
                 }
                 if (option !== "default") {
