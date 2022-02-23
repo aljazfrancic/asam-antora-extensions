@@ -828,7 +828,7 @@ function getPageNameFromSource( page ) {
     if (!result || result.length <=1) {
         result = content.match(re2)
     }
-    resultAlt = content.match(re3)
+    const resultAlt = content.match(re3)
     let returnValue
     if (result && result.length > 1) {
         returnValue = "Section "+result[1]
