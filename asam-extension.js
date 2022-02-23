@@ -686,12 +686,12 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
                 let page = foundPage[0]
                 if (!generateNumbers) {
                     unsetSectnumsAttributeInFile(page)
-                    let [a,b] = updateImageAndTableIndex(page, imageIndex, tableIndex)
+                    let [a,b] = updateImageAndTableIndex(pages, page, imageIndex, tableIndex)
                     return [content, chapterIndex, a, b,!generateNumbers, "default"]
                 }
                 chapterIndex = determineNextChapterIndex(targetLevel, chapterIndex, style, appendixCaption)
                 addTitleoffsetAttributeToPage( page, chapterIndex)
-                let [a,b] = updateImageAndTableIndex(page, imageIndex, tableIndex)
+                let [a,b] = updateImageAndTableIndex(pages, page, imageIndex, tableIndex)
                 newImageIndex = a
                 newTableIndex = b
                 let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
@@ -913,7 +913,7 @@ function handlePreface( nav, pages,line,imageIndex, tableIndex ) {
     const indexOfXref = line.indexOf("xref:")
     let page = determinePageForXrefInLine(line, indexOfXref, pages, nav)[0]
     unsetSectnumsAttributeInFile(page)
-    let [newImageIndex,newTableIndex] = updateImageAndTableIndex(page, imageIndex, tableIndex)
+    let [newImageIndex,newTableIndex] = updateImageAndTableIndex(pages, page, imageIndex, tableIndex)
     addSpecialSectionTypeToPage(page, "preface")
     return ["default", newImageIndex, newTableIndex]
 }
@@ -928,7 +928,7 @@ function handleBibliography(nav, pages, line, imageIndex, tableIndex) {
     let bibliographyPage = determinePageForXrefInLine(line, indexOfXref, pages, nav)
     let page = bibliographyPage[0]
     unsetSectnumsAttributeInFile(page)
-    let [newImageIndex,newTableIndex] = updateImageAndTableIndex(page, imageIndex, tableIndex)
+    let [newImageIndex,newTableIndex] = updateImageAndTableIndex(pages, page, imageIndex, tableIndex)
     addSpecialSectionTypeToPage(page, "bibliography")
 }
 
@@ -958,13 +958,14 @@ function addTableOffsetAttributeToPage( page, value ) {
     addAttributeWithValueToPage(page, newContent, indexOfTitle, "tableoffset", value)
 }
 
-function updateImageAndTableIndex(page, imageIndex=0, tableIndex=0){
+function updateImageAndTableIndex(pages, page, imageIndex=0, tableIndex=0){
     let newImageIndex = imageIndex
     let newTableIndex = tableIndex
 
     addImageOffsetAttributeToPage(page, newImageIndex)
     addTableOffsetAttributeToPage(page, newTableIndex)
-    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
+    // let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
+    let [numberOfLevelTwoSections, numberOfImages, numberOfTables] = getIncludedPagesContentForExtensionFeatures(pages, page)
     newImageIndex += parseInt(numberOfImages)
     newTableIndex += parseInt(numberOfTables)
     return ([newImageIndex,newTableIndex])
@@ -974,4 +975,59 @@ function addSpecialSectionTypeToPage( page, specialSectionType ){
     let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
     newContent.splice(indexOfTitle+1,0,"["+specialSectionType+"]")
     page.contents = Buffer.from(newContent.join("\n"))
+}
+
+function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0 ) {
+    const contentSum = page.contents.toString()
+    let newContent = contentSum.split("\n")
+    let numberOfLevelTwoSections = 0
+    let numberOfImages = 0
+    let numberOfTables = 0.
+    let ignoreLine = false
+    for(let line of newContent) {
+        // Find level 2 sections
+        if (line.indexOf("ifndef::") > -1 && line.indexOf("use-antora-rules") > -1) {
+            ignoreLine = true
+        }
+        else if (ignoreLine && line.indexOf("endif::") > -1) {
+            ignoreLine = false
+        }
+        if (!ignoreLine)
+        {
+            if ((leveloffset === 0 && line.startsWith("== ")) || (leveloffset === 1 && line.startsWith("= "))) {
+                numberOfLevelTwoSections += 1
+            }
+            else if (line.match(/^\s*include::/)) {
+                const re = /^\s*include::([^\[]+)\[(leveloffset=+(\d+))?/
+                let result = line.match(re)
+                const includePath = result[1].split("/")
+                const includeLeveloffset = result[3] ? result[3] : 0
+                let currentPath = page.out.dirname.split("/")
+                includePath.forEach(part => {
+                    if (part === "..") {currentPath = currentPath.slice(0,-1)}
+                    else if (part ===".") {}
+                    else {currentPath.push(part)}
+                })
+                const targetPath = currentPath.join("/")
+                if (pages.filter(page => page.out.dirname +"/"+ page.src.basename === targetPath).length > 0) {
+                    let includedPage = pages.filter(page => page.out.dirname +"/"+ page.src.basename === targetPath)[0]
+                    let [numberOfLevelTwoSectionsIncluded, numberOfImagesIncluded, numberOfTablesIncluded] = getIncludedPagesContentForExtensionFeatures(pages, includedPage, includeLeveloffset)
+                    numberOfLevelTwoSections += numberOfLevelTwoSectionsIncluded
+                    numberOfImages += numberOfImagesIncluded
+                    numberOfTables += numberOfTablesIncluded
+                }
+            }
+            else {
+                const reFigures = /\[#fig-[^\]]+\]/g
+                if ([...line.matchAll(reFigures)].length > 0) {
+                    numberOfImages += [...line.matchAll(reFigures)].length
+                }
+                const reTables = /\[#tab-[^\]]+\]/g
+                if ([...line.matchAll(reTables)].length > 0) {
+                    numberOfTables += [...line.matchAll(reTables)].length
+                }
+            }
+        }
+    }
+    return [numberOfLevelTwoSections, numberOfImages, numberOfTables]
 }

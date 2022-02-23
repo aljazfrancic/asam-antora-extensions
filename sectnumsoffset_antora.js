@@ -4,8 +4,10 @@ module.exports = function (registry) {
       var verbose = false
       self.process(function (doc) {
         // Check if sectnums and sectnumoffset is found. Only act if true
+        // if (doc.getTitle() && doc.getTitle().indexOf("General Architecture")>-1) {verbose = true}
         if (verbose){console.log("Title: ",doc.getTitle())}
         if (verbose){console.log("has imageoffset attribute: ",doc.hasAttribute("imageoffset"))}
+        if (verbose){console.log("has tableoffset attribute: ",doc.hasAttribute("tableoffset"))}
         if (doc.hasAttribute("sectnums") && (doc.hasAttribute("sectnumoffset") || doc.hasAttribute("titleoffset") || doc.hasAttribute("imageoffset") || doc.hasAttribute("tableoffset"))) {
             let offsetValue = Math.abs(doc.getAttribute("sectnumoffset",0))
             let pageTitle = doc.getTitle()
@@ -13,6 +15,9 @@ module.exports = function (registry) {
             let titlePrefix = doc.getAttribute("titleprefix","")
             let imageOffset = Math.abs(doc.getAttribute("imageoffset",0))
             let tableOffset = Math.abs(doc.getAttribute("tableoffset",0))
+
+            if (verbose){console.log("imageOffset attribute: ",imageOffset)}
+            if (verbose){console.log("tableoffset attribute: ",tableOffset)}
 
             if (titlePrefix) {
                 pageTitle = doc.setTitle(titlePrefix + " " + pageTitle)
@@ -26,7 +31,7 @@ module.exports = function (registry) {
                 sect.setNumeral(titleOffset+offsetValue)
             })
             imageOffset = updateImageOffset(doc, imageOffset, verbose)
-            tableOffset = updateTableOffset(doc, tableOffset)
+            tableOffset = updateTableOffset(doc, tableOffset, verbose)
         }
       })
     })
@@ -48,17 +53,18 @@ module.exports = function (registry) {
         }
         return (newImageOffset)
     }
-    function updateTableOffset( doc, tableOffset ) {
+    function updateTableOffset( doc, tableOffset, verbose=false ) {
         let newTableOffset = tableOffset
         for (let block of doc.getBlocks()) {
-            if (block.getNodeName() === "section") {
-                newTableOffset = updateTableOffset( block, newTableOffset)
+            if (verbose){console.log("block: ",block.getNodeName())}
+            if (block.getNodeName() === "section" || block.getNodeName() === "preamble") {
+                newTableOffset = updateTableOffset( block, newTableOffset, verbose)
             }
             else if(block.getNodeName() === "table") {
                 newTableOffset = 1 + newTableOffset
                 block.setNumeral(newTableOffset)
                 if(block.getCaption()) {
-                    block.setCaption("Table "+tableOffset+". ")
+                    block.setCaption("Table "+newTableOffset+". ")
             }
             }
         }
