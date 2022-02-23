@@ -689,7 +689,7 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
                 }
                 chapterIndex = determineNextChapterIndex(targetLevel, chapterIndex, style, appendixCaption)
                 // if(appendixCaption){console.log("chapterIndex", chapterIndex)}
-                let [newContent,indexOfTitle,indexOfNavtitle,indexOfReftext,numberOfLevelTwoSections] = getPageContentForSectnumsFunction(foundPage[0])
+                let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForSectnumsFunction(foundPage[0])
                 newContent.splice(indexOfTitle+1,0,":titleoffset: "+ chapterIndex)
                 if (appendixCaption) {
                     // console.log(foundPage[0].src.relative, appendixCaption, chapterIndex)
@@ -711,6 +711,7 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
                     const index = newContent[indexOfReftext].indexOf(":reftext:") + ":reftext:".length + 1
                     newContent[indexOfReftext] = newContent[indexOfReftext].slice(0,index) + chapterIndex + " " + newContent[indexOfReftext].slice(index)
                 }
+
                 foundPage[0]._contents = Buffer.from(newContent.join("\n"))
                 const newIndex = style === "iso" ? chapterIndex +"."+ (numberOfLevelTwoSections-1) : chapterIndex + (numberOfLevelTwoSections-1) +"."
                 chapterIndex = determineNextChapterIndex(targetLevel+1, newIndex, style, appendixCaption)
@@ -798,9 +799,11 @@ function getAnchorPageMapForPages( pages ) {
 function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
     if (anchorMap.size === 0) {return pages}
     const re = /<<([^>,]+)(,\s*([^>]+))?>>/g
+    const reAlt = /xref:{1,2}#([^\[]+)\[([^\]]*)\]/g
     pages.forEach(page => {
         let content = page.contents.toString()
-        const reference = [...content.matchAll(re)]
+        let reference = [...content.matchAll(re)]
+        reference.concat([...content.matchAll(reAlt)])
         reference.forEach(ref => {
             if (anchorMap.get(ref[1])) {
                 const referencePage = [...anchorMap.get(ref[1])][0]
@@ -852,7 +855,7 @@ function checkForRoleInLine( content, line, currentRole ) {
 }
 
 function unsetSectnumsAttributeInFile(page) {
-    let [newContent,indexOfTitle,indexOfNavtitle,indexOfReftext,numberOfLevelTwoSections] = getPageContentForSectnumsFunction(page)
+    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForSectnumsFunction(page)
     newContent.splice(indexOfTitle+1,0,":sectnums!: ")
     page.contents = Buffer.from(newContent.join("\n"))
 }
@@ -864,6 +867,8 @@ function getPageContentForSectnumsFunction( page ) {
     let indexOfNavtitle = -1
     let indexOfReftext = -1
     let numberOfLevelTwoSections = 0
+    let numberOfImages = 0
+    let numberOfTables = 0.
     for(let line of newContent) {
         // Find title
         if (line.startsWith("= ")) {
@@ -881,8 +886,15 @@ function getPageContentForSectnumsFunction( page ) {
         else if (line.startsWith(":reftext:")) {
             indexOfReftext = newContent.indexOf(line)
         }
+        if (line.indexOf("image:") > -1) {
+            numberOfImages += 1
+        }
+        if (line.indexOf("|===")) {
+            numberOfTables += 0.5
+        }
     }
-    return [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections]
+    numberOfTables = parseInt(numberOfTables)
+    return [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables]
 }
 
 function handlePreface( nav, pages,line ) {
@@ -890,7 +902,7 @@ function handlePreface( nav, pages,line ) {
     let prefacePage = determinePageForXrefInLine(line, indexOfXref, pages, nav)
     let page = prefacePage[0]
     unsetSectnumsAttributeInFile(page)
-    let [newContent,indexOfTitle,indexOfNavtitle,indexOfReftext,numberOfLevelTwoSections] = getPageContentForSectnumsFunction(page)
+    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForSectnumsFunction(page)
     newContent.splice(indexOfTitle+1,0,"[preface]")
     page.contents = Buffer.from(newContent.join("\n"))
     return "default"
