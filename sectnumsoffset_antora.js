@@ -8,8 +8,8 @@ module.exports = function (registry) {
             let pageTitle = doc.getTitle()
             let titleOffset = doc.getAttribute("titleoffset",null)
             let titlePrefix = doc.getAttribute("titleprefix","")
-            let imageOffset = doc.getAttribute("imageoffset",0)
-            let tableOffset = doc.getAttribute("tableoffset",0)
+            let imageOffset = Math.abs(doc.getAttribute("imageoffset",0))
+            let tableOffset = Math.abs(doc.getAttribute("tableoffset",0))
 
             if (titlePrefix) {
                 pageTitle = doc.setTitle(titlePrefix + " " + pageTitle)

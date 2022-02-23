@@ -608,6 +608,8 @@ function generatePageNumberBasedOnNavigation(pages, navFiles, styleSettings, app
     let generateNumbers = true
     const style = styleSettings.toLowerCase()
     let chapterIndex = setStartingChapterIndex(style,"0")
+    let imageIndex = 0,
+        tableIndex = 0
     navFiles.sort((a,b) => {
         return a.nav.index - b.nav.index
     })
@@ -630,22 +632,22 @@ function generatePageNumberBasedOnNavigation(pages, navFiles, styleSettings, app
                     currentRole = "default";
                     break;
                 case "appendix":
-                    [content, chapterIndex, generateNumbers,currentRole] = handleAppendix(nav, pages,content, line, generateNumbers, startLevel, chapterIndex, style, appendixCaption, appendixOffset);
+                    [content, chapterIndex, imageIndex, tableIndex, generateNumbers,currentRole] = handleAppendix(nav, pages,content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, appendixCaption, appendixOffset);
                     break;
                 case "glossary":
                     currentRole = "default";
                     break;
                 case "bibliography":
-                    currentRole = handleBibliography(nav, pages, line)
+                    currentRole = handleBibliography(nav, pages, line, imageIndex, tableIndex)
                     break;
                 case "index":
                     currentRole = "default";
                     break;
                 case "preface":
-                    currentRole = handlePreface(nav, pages, line)
+                    [currentRole, imageIndex, tableIndex]  = handlePreface(nav, pages, line, imageIndex, tableIndex)
                     break;
                 case "default":
-                    [content, chapterIndex, generateNumbers,currentRole] = tryApplyingPageAndSectionNumberValuesToPage(nav, pages,content, line, generateNumbers, startLevel, chapterIndex, style)
+                    [content, chapterIndex, imageIndex, tableIndex, generateNumbers,currentRole] = tryApplyingPageAndSectionNumberValuesToPage(nav, pages,content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style)
                     break;
             }
         }
@@ -657,18 +659,18 @@ function setStartingChapterIndex( style, value ) {
     return style === "iso" ? value : value+"."
 }
 
-function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line, generateNumbers, startLevel, chapterIndex, style, option="default", appendixCaption="" ) {
+function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, option="default", appendixCaption="" ) {
+    let newImageIndex = imageIndex
+    let newTableIndex = tableIndex
     const indexOfXref = line.indexOf("xref:")
     const level = indexOfXref > 0 ? line.lastIndexOf("*",indexOfXref) + 1 : line.lastIndexOf("*") + 1
     const targetLevel = level - startLevel + 1
-
     // Execute only if either a cross reference or a bullet point was found
     if (indexOfXref > 0 || level >= startLevel) {
         // Execute if no xref was found
-        // if(appendixCaption){console.log("indexOfXref, level, startLevel, targetLevel, generateNumbers", indexOfXref, level, startLevel, targetLevel, generateNumbers)}
         if (indexOfXref <= 0) {
             if (!generateNumbers) {
-                return [content, chapterIndex, !generateNumbers,"default"]
+                return [content, chapterIndex, newImageIndex, newTableIndex, !generateNumbers,"default"]
             }
             chapterIndex = determineNextChapterIndex(targetLevel, chapterIndex, style)
             const changedLine = line.slice(0,level) + " " + chapterIndex + line.slice(level)
@@ -679,21 +681,23 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
             let expectedNavtitleIndex = 0
             let expectedReftextIndex = 0
             let foundPage = determinePageForXrefInLine(line, indexOfXref, pages, nav)
-            // let newContent,indexOfTitle,indexOfNavtitle,indexOfReftext,numberOfLevelTwoSections;
             // Only execute if at least one matching page was found
-            // if(appendixCaption && foundPage.length > 0){console.log("foundPage",foundPage[0])}
             if (foundPage.length > 0) {
+                let page = foundPage[0]
                 if (!generateNumbers) {
-                    unsetSectnumsAttributeInFile(foundPage[0])
-                    return [content, chapterIndex, !generateNumbers, "default"]
+                    unsetSectnumsAttributeInFile(page)
+                    let [a,b] = updateImageAndTableIndex(page, imageIndex, tableIndex)
+                    return [content, chapterIndex, a, b,!generateNumbers, "default"]
                 }
                 chapterIndex = determineNextChapterIndex(targetLevel, chapterIndex, style, appendixCaption)
-                // if(appendixCaption){console.log("chapterIndex", chapterIndex)}
-                let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForSectnumsFunction(foundPage[0])
-                newContent.splice(indexOfTitle+1,0,":titleoffset: "+ chapterIndex)
+                addTitleoffsetAttributeToPage( page, chapterIndex)
+                let [a,b] = updateImageAndTableIndex(page, imageIndex, tableIndex)
+                newImageIndex = a
+                newTableIndex = b
+                let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
                 if (appendixCaption) {
-                    // console.log(foundPage[0].src.relative, appendixCaption, chapterIndex)
-                    newContent.splice(indexOfTitle+2,0,":titleprefix: "+ appendixCaption+" "+chapterIndex+":")
+                    const targetIndex = style === "iso" ? chapterIndex.split(".") : chapterIndex.split(".").slice(0,-1)
+                    newContent.splice(indexOfTitle+2,0,":titleprefix: "+ appendixCaption+" "+targetIndex.join(".")+":")
                 }
                 if (option !== "default") {
                     newContent.splice(indexOfTitle,0,"["+option+"]")
@@ -701,8 +705,6 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
                     expectedReftextIndex += 1
                     option = "default"
                 }
-                indexOfNavtitle += 1
-                indexOfReftext += 1
                 if (indexOfNavtitle > expectedNavtitleIndex) {
                     const index = newContent[indexOfNavtitle].indexOf(":navtitle:") + ":navtitle:".length + 1
                     newContent[indexOfNavtitle] = newContent[indexOfNavtitle].slice(0,index) + chapterIndex + " " + newContent[indexOfNavtitle].slice(index)
@@ -711,14 +713,13 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
                     const index = newContent[indexOfReftext].indexOf(":reftext:") + ":reftext:".length + 1
                     newContent[indexOfReftext] = newContent[indexOfReftext].slice(0,index) + chapterIndex + " " + newContent[indexOfReftext].slice(index)
                 }
-
-                foundPage[0]._contents = Buffer.from(newContent.join("\n"))
+                page._contents = Buffer.from(newContent.join("\n"))
                 const newIndex = style === "iso" ? chapterIndex +"."+ (numberOfLevelTwoSections-1) : chapterIndex + (numberOfLevelTwoSections-1) +"."
                 chapterIndex = determineNextChapterIndex(targetLevel+1, newIndex, style, appendixCaption)
             }
         }
     }
-    return [content, chapterIndex, generateNumbers, option]
+    return [content, chapterIndex, newImageIndex, newTableIndex,generateNumbers, option]
 }
 
 function determinePageForXrefInLine(line, indexOfXref, pages, nav) {
@@ -810,9 +811,6 @@ function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
         }
         references.forEach(ref => {
             if (anchorMap.get(ref[1])) {
-                if (ref[1].startsWith("tab")) {
-                    console.log(ref[1],ref[2],ref[3])
-                }
                 const referencePage = [...anchorMap.get(ref[1])][0]
                 if (page !== referencePage) {
                     const altText = ref[3] ? ref[3] : getPageNameFromSource( referencePage )
@@ -873,13 +871,7 @@ function checkForRoleInLine( content, line, currentRole ) {
     return [returnValue, content, hasChanged]
 }
 
-function unsetSectnumsAttributeInFile(page) {
-    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForSectnumsFunction(page)
-    newContent.splice(indexOfTitle+1,0,":sectnums!: ")
-    page.contents = Buffer.from(newContent.join("\n"))
-}
-
-function getPageContentForSectnumsFunction( page ) {
+function getPageContentForExtensionFeatures( page ) {
     const contentSum = page.contents.toString()
     let newContent = contentSum.split("\n")
     let indexOfTitle = 0
@@ -905,39 +897,81 @@ function getPageContentForSectnumsFunction( page ) {
         else if (line.startsWith(":reftext:")) {
             indexOfReftext = newContent.indexOf(line)
         }
-        if (line.indexOf("image:") > -1) {
-            numberOfImages += 1
+        const reFigures = /\[#fig-[^\]]+\]/g
+        if ([...line.matchAll(reFigures)].length > 0) {
+            numberOfImages += [...line.matchAll(reFigures)].length
         }
-        if (line.indexOf("|===")) {
-            numberOfTables += 0.5
+        const reTables = /\[#tab-[^\]]+\]/g
+        if ([...line.matchAll(reTables)].length > 0) {
+            numberOfTables += [...line.matchAll(reTables)].length
         }
     }
-    numberOfTables = parseInt(numberOfTables)
     return [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables]
 }
 
-function handlePreface( nav, pages,line ) {
+function handlePreface( nav, pages,line,imageIndex, tableIndex ) {
     const indexOfXref = line.indexOf("xref:")
-    let prefacePage = determinePageForXrefInLine(line, indexOfXref, pages, nav)
-    let page = prefacePage[0]
+    let page = determinePageForXrefInLine(line, indexOfXref, pages, nav)[0]
     unsetSectnumsAttributeInFile(page)
-    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForSectnumsFunction(page)
-    newContent.splice(indexOfTitle+1,0,"[preface]")
-    page.contents = Buffer.from(newContent.join("\n"))
-    return "default"
+    let [newImageIndex,newTableIndex] = updateImageAndTableIndex(page, imageIndex, tableIndex)
+    addSpecialSectionTypeToPage(page, "preface")
+    return ["default", newImageIndex, newTableIndex]
 }
 
-function handleAppendix( nav, pages, content, line, generateNumbers, startLevel, chapterIndex, style, appendixCaption, appendixOffset ) {
+function handleAppendix( nav, pages, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, appendixCaption, appendixOffset ) {
     const appendixStartLevel = isNaN(parseInt(startLevel)+parseInt(appendixOffset)) ? startLevel : (parseInt(startLevel)+parseInt(appendixOffset)).toString()
-    return tryApplyingPageAndSectionNumberValuesToPage(nav, pages,content, line, generateNumbers, appendixStartLevel, chapterIndex, style, "appendix", appendixCaption)
+    return tryApplyingPageAndSectionNumberValuesToPage(nav, pages,content, line, generateNumbers, appendixStartLevel, chapterIndex, imageIndex, tableIndex, style, "appendix", appendixCaption)
 }
 
-function handleBibliography(nav, pages, line) {
+function handleBibliography(nav, pages, line, imageIndex, tableIndex) {
     const indexOfXref = line.indexOf("xref:")
     let bibliographyPage = determinePageForXrefInLine(line, indexOfXref, pages, nav)
     let page = bibliographyPage[0]
     unsetSectnumsAttributeInFile(page)
-    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForSectnumsFunction(page)
-    newContent.splice(indexOfTitle+1,0,"[bibliography]")
+    let [newImageIndex,newTableIndex] = updateImageAndTableIndex(page, imageIndex, tableIndex)
+    addSpecialSectionTypeToPage(page, "bibliography")
+}
+
+function addAttributeWithValueToPage( page, pageContent, indexOfTitle, attribute, value, unset=false ) {
+    const attr = unset ? ":"+attribute+"!: "+value : ":"+attribute+": "+value.toString()
+    pageContent.splice(indexOfTitle+1,0,attr)
+    page.contents = Buffer.from(pageContent.join("\n"))
+}
+
+function unsetSectnumsAttributeInFile( page ) {
+    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
+    addAttributeWithValueToPage( page, newContent, indexOfTitle, "sectnums", "", true)
+}
+
+function addTitleoffsetAttributeToPage( page, value) {
+    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
+    addAttributeWithValueToPage(page, newContent, indexOfTitle, "titleoffset", value)
+}
+
+function addImageOffsetAttributeToPage( page, value ) {
+    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
+    addAttributeWithValueToPage(page, newContent, indexOfTitle, "imageoffset", value)
+}
+
+function addTableOffsetAttributeToPage( page, value ) {
+    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
+    addAttributeWithValueToPage(page, newContent, indexOfTitle, "tableoffset", value)
+}
+
+function updateImageAndTableIndex(page, imageIndex=0, tableIndex=0){
+    let newImageIndex = imageIndex
+    let newTableIndex = tableIndex
+
+    addImageOffsetAttributeToPage(page, newImageIndex)
+    addTableOffsetAttributeToPage(page, newTableIndex)
+    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
+    newImageIndex += parseInt(numberOfImages)
+    newTableIndex += parseInt(numberOfTables)
+    return ([newImageIndex,newTableIndex])
+}
+
+function addSpecialSectionTypeToPage( page, specialSectionType ){
+    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
+    newContent.splice(indexOfTitle+1,0,"["+specialSectionType+"]")
     page.contents = Buffer.from(newContent.join("\n"))
 }
