@@ -636,7 +636,7 @@ function generatePageNumberBasedOnNavigation(pages, navFiles, styleSettings, app
                     currentRole = "default";
                     break;
                 case "bibliography":
-                    [content, chapterIndex, generateNumbers,currentRole] = tryApplyingPageAndSectionNumberValuesToPage(nav, pages,content, line, generateNumbers, startLevel, chapterIndex, style, currentRole)
+                    currentRole = handleBibliography(nav, pages, line)
                     break;
                 case "index":
                     currentRole = "default";
@@ -911,4 +911,14 @@ function handlePreface( nav, pages,line ) {
 function handleAppendix( nav, pages, content, line, generateNumbers, startLevel, chapterIndex, style, appendixCaption, appendixOffset ) {
     const appendixStartLevel = isNaN(parseInt(startLevel)+parseInt(appendixOffset)) ? startLevel : (parseInt(startLevel)+parseInt(appendixOffset)).toString()
     return tryApplyingPageAndSectionNumberValuesToPage(nav, pages,content, line, generateNumbers, appendixStartLevel, chapterIndex, style, "appendix", appendixCaption)
+}
+
+function handleBibliography(nav, pages, line) {
+    const indexOfXref = line.indexOf("xref:")
+    let bibliographyPage = determinePageForXrefInLine(line, indexOfXref, pages, nav)
+    let page = bibliographyPage[0]
+    unsetSectnumsAttributeInFile(page)
+    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForSectnumsFunction(page)
+    newContent.splice(indexOfTitle+1,0,"[bibliography]")
+    page.contents = Buffer.from(newContent.join("\n"))
 }
