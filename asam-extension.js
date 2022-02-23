@@ -799,13 +799,20 @@ function getAnchorPageMapForPages( pages ) {
 function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
     if (anchorMap.size === 0) {return pages}
     const re = /<<([^>,]+)(,\s*([^>]+))?>>/g
-    const reAlt = /xref:{1,2}#([^\[]+)\[([^\]]*)\]/g
+    const reAlt = /xref:{1,2}#([^\[]+)\[(([^\]]*))\]/gm
     pages.forEach(page => {
         let content = page.contents.toString()
-        let reference = [...content.matchAll(re)]
-        reference.concat([...content.matchAll(reAlt)])
-        reference.forEach(ref => {
+        let references = [...content.matchAll(re)]
+        const referencesAlt = [...content.matchAll(reAlt)]
+        if (references.length < 1 ) {references = referencesAlt}
+        else {
+            if (referencesAlt.length > 0) {references = references + referencesAlt}
+        }
+        references.forEach(ref => {
             if (anchorMap.get(ref[1])) {
+                if (ref[1].startsWith("tab")) {
+                    console.log(ref[1],ref[2],ref[3])
+                }
                 const referencePage = [...anchorMap.get(ref[1])][0]
                 if (page !== referencePage) {
                     const altText = ref[3] ? ref[3] : getPageNameFromSource( referencePage )
