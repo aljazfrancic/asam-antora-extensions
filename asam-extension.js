@@ -40,9 +40,6 @@ module.exports.register = function ({ config }) {
                 pages = createKeywordsOverviewPage(keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, targetPath, targetName, targetModule, component, version)
                 keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
                 pages = findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywordPageMap, rolePageMap, macrosRegEx, macrosHeadings, logger, component, version )
-                if (anchorPageMap.size > 0) {
-                    pages = findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
-                }
                 keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
                 pages = createKeywordsOverviewPage(keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, targetPath, targetName, targetModule, component, version)
                 navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
@@ -59,6 +56,9 @@ module.exports.register = function ({ config }) {
                         appendixOffset = componentAttributes["appendix-offset"]
                     }
                     generatePageNumberBasedOnNavigation(pages, navFiles, style, appendixCaption, appendixOffset)
+                }
+                if (anchorPageMap.size > 0) {
+                    pages = findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
                 }
             })
         })
@@ -820,10 +820,22 @@ function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
 }
 
 function getPageNameFromSource( page ) {
-    let re = /^=\s+([^\n\r]+)/m
+    let re1 = /:titleprefix:\s*([^\n]+)/m
+    let re2 = /:titleoffset:\s*([^\n]+)/m
+    let re3 = /^=\s+([^\n\r]+)/m
     let content =page.contents.toString()
-    let result = content.match(re)
-    const returnValue = result && result.length > 1 ? result[1] : page.src.stem
+    let result = content.match(re1)
+    if (!result || result.length <=1) {
+        result = content.match(re2)
+    }
+    resultAlt = content.match(re3)
+    let returnValue
+    if (result && result.length > 1) {
+        returnValue = "Section "+result[1]
+    }
+    else {
+        returnValue = resultAlt && resultAlt.length > 1 ? resultAlt[1] : page.src.stem
+    }
     return (returnValue)
 }
 
