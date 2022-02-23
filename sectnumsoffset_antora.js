@@ -1,8 +1,11 @@
 module.exports = function (registry) {
     registry.treeProcessor(function () {
       var self = this
+      var verbose = false
       self.process(function (doc) {
         // Check if sectnums and sectnumoffset is found. Only act if true
+        if (verbose){console.log("Title: ",doc.getTitle())}
+        if (verbose){console.log("has imageoffset attribute: ",doc.hasAttribute("imageoffset"))}
         if (doc.hasAttribute("sectnums") && (doc.hasAttribute("sectnumoffset") || doc.hasAttribute("titleoffset") || doc.hasAttribute("imageoffset") || doc.hasAttribute("tableoffset"))) {
             let offsetValue = Math.abs(doc.getAttribute("sectnumoffset",0))
             let pageTitle = doc.getTitle()
@@ -22,25 +25,43 @@ module.exports = function (registry) {
                 offsetValue = 1 + offsetValue
                 sect.setNumeral(titleOffset+offsetValue)
             })
-            // console.log(doc.getBlocks().filter(x=>x.getNodeName() === "image"))
-            doc.getBlocks().filter(x=>x.getNodeName() === "image").forEach(image => {
-                imageOffset = 1 + imageOffset
-                const oldNumeral = image.getNumeral()
-                image.setNumeral(imageOffset)
-                if(image.getCaption()) {
-                    image.setCaption(image.getCaption().replace(oldNumeral,imageOffset))
-                }
-            })
-            doc.getBlocks().filter(x=>x.getNodeName() === "table" && x.getStyle() === "table").forEach(table => {
-                tableOffset = 1+ tableOffset
-                const oldNumeral = table.getNumeral()
-                table.setNumeral(tableOffset)
-                if (table.getCaption())
-                {
-                    table.setCaption("Table "+tableOffset+". ")
-                }
-            })
+            imageOffset = updateImageOffset(doc, imageOffset, verbose)
+            tableOffset = updateTableOffset(doc, tableOffset)
         }
       })
     })
+    function updateImageOffset( doc, imageOffset, verbose=false ) {
+        let newImageOffset = imageOffset
+        for (let block of doc.getBlocks()) {
+            if (verbose){console.log("block: ",block.getNodeName())}
+            if (block.getNodeName() === "section" || block.getNodeName() === "preamble") {
+                newImageOffset = updateImageOffset( block, newImageOffset, verbose)
+            }
+            else if(block.getNodeName() === "image") {
+                newImageOffset = 1 + newImageOffset
+                const oldNumeral = block.getNumeral()
+                block.setNumeral(newImageOffset)
+                if(block.getCaption()) {
+                    block.setCaption(block.getCaption().replace(oldNumeral,newImageOffset))
+            }
+            }
+        }
+        return (newImageOffset)
+    }
+    function updateTableOffset( doc, tableOffset ) {
+        let newTableOffset = tableOffset
+        for (let block of doc.getBlocks()) {
+            if (block.getNodeName() === "section") {
+                newTableOffset = updateTableOffset( block, newTableOffset)
+            }
+            else if(block.getNodeName() === "table") {
+                newTableOffset = 1 + newTableOffset
+                block.setNumeral(newTableOffset)
+                if(block.getCaption()) {
+                    block.setCaption("Table "+tableOffset+". ")
+            }
+            }
+        }
+        return (newTableOffset)
+    }
   }
