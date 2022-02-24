@@ -816,8 +816,10 @@ function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
             if (anchorMap.get(ref[1])) {
                 const referencePage = [...anchorMap.get(ref[1])][0]
                 if (page !== referencePage) {
-                    const altText = ref[3] ? ref[3] : getPageNameFromSource( referencePage )
-                    const replacementXref = "xref:"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+ref[1]+"["+altText+"]"
+                    let [autoAltText, altLink] = getReferenceNameFromSource( pages, referencePage, ref[1] )
+                    const altText = ref[3] ? ref[3] : autoAltText
+                    const anchorLink = altLink ? altLink : ref[1]
+                    const replacementXref = "xref:"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+anchorLink+"["+altText+"]"
                     content = content.replace(ref[0],replacementXref)
                 }
             }
@@ -827,24 +829,133 @@ function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
     return pages
 }
 
-function getPageNameFromSource( page ) {
-    let re1 = /:titleprefix:\s*([^\n]+)/m
-    let re2 = /:titleoffset:\s*([^\n]+)/m
-    let re3 = /^=\s+([^\n\r]+)/m
+function getReferenceNameFromSource( pages, page, anchor ) {
+    const reSectionEqualSigns = /^\s*(=+)\s+(.*)$/m
+    const reCaptionLabel = /^\.(\S.+)$/m
+    const reAnchorType = /([^-\]]+)-?[^\]]*/m
+
     let content =page.contents.toString()
+    const resultAnchorType = anchor.match(reAnchorType)
+    const indexOfAnchor = content.indexOf(anchor)
+    const resultForNextHeading = content.slice(indexOfAnchor).match(reSectionEqualSigns)
+    // const resultForPreviousHeading = content.slice(0,indexOfAnchor).match(reSectionEqualSigns)
+    const resultNextCaption = content.slice(indexOfAnchor).match(reCaptionLabel)
+    // Use special anchor formats: sec, top, fig, tab, ...
+    let result
+    let returnValue = ""
+    let altLink
+
+    if (resultAnchorType){
+        switch (resultAnchorType[1]) {
+            case "fig":
+                // console.log("found figure: ", anchor);
+                result = resultNextCaption
+                // console.log(result[1])
+                break;
+            case "tab":
+                // console.log("found table: ", anchor);
+                result = resultNextCaption
+                // console.log(result[1])
+                break;
+            case "top":
+                // console.log("found top anchor: ", anchor)
+                returnValue = getAltTextFromTitle( page, content )
+                break;
+            case "sec":
+                result = resultForNextHeading
+                const pageNumber = getAltNumberFromTitle(page,content)
+                let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages,page,result[1].split("=").length-1,anchor)
+                if (relativeSectionNumber.length > 1){
+                    relativeSectionNumber[0]=""
+                    returnValue = "Section " + pageNumber+relativeSectionNumber.join(".")
+                }
+                else {
+                    returnValue = "Section " + pageNumber
+                }
+                break;
+            default:
+                console.log("non-standard anchor type detected: ", anchor)
+                returnValue = getAltTextFromTitle( page, content )
+                break;
+        }
+    }
+    else {
+        returnValue = getAltTextFromTitle( page, content )
+    }
+    return ([returnValue, altLink])
+}
+
+function getRelativeSectionNumberWithIncludes(pages,page,targetSectionLevel,startText="") {
+    let currentTargetSectionLevel = targetSectionLevel
+    let relativeIndex = startText ? [1] : [0]
+    let content = page.contents.toString()
+    if (startText){
+        const indexType1 = content.indexOf("[#"+startText+"]")
+        const indexType2 = content.indexOf("[["+startText+"]]")
+        if (indexType1 > -1) {
+            content = content.slice(0,indexType1);
+        }
+        else if(indexType2 > -1) {
+            content = content.slice(0,indexType2)
+        }
+    }
+    const reSectionStart = /^(=+)\s[^\n]+/
+    content.split("\n").reverse().forEach(line => {
+        const sectionSearchResult = line.match(reSectionStart)
+        const includeSearchResult = line.match(/^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/)
+        if (includeSearchResult && includeSearchResult.length > 0) {
+            const leveloffset = includeSearchResult[3] ? targetSectionLevel - includeSearchResult[3] : targetSectionLevel
+            if (leveloffset > 0)
+            {
+                const targetPage = determineTargetPageFromIncludeMacro ( pages, page, includeSearchResult[1] )
+                if (targetPage){
+                    let includedSectionNumbers = getRelativeSectionNumberWithIncludes(pages,targetPage,leveloffset)
+                    for (let i in includedSectionNumbers) {
+                        relativeIndex[i] += includedSectionNumbers[i]
+                    }
+                }
+            }
+        }
+        if (sectionSearchResult && sectionSearchResult.length > 0) {
+            const foundSectionLevel = sectionSearchResult[1].split("=").length - 1
+            if (foundSectionLevel === currentTargetSectionLevel) {
+                relativeIndex[0] = relativeIndex[0] + 1
+            }
+            else if(foundSectionLevel === currentTargetSectionLevel - 1) {
+                relativeIndex.reverse()
+                relativeIndex.push(1)
+                relativeIndex.reverse()
+                currentTargetSectionLevel = foundSectionLevel
+            }
+            // else {console.log("irrelevant section")}
+        }
+    })
+    return relativeIndex
+}
+
+function getAltTextFromTitle( page, content ) {
+    const re1 = /:titleprefix:\s*([^\n]+)/m
+    const re2 = /:titleoffset:\s*([^\n]+)/m
+    const re3 = /^=\s+([^\n\r]+)/m
+
+    let returnValue
     let result = content.match(re1)
     if (!result || result.length <=1) {
         result = content.match(re2)
     }
     const resultAlt = content.match(re3)
-    let returnValue
     if (result && result.length > 1) {
         returnValue = "Section "+result[1]
     }
     else {
         returnValue = resultAlt && resultAlt.length > 1 ? resultAlt[1] : page.src.stem
     }
-    return (returnValue)
+    return returnValue
+}
+
+function getAltNumberFromTitle( page, content ) {
+    let value = getAltTextFromTitle(page,content)
+    return value.split(" ")[1]
 }
 
 function checkForSectnumsAttribute( content, line, previousValue=true ) {
@@ -951,10 +1062,8 @@ function addTableOffsetAttributeToPage( page, value ) {
 function updateImageAndTableIndex(pages, page, imageIndex=0, tableIndex=0){
     let newImageIndex = imageIndex
     let newTableIndex = tableIndex
-
     addImageOffsetAttributeToPage(page, newImageIndex)
     addTableOffsetAttributeToPage(page, newTableIndex)
-    // let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext, numberOfLevelTwoSections, numberOfImages, numberOfTables] = getPageContentForExtensionFeatures(page)
     let [numberOfLevelTwoSections, numberOfImages, numberOfTables] = getIncludedPagesContentForExtensionFeatures(pages, page)
     newImageIndex += parseInt(numberOfImages)
     newTableIndex += parseInt(numberOfTables)
@@ -1005,7 +1114,6 @@ function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0
                     numberOfLevelTwoSections += numberOfLevelTwoSectionsIncluded
                     numberOfImages += numberOfImagesIncluded
                     numberOfTables += numberOfTablesIncluded
-                    if (page.src.stem === "10_00_roads") {console.log("numberOfLevelTwoSections = ",numberOfLevelTwoSections)}
                 }
             }
             else {
@@ -1021,4 +1129,19 @@ function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0
         }
     }
     return [numberOfLevelTwoSections, numberOfImages, numberOfTables]
+}
+
+function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath ) {
+    if (!Array.isArray(includePath)) {
+        includePath = includePath.split("/")
+    }
+    let currentPath = thisPage.out.dirname.split("/")
+    includePath.forEach(part => {
+        if (part === "..") {currentPath = currentPath.slice(0,-1)}
+        else if (part ===".") {}
+        else {currentPath.push(part)}
+    })
+    const targetPath = currentPath.join("/")
+    let includedPage = pages.filter(page => page.out.dirname +"/"+ page.src.basename === targetPath)[0]
+    return includedPage
 }
