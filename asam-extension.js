@@ -36,7 +36,7 @@ module.exports.register = function ({ config }) {
                 let navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
                 let keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
                 const rolePageMap = getRolePageMapForPages(pages)
-                let anchorPageMap = getAnchorPageMapForPages(pages)
+                let anchorPageMap = getAnchorPageMapForPages(pages, navFiles)
                 pages = createKeywordsOverviewPage(keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, targetPath, targetName, targetModule, component, version)
                 keywordPageMap = getKeywordPageMapForPages(useKeywords,pages)
                 pages = findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywordPageMap, rolePageMap, macrosRegEx, macrosHeadings, logger, component, version )
@@ -769,32 +769,86 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appen
     return chapterIndex
 }
 
-function getAnchorPageMapForPages( pages ) {
+function getAnchorsFromPage( pages, page ) {
     var re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)\]|anchor:([^\[]+)\[/
-
-    var anchorMap = new Map;
-    for (let page of pages.filter((page) => page.out)) {
-        var results = []
-        for (var line of page.contents.toString().split("\n")) {
+    var resultMap = new Map
+    var results = []
+    let ignoreLine = false
+    for (var line of page.contents.toString().split("\n")) {
+        if (line.indexOf("ifndef::") > -1 && line.indexOf("use-antora-rules") > -1) {
+            ignoreLine = true
+        }
+        else if (ignoreLine && line.indexOf("endif::") > -1) {
+            ignoreLine = false
+        }
+        if (ignoreLine) {continue;}
+        const includeSearchResult = line.match(/^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/)
+        if (includeSearchResult && includeSearchResult.length > 0) {
+            const targetPage = determineTargetPageFromIncludeMacro ( pages, page, includeSearchResult[1] )
+            if (targetPage) {
+                const partialAnchorMap = getAnchorsFromPage(pages,targetPage)
+                resultMap = addOrUpdateAnchorMapEntry( resultMap, partialAnchorMap, page )
+            }
+        }
+        else {
             const result = re.exec(line);
             if (result) {
                 results.push(result)
             }
         }
-        if (results) {
-            for (let entry of results) {
-                const e1 = entry[1]
-                const e2 = entry[4]
-                const e3 = entry[5]
+    }
+    if (results) {
+        for (let entry of results) {
+            const e1 = entry[1]
+            const e2 = entry[4]
+            const e3 = entry[5]
 
-                const resultValue = e1 ? e1 : e2 ? e2 : e3
-                if (anchorMap.has(resultValue)) {
-                    anchorMap = updateMapEntry(anchorMap,resultValue,page)
-                }
-                else {
-                    anchorMap.set(resultValue, new Set([page]))
-                }
+            const resultValue = e1 ? e1 : e2 ? e2 : e3
+            if (resultMap.has(resultValue)) {
+                resultMap = updateMapEntry(resultMap,resultValue,page)
             }
+            else {
+                resultMap.set(resultValue, new Set([page]))
+            }
+        }
+    }
+    return resultMap
+}
+
+function getAnchorPageMapForPages( pages, navFiles ) {
+    var anchorMap = new Map;
+    for (let page of pages.filter((page) => page.out)) {
+        let hasPriority = false
+        for (let nav of navFiles) {
+            if (nav.contents.toString().indexOf(page.src.relative) > -1) {
+                hasPriority = true;
+                break;
+            }
+        }
+        let updateMap = getAnchorsFromPage(pages, page)
+        if (updateMap && updateMap.size > 0) {
+            if (hasPriority) {
+                anchorMap = addOrUpdateAnchorMapEntry(updateMap,anchorMap)
+            }
+            else {
+                anchorMap = addOrUpdateAnchorMapEntry(anchorMap, updateMap)
+            }
+        }
+    }
+    return anchorMap
+}
+
+function addOrUpdateAnchorMapEntry( anchorMap, updateMap, overridePage = null ) {
+    for (let key of updateMap.keys()) {
+        if (overridePage) {
+            updateMap.set(key, new Set([overridePage]))
+        }
+        if (anchorMap.has(key)) {
+            const mergedSet = new Set([...anchorMap.get(key),...updateMap.get(key)])
+            anchorMap = anchorMap.set(key, mergedSet)
+        }
+        else {
+            anchorMap.set(key,updateMap.get(key))
         }
     }
     return anchorMap
@@ -1142,6 +1196,6 @@ function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath ) {
         else {currentPath.push(part)}
     })
     const targetPath = currentPath.join("/")
-    let includedPage = pages.filter(page => page.out.dirname +"/"+ page.src.basename === targetPath)[0]
+    let includedPage = pages.filter(page => page.out && page.out.dirname +"/"+ page.src.basename === targetPath)[0]
     return includedPage
 }
