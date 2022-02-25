@@ -17,7 +17,7 @@ module.exports.register = function ({ config }) {
         { macro: "role", heading: "== Role-related topics\n\n" },
         { macro: "related", heading: "== Related topics\n\n" },
         { macro: "reference", heading: "" },
-        { macro: "pages", heading: "== Pages\n\n" },
+        { macro: "pages", heading: "== Pages\n:pagesmacro:\n\n" },
         { macro: "autonav", heading: "" }
     )
 
@@ -312,6 +312,7 @@ function replacePagesMacro( page, pageContent, line, macroResult, heading, pages
             content = content.concat("\n",addNewBulletPoint(linkText))
         }
     }
+    content += "\n"
     pageContent.splice(pageContent.indexOf(line),1,content)
     return(pageContent)
 }
@@ -1149,6 +1150,9 @@ function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0
         {
             if ((leveloffset === 0 && line.startsWith("== ")) || (leveloffset === 1 && line.startsWith("= "))) {
                 numberOfLevelTwoSections += 1
+            }
+            else if (line.match(/^:pagesmacro:/)) {
+                numberOfLevelTwoSections -= 1
             }
             else if (line.match(/^\s*include::/)) {
                 const re = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?/
