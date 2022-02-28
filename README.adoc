@@ -121,6 +121,8 @@ For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/proj
 == Sequential numbering in Antora
 To use the following features, add the sectnumsoffset_antora extension to the asciidoctor extensions in the site.yml and add the attribtute `numbered_titles: true` to the asam-antora-extensions settings.
 
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-sequential_sectnums.html[ASAM Project Guide^]
+
 === Automatic page numbers
 Antora has sorted (through the navigation file(s)) article pages but is not capable of assigning page numbers automatically.
 Similarly, the sectnums feature of Asciidoctor only works within one document, not over separate adoc files that are aggregated by Antora.
