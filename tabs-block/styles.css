@@ -24,6 +24,10 @@
   margin-bottom: 0;
 }
 
+.tabs li:first-child {
+    margin-top: .5rem
+}
+
 .tabs li + li {
   margin-top: 0;
 }
