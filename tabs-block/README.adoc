@@ -1,0 +1,2 @@
+= Tabs block
+https://gitlab.com/antora/antora-asciidoctor-extensions/-/tree/main/tabs-block[]
