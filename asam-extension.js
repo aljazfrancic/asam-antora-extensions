@@ -677,6 +677,8 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
             chapterIndex = determineNextChapterIndex(targetLevel, chapterIndex, style)
             const changedLine = line.slice(0,level) + " " + chapterIndex + line.slice(level)
             content[content.indexOf(line)] = changedLine
+            chapterIndex = style === "iso" ? chapterIndex +"."+ 0 : chapterIndex + 0 +"."
+
         }
         // Execute if xref was found
         else if (level >= startLevel) {
