@@ -1168,7 +1168,7 @@ function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0
                     else {currentPath.push(part)}
                 })
                 const targetPath = currentPath.join("/")
-                if (pages.filter(page => page.out.dirname +"/"+ page.src.basename === targetPath).length > 0) {
+                if (pages.filter(page => page.hasOwnProperty('out') && page.out.dirname +"/"+ page.src.basename === targetPath).length > 0) {
                     let includedPage = pages.filter(page => page.out.dirname +"/"+ page.src.basename === targetPath)[0]
                     let [numberOfLevelTwoSectionsIncluded, numberOfImagesIncluded, numberOfTablesIncluded] = getIncludedPagesContentForExtensionFeatures(pages, includedPage, includeLeveloffset)
                     numberOfLevelTwoSections += numberOfLevelTwoSectionsIncluded
