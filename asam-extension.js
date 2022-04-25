@@ -479,6 +479,10 @@ function createKeywordsOverviewPage( keywordOverviewPageRequested, contentCatalo
     )
     let myBase;
     for (let entry of [...keywordPageMap.entries()].sort()) {
+        if (entry[0].trim() === "") {
+            console.log("skipped entry ",entry[0])
+            continue;
+        }
         let val = entry[1].entries().next().value[0]
         myBase = val.base
         if (targetPath !== "" && !targetPath.endsWith("/")){
@@ -677,8 +681,6 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
             chapterIndex = determineNextChapterIndex(targetLevel, chapterIndex, style)
             const changedLine = line.slice(0,level) + " " + chapterIndex + line.slice(level)
             content[content.indexOf(line)] = changedLine
-            chapterIndex = style === "iso" ? chapterIndex +"."+ 0 : chapterIndex + 0 +"."
-
         }
         // Execute if xref was found
         else if (level >= startLevel) {
@@ -1168,7 +1170,7 @@ function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0
                     else {currentPath.push(part)}
                 })
                 const targetPath = currentPath.join("/")
-                if (pages.filter(page => page.hasOwnProperty('out') && page.out.dirname +"/"+ page.src.basename === targetPath).length > 0) {
+                if (pages.filter(page => page.out.dirname +"/"+ page.src.basename === targetPath).length > 0) {
                     let includedPage = pages.filter(page => page.out.dirname +"/"+ page.src.basename === targetPath)[0]
                     let [numberOfLevelTwoSectionsIncluded, numberOfImagesIncluded, numberOfTablesIncluded] = getIncludedPagesContentForExtensionFeatures(pages, includedPage, includeLeveloffset)
                     numberOfLevelTwoSections += numberOfLevelTwoSectionsIncluded
