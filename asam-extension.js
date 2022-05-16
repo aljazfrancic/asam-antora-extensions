@@ -923,13 +923,15 @@ function getReferenceNameFromSource( pages, page, anchor ) {
             case "sec":
                 result = resultForNextHeading
                 const pageNumber = getAltNumberFromTitle(page,content)
-                let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages,page,result[1].split("=").length-1,anchor)
-                if (relativeSectionNumber.length > 1){
-                    relativeSectionNumber[0]=""
-                    returnValue = "Section " + pageNumber+relativeSectionNumber.join(".")
-                }
-                else {
-                    returnValue = "Section " + pageNumber
+                if(result) {
+                    let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages,page,result[1].split("=").length-1,anchor)
+                    if (relativeSectionNumber.length > 1){
+                        relativeSectionNumber[0]=""
+                        returnValue = "Section " + pageNumber+relativeSectionNumber.join(".")
+                    }
+                    else {
+                        returnValue = "Section " + pageNumber
+                    }
                 }
                 break;
             default:
