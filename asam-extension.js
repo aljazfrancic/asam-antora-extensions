@@ -479,10 +479,6 @@ function createKeywordsOverviewPage( keywordOverviewPageRequested, contentCatalo
     )
     let myBase;
     for (let entry of [...keywordPageMap.entries()].sort()) {
-        if (entry[0].trim() === "") {
-            console.log("skipped entry ",entry[0])
-            continue;
-        }
         let val = entry[1].entries().next().value[0]
         myBase = val.base
         if (targetPath !== "" && !targetPath.endsWith("/")){
@@ -681,6 +677,8 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
             chapterIndex = determineNextChapterIndex(targetLevel, chapterIndex, style)
             const changedLine = line.slice(0,level) + " " + chapterIndex + line.slice(level)
             content[content.indexOf(line)] = changedLine
+            chapterIndex = style === "iso" ? chapterIndex +"."+ 0 : chapterIndex + 0 +"."
+
         }
         // Execute if xref was found
         else if (level >= startLevel) {
@@ -923,15 +921,13 @@ function getReferenceNameFromSource( pages, page, anchor ) {
             case "sec":
                 result = resultForNextHeading
                 const pageNumber = getAltNumberFromTitle(page,content)
-                if(result) {
-                    let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages,page,result[1].split("=").length-1,anchor)
-                    if (relativeSectionNumber.length > 1){
-                        relativeSectionNumber[0]=""
-                        returnValue = "Section " + pageNumber+relativeSectionNumber.join(".")
-                    }
-                    else {
-                        returnValue = "Section " + pageNumber
-                    }
+                let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages,page,result[1].split("=").length-1,anchor)
+                if (relativeSectionNumber.length > 1){
+                    relativeSectionNumber[0]=""
+                    returnValue = "Section " + pageNumber+relativeSectionNumber.join(".")
+                }
+                else {
+                    returnValue = "Section " + pageNumber
                 }
                 break;
             default:
@@ -1073,6 +1069,9 @@ function getPageContentForExtensionFeatures( page ) {
 function handlePreface( nav, pages,line,imageIndex, tableIndex ) {
     const indexOfXref = line.indexOf("xref:")
     let page = determinePageForXrefInLine(line, indexOfXref, pages, nav)[0]
+    if (!page) {
+        return ["default", imageIndex, tableIndex]
+    }
     unsetSectnumsAttributeInFile(page)
     let [newImageIndex,newTableIndex] = updateImageAndTableIndex(pages, page, imageIndex, tableIndex)
     addSpecialSectionTypeToPage(page, "preface")
@@ -1088,6 +1087,9 @@ function handleBibliography(nav, pages, line, imageIndex, tableIndex) {
     const indexOfXref = line.indexOf("xref:")
     let bibliographyPage = determinePageForXrefInLine(line, indexOfXref, pages, nav)
     let page = bibliographyPage[0]
+    if (!page) {
+        return ["default", imageIndex, tableIndex]
+    }
     unsetSectnumsAttributeInFile(page)
     let [newImageIndex,newTableIndex] = updateImageAndTableIndex(pages, page, imageIndex, tableIndex)
     addSpecialSectionTypeToPage(page, "bibliography")
