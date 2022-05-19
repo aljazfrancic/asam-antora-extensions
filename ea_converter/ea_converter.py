@@ -16,7 +16,8 @@ def get_navigation_structure(source_path,fname,target_path,module_path,navigatio
         path = target_path + "/"
 
     content = ""
-    nav_content = ["* "+navigation_title+"\n"]
+    nav_content = [":!sectnums:\n"]
+    nav_content.append("* "+navigation_title+"\n")
     with open(source_path+"/"+fname+".html", "r") as file:
         content = file.read()
 
@@ -25,6 +26,7 @@ def get_navigation_structure(source_path,fname,target_path,module_path,navigatio
     level1 = nav_list('font.FrameHeadingFont')
     level2 = nav_list('font.FrameItemFont')
     for i in range(len(level1)):
+        nav_content.append(":!sectnums:\n")
         nav_content.append("** " + level1.eq(i).text()+"\n")
         symbols = level2.eq(i)("span.DeprecatedSymbol")
         links = level2.eq(i)('a[title="class in uml"]')
@@ -35,7 +37,9 @@ def get_navigation_structure(source_path,fname,target_path,module_path,navigatio
             link_path = links.eq(j).attr('href').replace("./","").replace(".html",".adoc")
             if target_path:
                 link_path = target_path + "/" + link_path
+            nav_content.append(":!sectnums:\n")
             nav_content.append("*** xref:{link}[{label}]\n".format(link=link_path,label=link_text))
+    nav_content.append(":!sectnums:\n")
     nav_content.append("** xref:meta.adoc[Meta]")
 
     with open(module_path+"/nav.adoc","w") as nav:
