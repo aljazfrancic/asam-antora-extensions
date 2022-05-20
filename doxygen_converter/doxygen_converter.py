@@ -75,9 +75,9 @@ def get_navigation_structure(source_path,fname,target_path,module_path):
     elif fname == "navtreedata":
         print("found navtree data")
         js_nav_content = parse_js_var(source_path,fname,"NAVTREE",0.0)
-        nav_content = [":!sectnums:\n"]
+        nav_content = []
         for e in js_nav_content:
-            nav_content.append(":!sectnums:\n")
+            nav_content.append(":sectnums!:\n")
             if e['link'] == "None":
                 nav_content.append("*" * int(e['level']) + " {label}\n".format(label=e['label']))
             else:
