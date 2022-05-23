@@ -1,3 +1,4 @@
+
 module.exports = function (registry) {
     registry.postprocessor(function () {
       var self = this
