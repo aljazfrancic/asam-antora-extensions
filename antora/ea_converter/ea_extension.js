@@ -1,7 +1,6 @@
 'use strict'
 var spawnSync = require("child_process").spawnSync;
 const fs = require("fs");
-const path = require("path")
 
 const FileCreator = require('../../core/file_creator.js')
 
@@ -11,18 +10,17 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
         // Define variables
         // ----------------
         workdir = workdir ? workdir + "/" : ""
-        const converterDirectory = './'+workdir+'ea_converter'
+        const converterDirectory = __dirname
         const startPath = process.cwd()
         const targetOutputDirectory = "gen"
         const convertedOutputDirectory = "converted_interface"
         const navOutputDirectory = "navigation_file"
-
         // ----------------
         // Execute on every version and component
         // ----------------
         contentAggregate.forEach(v => {
             if(v.asciidoc.attributes.ea_module) {
-                console.log(v.version)
+                console.log("EA conversion for",v.version)
                 let eaModulePath = v.asciidoc.attributes.ea_module ? "modules/"+v.asciidoc.attributes.ea_module : "modules/ROOT"
                 let pathInModule = v.asciidoc.attributes.ea_module_path ? "/"+v.asciidoc.attributes.ea_module_path : ""
                 let imgDirOffset = v.asciidoc.attributes.ea_module_path ? "../".repeat(pathInModule.split("/").length) + "_" : "_"
@@ -35,6 +33,7 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
 
                 try{
                     process.chdir(converterDirectory)
+
                     // ----------------
                     // Run the python script on the generated files to
                     // a) convert the html content to asciidoc and then

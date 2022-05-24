@@ -12,7 +12,7 @@ function convertDoxygen(workdir, contentAggregate) {
         // Define variables
         // ----------------
         workdir = workdir ? workdir + "/" : ""
-        const converterDirectory = './'+workdir+'doxygen_converter'
+        const converterDirectory = __dirname
         const startPath = process.cwd()
         const temporaryDirectory = "temp"
         const targetOutputDirectory = "gen"
@@ -23,7 +23,7 @@ function convertDoxygen(workdir, contentAggregate) {
         // Execute on every version and component
         // ----------------
         contentAggregate.forEach(v => {
-            console.log(v.version)
+            console.log("Doxygen conversion for",v.version)
             let interfaceVersion = v.asciidoc.attributes.doxygen_interface_version ? v.asciidoc.attributes.doxygen_interface_version : null
             let documentDate = v.asciidoc.attributes.doxygen_document_date ? v.asciidoc.attributes.doxygen_document_date : null
             let doxygenModulePath = v.asciidoc.attributes.doxygen_module ? "modules/"+v.asciidoc.attributes.doxygen_module : "modules/ROOT"

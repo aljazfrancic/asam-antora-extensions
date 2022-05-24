@@ -1,6 +1,8 @@
 'use strict'
 
-const File = require('./file.js')
+const File = require('./file.js');
+const fs = require("fs");
+const path = require("path");
 
 function createNewVirtualFile( contentCatalog, filename, path, module, component, version, content, base, type="page" ) {
     if (typeof content === 'string' || content instanceof String){
