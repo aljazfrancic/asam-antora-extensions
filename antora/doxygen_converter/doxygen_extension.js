@@ -2,17 +2,12 @@
 var spawnSync = require("child_process").spawnSync;
 var exec = require("child_process").execSync, child;
 const fs = require("fs");
-const path = require("path")
 
 // const File = require('../file')
-const File = require('../asam-antora-extensions/file')
+const FileCreator = require('../../core/file_creator.js')
 
-module.exports.register = function ({config}) {
-    let {folderOffset,workdir} = config
-    this
-      .on('contentAggregated', ({contentAggregate}) => {
-        // console.log(fs.readdirSync(process.cwd()+"/"+workdir))
 
+function convertDoxygen(workdir, contentAggregate) {
         // ----------------
         // Define variables
         // ----------------
@@ -23,7 +18,6 @@ module.exports.register = function ({config}) {
         const targetOutputDirectory = "gen"
         const convertedOutputDirectory = "converted_interface"
         const navOutputDirectory = "navigation_file"
-        // const imgDirectory = "attachments"
 
         // ----------------
         // Execute on every version and component
@@ -39,17 +33,15 @@ module.exports.register = function ({config}) {
             const files = {
                 fileList: v.files
             }
-            // const attFiles = files.fileList.filter(f => f.src.path.includes("_attachments") && f.src.extname === ".png" )
-            // console.log("TEST: ",attFiles[0].src)
             const defaultOrigin = v.files[0].src.origin
             const splitAbsPath = v.files[0].src.abspath ? v.files[0].src.abspath.split("/") : null
             const abspathPrefix = splitAbsPath ? splitAbsPath.slice(0,splitAbsPath.indexOf("modules")).join("/")+"/" : null
 
             try{
                 // ----------------
-                // Only execute if the attribute "document_date" has been set in the component descriptor
+                // Only execute if any of the doxygen attributes has been set in the component descriptor
                 // ----------------
-                if (documentDate){
+                if (documentDate || interfaceVersion || v.asciidoc.attributes.doxygen_module || v.asciidoc.attributes.doxygen_module_path){
 
                     // ----------------
                     // Enter the target path and execute the doxygen shell script to
@@ -79,10 +71,10 @@ module.exports.register = function ({config}) {
                     let newFiles = []
                     let currentPath = "./"+targetOutputDirectory+"/"+convertedOutputDirectory;
                     let virtualTargetPath = doxygenModulePath+"/pages"+pathInModule;
-                    newFiles = newFiles.concat(addAllFilesInFolderAsVirtualFiles(currentPath, virtualTargetPath, defaultOrigin, abspathPrefix))
+                    newFiles = newFiles.concat(FileCreator.addAllFilesInFolderAsVirtualFiles(currentPath, virtualTargetPath, defaultOrigin, abspathPrefix))
                     currentPath = "./"+targetOutputDirectory+"/"+convertedOutputDirectory+"/_attachments";
                     virtualTargetPath = doxygenModulePath+"/"+imgDirectory;
-                    newFiles = newFiles.concat(addAllFilesInFolderAsVirtualFiles(currentPath, virtualTargetPath, defaultOrigin, abspathPrefix))
+                    newFiles = newFiles.concat(FileCreator.addAllFilesInFolderAsVirtualFiles(currentPath, virtualTargetPath, defaultOrigin, abspathPrefix))
                     currentPath = navOutputDirectory;
                     let navFiles = v.files.filter(x => x.src.stem === "nav" && x.src.path.includes(doxygenModulePath+"/"))
                     // TODO: Add function that creates the nav.adoc file in case it does not exist!
@@ -96,28 +88,6 @@ module.exports.register = function ({config}) {
                     // ----------------
                     // Clean up temporary files and folders after this is done, then return back to the previous directory for the next version/component.
                     // ----------------
-                    // fs.rename(temporaryDirectory, v.version+"__"+temporaryDirectory, function(err) {
-                    //     if (err) {
-                    //       console.log(err)
-                    //     } else {
-                    //       console.log("Successfully renamed the directory.")
-                    //     }
-                    //   })
-                    // fs.rename(targetOutputDirectory, v.version+"__"+targetOutputDirectory, function(err) {
-                    //     if (err) {
-                    //       console.log(err)
-                    //     } else {
-                    //       console.log("Successfully renamed the directory.")
-                    //     }
-                    //   })
-                    //   fs.rename(navOutputDirectory, v.version+"__"+navOutputDirectory, function(err) {
-                    //     if (err) {
-                    //       console.log(err)
-                    //     } else {
-                    //       console.log("Successfully renamed the directory.")
-                    //     }
-                    //   })
-
                     fs.rmSync(temporaryDirectory, { recursive: true });
                     fs.rmSync(targetOutputDirectory, { recursive: true });
                     fs.rmSync(navOutputDirectory, { recursive: true });
@@ -128,55 +98,10 @@ module.exports.register = function ({config}) {
                 console.log(e)
             }
         })
-      })
   }
 
-  function deleteTemporaryFile( path ) {
-    fs.unlink(path, function (err) {
-        if (err) {
-          console.error(err);
-        } else {
-          console.log("File removed:", path);
-        }
-      });
-  }
 
-  function addAllFilesInFolderAsVirtualFiles( inputPath, targetPath, defaultOrigin, abspathPrefix ) {
-    let newFiles = []
-    const filesAndDirectories = fs.readdirSync(inputPath, { withFileTypes: true });
-    const files =  filesAndDirectories
-    .filter(dirent => dirent.isFile())
-    .map(dirent => dirent.name);
-    for(let f of files) {
-        try {
-            const contents = fs.readFileSync(inputPath+"/"+f)
-            let src = {
-                    "path": targetPath+"/"+f,
-                    "basename": f,
-                    "stem": path.basename(f,path.extname(f)),
-                    "extname": path.extname(f),
-                    "origin": {
-                        "type": "doxygen"
-                }
-            }
-            if (src.extname === "undefined" || !src.extname) {
-                console.log(f, f.split(".")[0], f.split(".")[1])
-            }
-            let file = new File({
-                path: src.path,
-                contents: contents,
-                src: src
-            })
-            file.src.origin = defaultOrigin
-            if (abspathPrefix) {
-                file.src.abspath = abspathPrefix+file.src.path
-            }
-            newFiles.push(file)
 
-        } catch(e){
-            console.log(e)
-        }
-
-    }
-    return(newFiles)
-  }
+module.exports = {
+    convertDoxygen
+}

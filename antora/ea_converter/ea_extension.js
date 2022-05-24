@@ -3,13 +3,9 @@ var spawnSync = require("child_process").spawnSync;
 const fs = require("fs");
 const path = require("path")
 
-// const File = require('../file')
-const File = require('../asam-antora-extensions/file')
+const FileCreator = require('../../core/file_creator.js')
 
-module.exports.register = function ({config}) {
-    let {folderOffset,workdir} = config
-    this
-      .on('contentAggregated', ({contentAggregate}) => {
+function convertEnterpriseArchitect ( workdir, contentAggregate ) {
 
         // ----------------
         // Define variables
@@ -55,7 +51,7 @@ module.exports.register = function ({config}) {
                     let newFiles = []
                     let currentPath = "./"+targetOutputDirectory+"/"+convertedOutputDirectory;
                     let virtualTargetPath = eaModulePath+"/pages"+pathInModule;
-                    newFiles = newFiles.concat(addAllFilesInFolderAsVirtualFiles(currentPath, virtualTargetPath, defaultOrigin, abspathPrefix, true))
+                    newFiles = newFiles.concat(FileCreator.addAllFilesInFolderAsVirtualFiles(currentPath, virtualTargetPath, defaultOrigin, abspathPrefix, true))
                     currentPath = "./"+targetOutputDirectory+"/"+navOutputDirectory;
                     let navFiles = v.files.filter(x => x.src.stem === "nav" && x.src.path.includes(eaModulePath+"/"))
                     // TODO: Add function that creates the nav.adoc file in case it does not exist!
@@ -69,14 +65,6 @@ module.exports.register = function ({config}) {
                     // ----------------
                     // Clean up temporary files and folders after this is done, then return back to the previous directory for the next version/component.
                     // ----------------
-                    // fs.rename(targetOutputDirectory, v.version+"__"+targetOutputDirectory, function(err) {
-                    //     if (err) {
-                    //       console.log(err)
-                    //     } else {
-                    //       console.log("Successfully renamed the directory.")
-                    //     }
-                    //   })
-
                     fs.rmSync(targetOutputDirectory, { recursive: true });
                     console.log("Temporary output files deleted")
                     process.chdir(startPath)
@@ -85,54 +73,10 @@ module.exports.register = function ({config}) {
                 }
             }
         })
-    })
   }
 
-  function addAllFilesInFolderAsVirtualFiles( inputPath, targetPath, defaultOrigin, abspathPrefix, recursive=false ) {
-    let newFiles = []
-    const filesAndDirectories = fs.readdirSync(inputPath, { withFileTypes: true });
-    const files =  filesAndDirectories
-    .filter(dirent => dirent.isFile())
-    .map(dirent => dirent.name);
-    for(let f of files) {
-        try {
-            const contents = fs.readFileSync(inputPath+"/"+f)
-            let src = {
-                    "path": targetPath+"/"+f,
-                    "basename": f,
-                    "stem": path.basename(f,path.extname(f)),
-                    "extname": path.extname(f),
-                    "origin": {
-                        "type": "doxygen"
-                }
-            }
-            if (src.extname === "undefined" || !src.extname) {
-                console.log(f, f.split(".")[0], f.split(".")[1])
-            }
-            let file = new File({
-                path: src.path,
-                contents: contents,
-                src: src
-            })
-            file.src.origin = defaultOrigin
-            if (abspathPrefix) {
-                file.src.abspath = abspathPrefix+file.src.path
-            }
-            newFiles.push(file)
 
-        } catch(e){
-            console.log(e)
-        }
 
-    }
-    if(recursive) {
-        const folders = filesAndDirectories
-        .filter(dirent => dirent.isDirectory())
-        .map(dirent => dirent.name);
-        for (let folder of folders){
-            const extraFiles = addAllFilesInFolderAsVirtualFiles(inputPath+"/"+folder, targetPath+"/"+folder, defaultOrigin, abspathPrefix, recursive )
-            newFiles = newFiles.concat(extraFiles)
-        }
-    }
-    return(newFiles)
+  module.exports = {
+      convertEnterpriseArchitect
   }

@@ -1,7 +1,8 @@
 'use strict'
 
-const ContentAnalyzer = require('../content_analyzer/content_analyzer.js')
-const Helper = require('./helper.js')
+const ContentAnalyzer = require('../../core/content_analyzer.js')
+const FileCreator = require('../../core/file_creator.js')
+const Helper = require('./lib/helper.js')
 
 function replaceRoleRelatedMacro( page, pageContent, line, macroResult, heading, rolePageMap, keywordPageMap, logger ) {
     var resultValues = Helper.parseCustomXrefMacro(macroResult, line, heading)
@@ -123,7 +124,7 @@ function replaceAutonavMacro( contentCatalog, pages, nav, component, version, fi
     const moduleName = nav.src.module
     let modulePages = pages.filter(page => page.src.module === moduleName)
 
-    let addedVirtualPages = Helper.createVirtualFilesForFolders(contentCatalog,component,version,moduleName,modulePages,modulePath)
+    let addedVirtualPages = FileCreator.createVirtualFilesForFolders(contentCatalog,component,version,moduleName,modulePages,modulePath)
     modulePages = [...modulePages,...addedVirtualPages]
     pages = [...pages,...addedVirtualPages]
 
@@ -164,7 +165,7 @@ function replaceAutonavMacro( contentCatalog, pages, nav, component, version, fi
             currentLevel = currentLevel-1 + moduleRootPath.split("/").length
         }
         let line = "*".repeat(currentLevel) + " xref:"+page.src.relative+"[]"
-        if ((page.src.relative !== moduleStartPage || !findModuleMainPage) && Helper.isPublishableFile(page))  {
+        if ((page.src.relative !== moduleStartPage || !findModuleMainPage) && ContentAnalyzer.isPublishableFile(page))  {
             navBody.push(line)
         }
     })

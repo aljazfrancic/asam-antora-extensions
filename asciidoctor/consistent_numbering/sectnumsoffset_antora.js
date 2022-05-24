@@ -35,6 +35,7 @@ module.exports = function (registry) {
         }
       })
     })
+
     function updateImageOffset( doc, imageOffset, verbose=false ) {
         let newImageOffset = imageOffset
         for (let block of doc.getBlocks()) {
@@ -53,6 +54,7 @@ module.exports = function (registry) {
         }
         return (newImageOffset)
     }
+
     function updateTableOffset( doc, tableOffset, verbose=false ) {
         let newTableOffset = tableOffset
         for (let block of doc.getBlocks()) {

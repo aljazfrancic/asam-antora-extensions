@@ -1,5 +1,7 @@
 'use strict'
 
+const FileCreator = require("../../core/file_creator.js")
+
 function createKeywordsOverviewPage( keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, targetPath, targetName, targetModule, component, version ) {
     if (!keywordOverviewPageRequested) {
         return pages
@@ -42,7 +44,7 @@ function createKeywordsOverviewPage( keywordOverviewPageRequested, contentCatalo
         return pages
     }
     else {
-        let newFile = createNewVirtualFile(contentCatalog, targetName, targetPath, targetModule, component, version, standardContent.join("\n"),myBase)
+        let newFile = FileCreator.createNewVirtualFile(contentCatalog, targetName, targetPath, targetModule, component, version, standardContent.join("\n"),myBase)
         return [...pages,newFile]
     }
 }
