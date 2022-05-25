@@ -1,0 +1,60 @@
+= Sequential numbering
+Antora is not able to generate sequential numbers over more than one page.
+Also, page titles are not numbered automatically either.
+
+This extension provides options to
+
+* Add sequential title numbers to each page (similarly to Asciidoctor sections)
+* Provide styles and exceptions for specific pages (e.g. Appendix, Bibliography)
+* Have sequential numbers for images and tables that follow the ASAM anchor requirements
+* Apply the iso-style section and title numbers
+
+== Configuration
+To activate all sequential numbering, add the following configuration to the extension attributes:
+[source, YAML]
+----
+numbered_titles: true
+----
+
+To use the iso-style numbering, add the following configuration to the extension attributes:
+
+[source, YAML]
+----
+section_number_style: "iso"
+----
+
+.Configuration if the extension is located in the folder "asam-antora-extensions" and has no other configuration besides the numbered titles and the iso-style numbering
+====
+[source,YAML]
+----
+antora:
+  extensions:
+  - require: './asam-antora-extensions/asam-antora_extension.js'
+    numbered_titles: true
+    section_number_style: "iso"
+----
+====
+
+== Notes
+This extension consists of both Antora and Asciidoctor extensions!
+
+
+== How it works
+The ASAM Antora extension adds a title number (`titleoffset` attribute) to each page based on the order in the navigation tree (per component and version).
+Afterwards, the "sectnumsoffset_antora" extensions for Asciidoctor then uses the title offset as well as an optional (manually defined) `sectnumoffset` attribute on the page to re-number all level 2 sections within each page.
+The attributes can also be set manually in each file.
+However, manual changes are currently NOT passed on through the chain to following pages.
+
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-sequential_sectnums.html[ASAM Project Guide^]
+
+Since Asciidoctor counts all images and tables only within each page, their caption numbers start at 1 on every new Antora page by default.
+In case of standards, these numbers must be sequential (and unique) within each standard, not each page.
+
+To do this but also only count relevant images, the extension looks for valid ASAM-style table and image anchors.
+For each anchor found, the next page's image and table offset value is increased accordingly, similarly to the titleoffset attribute.
+
+
+== ISO-2145 style
+By default, section numbers in Asciidoctor have a trailing dot (".").
+To be in line with ISO 2145, sections in standards have to be numbered without this trailing dot.
+The Antora extension in combination with the sectnums_to_iso extension for Asciidoctor addresses this problem.

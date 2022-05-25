@@ -1,0 +1,5 @@
+= Orphan pages
+The ASAM Antora extension finds all pages not listed in any nav.adoc and puts a warning in the console output.
+If configured, these pages can also automatically be listed under a separated navigation entry (e.g. "orphans") at the end of the Antora document.
+
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-orphan_pages.html[ASAM Project Guide^]

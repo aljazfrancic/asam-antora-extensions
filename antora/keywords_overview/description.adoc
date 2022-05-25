@@ -1,0 +1,5 @@
+= Keywords overview page
+The ASAM Antora extension generates an overview page that lists all keywords used in the Antora pages.
+The location and the (virtual) filename can be configured in the site.yml (Antora playbook).
+
+For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-keyword_overview.html[ASAM Project Guide^]
