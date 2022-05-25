@@ -16,7 +16,6 @@
 //-------------
 const CON = require('./core/constants.js');
 const ConfigParser = require("./core/parse_config.js");
-const MapGen = require('./core/map_generator.js')
 const ContentAnalyzer = require('./core/content_analyzer.js')
 //-------------
 // 2) Addons
@@ -73,7 +72,7 @@ module.exports.register = function ({ config }) {
                     pages: pages,
                     navFiles: navFiles
                 }
-                let { keywordPageMap, rolePageMap, anchorPageMap } = MapGen.generateMapsForPages( mapInput )
+                let { keywordPageMap, rolePageMap, anchorPageMap } = ContentAnalyzer.generateMapsForPages( mapInput )
                 //-------------
                 // Addon Keywords: Create initial keywords overview page.
                 // Required setting: keywords: create_overview: true
@@ -83,7 +82,7 @@ module.exports.register = function ({ config }) {
                 //-------------
                 // Addon Keywords: Get updated keyword page map
                 //-------------
-                keywordPageMap = MapGen.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
+                keywordPageMap = ContentAnalyzer.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
                 //-------------
                 // Addon Macros: Replace all custom macros. NOTE: This requires the keywords extension!
                 //-------------
@@ -91,7 +90,7 @@ module.exports.register = function ({ config }) {
                 //-------------
                 // Addon Keywords: Get updated keyword page map
                 //-------------
-                keywordPageMap = MapGen.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
+                keywordPageMap = ContentAnalyzer.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
                 //-------------
                 // Addon Keywords: Create final keywords overview page.
                 //-------------

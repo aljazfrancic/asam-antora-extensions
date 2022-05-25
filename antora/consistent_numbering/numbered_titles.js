@@ -16,7 +16,7 @@ function applySectionAndTitleNumbers (pages, navFiles, sectionNumberStyle, conte
     // Determine the appendix caption and the standard offset for the appendix to be used.
     const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].asciidoc.attributes
     const appendixCaption = Object.keys(componentAttributes).indexOf("appendix-caption") > -1 ? componentAttributes["appendix-caption"] : "Appendix"
-    let appendixOffset = Object.keys(componentAttributes).indexOf("appendix-offset") > -1 ? appendixOffset = componentAttributes["appendix-offset"] : 0
+    let appendixOffset = Object.keys(componentAttributes).indexOf("appendix-offset") > -1 ? componentAttributes["appendix-offset"] : 0
 
     // Sort nav files by index and the process them in order
     navFiles.sort((a,b) => {
@@ -84,7 +84,7 @@ function handlePreface( nav, pages,line,imageIndex, tableIndex ) {
     if (!page) {
         return ["default", imageIndex, tableIndex]
     }
-    unsetSectnumsAttributeInFile(page)
+    Helper.unsetSectnumsAttributeInFile(page)
     let [newImageIndex,newTableIndex] = ImgTab.updateImageAndTableIndex(pages, page, imageIndex, tableIndex)
     ContentManipulator.addSpecialSectionTypeToPage(page, "preface")
     return ["default", newImageIndex, newTableIndex]
