@@ -2,7 +2,7 @@
 
 const ContentAnalyzer = require('../../core/content_analyzer.js')
 
-function find_orphan_pages(contentCatalog, addToNavigation) {
+function find_orphan_pages( contentCatalog, addToNavigation, logger ) {
 contentCatalog.getComponents().forEach(({ versions }) => {
     versions.forEach(({ name: component, version, navigation: nav, url: defaultUrl }) => {
       const navEntriesByUrl = ContentAnalyzer.getNavEntriesByUrl(nav)
