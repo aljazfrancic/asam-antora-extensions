@@ -25,7 +25,8 @@ const ConsistentNumbering = require('./antora/consistent_numbering/numbered_titl
 const CrossrefReplacement = require('./antora/crossref_replacement/crossref_replacement.js')
 const Doxygen = require("./antora/doxygen_converter/doxygen_extension.js") // TODO
 const EA = require("./antora/ea_converter/ea_extension.js") // TODO
-const Keywords = require('./antora/keywords_overview/keywords_overview.js')
+const Keywords = require('./antora/keywords_overview/keywords_overview.js');
+const Orphans = require('./antora/orphan_pages/orphan_pages.js');
 //-------------
 //-------------
 // Register this module in antora so it is used by the Antora pipeline.
@@ -128,34 +129,6 @@ module.exports.register = function ({ config }) {
         //-------------
         // Execute all features for each component-version-combination
         //-------------
-        contentCatalog.getComponents().forEach(({ versions }) => {
-          versions.forEach(({ name: component, version, navigation: nav, url: defaultUrl }) => {
-            const navEntriesByUrl = ContentAnalyzer.getNavEntriesByUrl(nav)
-            const unlistedPages = contentCatalog
-              .findBy({ component, version, family: 'page' })
-              .filter((page) => page.out)
-              .reduce((collector, page) => {
-                if ((page.pub.url in navEntriesByUrl) || page.pub.url === defaultUrl) return collector
-                //-------------
-                // Create logger entry for any page that was has been found but is not entered in at least one navigation file
-                //-------------
-                logger.warn({ file: page.src, source: page.src.origin }, 'detected unlisted page')
-                return collector.concat(page)
-              }, [])
-            //-------------
-            // Optional: Add found unlisted files to a new navigation entry
-            // Optional settings: add_to_navigation: true; unlisted_pages_heading: "Unlisted pages"
-            //-------------
-            if (unlistedPages.length && parsedConfig.addToNavigation) {
-              nav.push({
-                content: parsedConfig.unlistedPagesHeading,
-                items: unlistedPages.map((page) => {
-                  return { content: page.asciidoc.navtitle, url: page.pub.url, urlType: 'internal' }
-                }),
-                root: true,
-              })
-            }
-          })
-        })
+        Orphans.find_orphan_pages(contentCatalog,parsedConfig.addToNavigation)
       })
   }

@@ -4,7 +4,7 @@ const ContentAnalyzer = require('../../core/content_analyzer.js')
 const FileCreator = require('../../core/file_creator.js')
 const Helper = require('./lib/helper.js')
 
-function replaceRoleRelatedMacro( page, pageContent, line, macroResult, heading, rolePageMap, keywordPageMap, logger ) {
+function replaceRoleRelatedMacro( page, pageContent, line, macroResult, heading, rolePageMap, logger ) {
     var resultValues = Helper.parseCustomXrefMacro(macroResult, line, heading)
     var exclusionSet = Helper.excludeSelf(page)
     var content = ""
@@ -205,7 +205,7 @@ function findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywor
                     var newContent = ""
                     switch (macro) {
                         case "role":
-                            pageContent = replaceRoleRelatedMacro(page, pageContent, line, macroResult, heading, rolePageMap, keywordPageMap,logger)
+                            pageContent = replaceRoleRelatedMacro(page, pageContent, line, macroResult, heading, rolePageMap, logger)
                             break;
                         case "related":
                             newContent = replaceRelatedMacro(page, pageContent, line, macroResult, heading, keywordPageMap, macrosRegEx)
