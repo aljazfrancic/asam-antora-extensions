@@ -1,21 +1,31 @@
 'use strict'
-
+//-------------
+//-------------
+// Module for the consistent numbering extension.
+// This module provides a central function, 'applySectionAndTitleNumbers', that parses each adoc file in a component-version-combination and determines the relevant section, image, and table offset using the page order in the navigation file.
+// Note 1: This addon requires the Asciidoctor extension "sectnumoffset_antora" to work!
+// Note 2: This addon also requires the Asciidoctor extension "sectnums_to_iso" when using the iso style numeration.
+//
+//-------------
+//-------------
+// Author: Philip Windecker
+//-------------
+//-------------
 const Helper = require('./lib/helper.js')
 const ImgTab = require('./lib/images_tables.js')
 const ContentAnalyzer = require('../../core/content_analyzer.js')
 const ContentManipulator = require('../../core/content_manipulator.js')
 
-//-------------
-//-------------
-// Main function, responsible for all title and section number actions
-// This is the only function exposed as module
-// Note: This addon requires the Asciidoctor extension "sectnumoffset_antora" to work!
-// Note2: This addon also requires the Asciidoctor extension "sectnums_to_iso" when using the iso style numeration.
-//-------------
+/**
+ * Determines and applies consistent and consecutive numbers for page titles, sections, ASAM-style images, and ASAM-style tables.
+ * This also applies section roles such as "appendix", "bibliography", and "preface". Not all roles are currently supported yet, however!
+ * @param {*} pages - An array of pages for a given component-version-combination.
+ * @param {*} navFiles - An array of navigation files for a given component-version-combination.
+ * @param {String} sectionNumberStyle - The selected style for section numbers. If "iso", the trailing "." is dropped.
+ * @param {Object} contentCatalog - The content catalog provided by Antora.
+ * @param {String} component - The current component.
+ */
 function applySectionAndTitleNumbers (pages, navFiles, sectionNumberStyle, contentCatalog, component) {
-    //-------------
-    // Set style depending on chosen option
-    //-------------
     const style = sectionNumberStyle ? sectionNumberStyle.toLowerCase() : "default"
     //-------------
     // Determine the appendix caption and the standard offset for the appendix to be used.
@@ -24,20 +34,23 @@ function applySectionAndTitleNumbers (pages, navFiles, sectionNumberStyle, conte
     const appendixCaption = Object.keys(componentAttributes).indexOf("appendix-caption") > -1 ? componentAttributes["appendix-caption"] : "Appendix"
     let appendixOffset = Object.keys(componentAttributes).indexOf("appendix-offset") > -1 ? componentAttributes["appendix-offset"] : 0
     //-------------
-    // Sort nav files by index and the process them in order
+    // Sort nav files by index and the process them in order, then generate consistent numbers accordingly.
     //-------------
     navFiles.sort((a,b) => {
         return a.nav.index - b.nav.index
     })
-    generatePageNumberBasedOnNavigation(pages, navFiles, style, appendixCaption, appendixOffset)
+    generateConsistentNumbersBasedOnNavigation(pages, navFiles, style, appendixCaption, appendixOffset)
 }
 
-//-------------
-//-------------
-// Function for handling each navigation file and creating a consistent numbering
-// Called by the main function to go through all options and apply the correct one
-//-------------
-function generatePageNumberBasedOnNavigation(pages, navFiles, style, appendixCaption, appendixOffset) {
+/**
+ * Create consistent numbering based on ordered navigation files.
+ * @param {*} pages - An array of pages.
+ * @param {*} navFiles - A sorted array of navigation files.
+ * @param {String} style - The selected style. If "iso", drop the trailing ".".
+ * @param {String} appendixCaption - The caption for appendices.
+ * @param {Number} appendixOffset - An offset value for appendices, if an appendix needs to start with a different letter than "A".
+ */
+function generateConsistentNumbersBasedOnNavigation(pages, navFiles, style, appendixCaption, appendixOffset) {
     const reStartLevel = /:start-level: ([0-9]*)/;
     const reResetLevelOffset = /:reset-level-offset:/;
     let currentRole = "default"
@@ -106,10 +119,15 @@ function generatePageNumberBasedOnNavigation(pages, navFiles, style, appendixCap
     })
 }
 
-//-------------
-//-------------
-// This function deals with pages declared as "preface" in the navigation file.
-//-------------
+/**
+ * Apply section numbers to a page declared as "preface". Resets to "default" afterwards.
+ * @param {Object} nav - The navigation file.
+ * @param {*} pages - An array of pages.
+ * @param {String} line - The next valid line after the role "preface" was declared.
+ * @param {Number} imageIndex - The current image index used for the corresponding offset attribute.
+ * @param {Number} tableIndex - The current table index used for the corresponding offset attribute.
+ * @returns {Array} - [new role, current image index, current table index]
+ */
 function handlePreface( nav, pages,line,imageIndex, tableIndex ) {
     const indexOfXref = line.indexOf("xref:")
     let page = ContentAnalyzer.determinePageForXrefInLine(line, indexOfXref, pages, nav)[0]
@@ -122,19 +140,36 @@ function handlePreface( nav, pages,line,imageIndex, tableIndex ) {
     return ["default", newImageIndex, newTableIndex]
 }
 
-//-------------
-//-------------
-// This function deals with pages declared as "appendix" in the navigation file.
-//-------------
+/**
+ * Apply section numbers to a page declared as "preface". Resets to "default" afterwards.
+ * @param {Object} nav - The navigation file.
+ * @param {*} pages - An array of pages.
+ * @param {*} content - The content of the navigation file.
+ * @param {String} line - The next valid line after the role "preface" was declared.
+ * @param {Boolean} generateNumbers - Defines if sectnums are allowed.
+ * @param {Number} startLevel - The section level at which to start, depending on the level of the line in the bullet point list.
+ * @param {String} chapterIndex - The current chapter index.
+ * @param {Number} imageIndex - The current image index used for the corresponding offset attribute.
+ * @param {Number} tableIndex - The current table index used for the corresponding offset attribute.
+ * @param {String} style - The selected style. If "iso", drop the trailing ".".
+ * @param {String} appendixCaption - The caption for appendices.
+ * @param {Number} appendixOffset - An offset value for appendices, if an appendix needs to start with a different letter than "A".
+ * @returns {Array} - [new role, current image index, current table index]
+ */
 function handleAppendix( nav, pages, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, appendixCaption, appendixOffset ) {
     const appendixStartLevel = isNaN(parseInt(startLevel)+parseInt(appendixOffset)) ? startLevel : (parseInt(startLevel)+parseInt(appendixOffset)).toString()
     return tryApplyingPageAndSectionNumberValuesToPage(nav, pages,content, line, generateNumbers, appendixStartLevel, chapterIndex, imageIndex, tableIndex, style, "appendix", appendixCaption)
 }
 
-//-------------
-//-------------
-// This function deals with pages declared as "bibliography" in the navigation file.
-//-------------
+/**
+ * Apply section numbers to a page declared as "bibliography". Resets to "default" afterwards.
+ * @param {Object} nav - The navigation file.
+ * @param {*} pages - An array of pages.
+ * @param {String} line - The next valid line after the role "preface" was declared.
+ * @param {Number} imageIndex - The current image index used for the corresponding offset attribute.
+ * @param {Number} tableIndex - The current table index used for the corresponding offset attribute.
+ * @returns {Array} - [new role, current image index, current table index]
+ */
 function handleBibliography(nav, pages, line, imageIndex, tableIndex) {
     const indexOfXref = line.indexOf("xref:")
     let bibliographyPage = ContentAnalyzer.determinePageForXrefInLine(line, indexOfXref, pages, nav)
@@ -148,31 +183,34 @@ function handleBibliography(nav, pages, line, imageIndex, tableIndex) {
     return ["default", newImageIndex, newTableIndex]
 }
 
-//-------------
-//-------------
-// This function takes a given content, analyzes it, and decides what to do with it.
-// Pages are parsed, level 2 sections, figures and tables counted, and the offset from the previous page applied.
-// Non-pages just increase the section number by one and the line is changed accordingly.
-//-------------
+/**
+ * Default function for applying consistent and consecutive numbers to a page or a non-page entry in a navigation file.
+ * Analyze the given line and parse page, if applicable.
+ * Determine level 2 sections, number of valid figures and tables, and apply offsets, if current page and navigation role/settings allows numbering.
+ * @param {Object} nav - The navigation file.
+ * @param {*} pages - An array of pages.
+ * @param {*} content - The content of the navigation file.
+ * @param {String} line - The next valid line after the role "preface" was declared.
+ * @param {Boolean} generateNumbers - Defines if sectnums are allowed.
+ * @param {Number} startLevel - The section level at which to start, depending on the level of the line in the bullet point list.
+ * @param {String} chapterIndex - The current chapter index.
+ * @param {Number} imageIndex - The current image index used for the corresponding offset attribute.
+ * @param {Number} tableIndex - The current table index used for the corresponding offset attribute.
+ * @param {String} style - The selected style. If "iso", drop the trailing ".".
+ * @param {String} option - Optional: If set to anything but "default", the option will be added as page role after the title (e.g. [appendix]).
+ * @param {String} appendixCaption - The caption for appendices.
+ * @returns {Array} - [Changed content, new chapterIndex, new imageIndex, new tableIndex, generateNumbers = true, new option]
+ */
 function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, option="default", appendixCaption="" ) {
-    //-------------
-    // Prepare variables
-    //-------------
     let newImageIndex = imageIndex
     let newTableIndex = tableIndex
     let numberOfLevelTwoSections = 0
-    //-------------
-    // Check if the line references a page (xref) or not
-    //-------------
     const indexOfXref = line.indexOf("xref:")
     //-------------
     // Determine the current level by counting the bullet points in this line, then deduct the startlevel offset.
     //-------------
     const level = indexOfXref > 0 ? line.lastIndexOf("*",indexOfXref) + 1 : line.lastIndexOf("*") + 1
     const targetLevel = level - startLevel + 1
-    //-------------
-    // Execute only if either a cross reference or a bullet point was found. Empty lines and non-list entries are ignored.
-    //-------------
     if (indexOfXref > 0 || level >= startLevel) {
         //-------------
         // Execute if no xref was found (i.e. the line contains only a list entry without link).
@@ -201,21 +239,13 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
             //-------------
             if (foundPage.length > 0) {
                 let page = foundPage[0]
-                //-------------
-                // If section numbers are deactivated for this page by a previous instruction, do not add numbers.
-                // Instead, only count images and tables and reset to default, then return.
-                //-------------
                 if (!generateNumbers) {
                     Helper.unsetSectnumsAttributeInFile(page)
                     let [a,b,c] = ImgTab.updateImageAndTableIndex(pages, page, imageIndex, tableIndex)
                     return [content, chapterIndex, a, b,!generateNumbers, "default"]
                 }
                 //-------------
-                // If section number shall be applied, determine the applicable and following numbers.
-                // Add the determined offset values to the page as attributes.
-                // Then, determine the relevant images and tables and set the new offset values.
-                // Depending on the title type, add the correct prefix to the page title as attribute.
-                // Lastly, write the changes to the file and then update the chapter index for the next page.
+                // If section number shall be applied, apply current values and determine the next ones.
                 //-------------
                 chapterIndex = Helper.determineNextChapterIndex(targetLevel, chapterIndex, style, appendixCaption)
                 Helper.addTitleoffsetAttributeToPage( page, chapterIndex)

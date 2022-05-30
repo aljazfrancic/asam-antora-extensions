@@ -1,10 +1,39 @@
 'use strict'
-
+//-------------
+//-------------
+// Module for the custom ASAM macros.
+// This module provides a central function, 'findAndReplaceCustomASAMMacros', that parses each adoc file in a component-version-combination and replaces each occurrence of a custom ASAM macro with the corresponding AsciiDoc code.
+// The following macros are supported:
+// * role_related
+// * related
+// * reference
+// * autonav
+// * pages
+//
+//-------------
+//-------------
+// Author: Philip Windecker
+//-------------
+//-------------
 const ContentAnalyzer = require('../../core/content_analyzer.js')
 const FileCreator = require('../../core/file_creator.js')
 const Helper = require('./lib/helper.js')
 
+/**
+ * Replaces the ASAM macro 'role_related'.
+ * @param {Object} page - The page where the macro was found in.
+ * @param {*} pageContent - The content of this page.
+ * @param {String} line - The line where the macro was found in.
+ * @param {*} macroResult - The result of the regular expression for matching the role_related macro.
+ * @param {String} heading - The heading to be used when replacing this macro.
+ * @param {*} rolePageMap - A map containing links between roles and the pages they are listed in.
+ * @param {*} logger - The logger for the log output generation.
+ * @returns
+ */
 function replaceRoleRelatedMacro( page, pageContent, line, macroResult, heading, rolePageMap, logger ) {
+    //-------------
+    // Prepare with parsing the result and adding the current page as exception
+    //-------------
     var resultValues = Helper.parseCustomXrefMacro(macroResult, line, heading)
     var exclusionSet = Helper.excludeSelf(page)
     var content = ""
@@ -14,6 +43,10 @@ function replaceRoleRelatedMacro( page, pageContent, line, macroResult, heading,
     else {
         content = resultValues.newLine
     }
+    //-------------
+    // For each attribute, get all pages that apply.
+    // If the macro uses parameters, the page selection is limited to those pages that also contain the given set of keyword(s) (at least one of them).
+    //-------------
     resultValues.attributes.split(",").forEach((el) => {
         const elTrimmed = el.trim()
         if (rolePageMap.has(elTrimmed)) {
@@ -46,11 +79,29 @@ function replaceRoleRelatedMacro( page, pageContent, line, macroResult, heading,
     return (pageContent)
 }
 
+/**
+ * Replaces the ASAM macro 'related' with a bullet point list of pages containing keywords listed by the macro.
+ * @param {Object} page - The page where the macro was found in.
+ * @param {*} pageContent - The content of this page.
+ * @param {String} line - The line where the macro was found in.
+ * @param {*} macroResult - The result of the regular expression for matching the related macro.
+ * @param {String} heading - The heading to be used when replacing this macro.
+ * @param {*} keywordPageMap - A map containing links between keywords and the pages they are listed in.
+ * @returns {*} - The updated pageContent.
+ */
 function replaceRelatedMacro( page, pageContent, line, macroResult, heading, keywordPageMap ) {
+    //-------------
+    // Prepare with parsing the result and adding the current page as exception
+    //-------------
     var resultValues = Helper.parseCustomXrefMacro(macroResult, line, heading)
     var exclusionSet = Helper.excludeSelf(page)
     exclusionSet = Helper.excludeNegatedAttributes(exclusionSet, resultValues.attributes, keywordPageMap)
     var content = resultValues.newLine
+    //-------------
+    // For each attribute, get all pages that apply.
+    // If an attribute is negated (i.e. it starts with '!'), it is instead excluded and ignored.
+    // Each entry that is left is then added as a bullet point cross reference to the target page.
+    //-------------
     resultValues.attributes.split(",").forEach((el) => {
         const elTrimmed = el.trim()
         if (elTrimmed.startsWith("!")) {
@@ -66,7 +117,6 @@ function replaceRelatedMacro( page, pageContent, line, macroResult, heading, key
             })
         }
         else {
-            // logger.warn({ file: page.src, source: page.src.origin }, 'No page for keyword found')
             const filename = page.src
             console.log(`No page for keyword ${el} found: file: ${filename}`)
             console.log(exclusionSet)
@@ -77,17 +127,45 @@ function replaceRelatedMacro( page, pageContent, line, macroResult, heading, key
     return (pageContent)
 }
 
+/**
+ * Replaces the ASAM macro 'reference'. Note: This currently is just an alias for replaceRelatedMacro().
+ * @param {Object} page - The page where the macro was found in.
+ * @param {*} pageContent - The content of this page.
+ * @param {String} line - The line where the macro was found in.
+ * @param {*} macroResult - The result of the regular expression for matching the related macro.
+ * @param {String} heading - The heading to be used when replacing this macro.
+ * @param {*} keywordPageMap - A map containing links between keywords and the pages they are listed in.
+ * @returns {*} - The updated pageContent.
+ */
 function replaceReferenceMacro( page, pageContent, line, macroResult, heading, keywordPageMap ) {
     return (replaceRelatedMacro(page, pageContent, line, macroResult, heading, keywordPageMap))
 }
 
+/**
+ * Replaces the ASAM macro 'pages' with a bullet point list of pages in the requested location.
+ * @param {Object} page - The page where the macro was found in.
+ * @param {*} pageContent - The content of this page.
+ * @param {String} line - The line where the macro was found in.
+ * @param {*} macroResult - The result of the regular expression for matching the related macro.
+ * @param {String} heading - The heading to be used when replacing this macro.
+ * @param {*} pages - The complete list of pages
+ * @returns {*} - The updated pageContent.
+ */
 function replacePagesMacro( page, pageContent, line, macroResult, heading, pages ) {
+    //-------------
+    // Prepare with parsing the result and adding the current page as exception
+    //-------------
     var resultValues = Helper.parseCustomXrefMacro(macroResult, line, heading)
     var exclusionSet = Helper.excludeSelf(page)
     const parameterArray = resultValues.parameters.split(",")
     var content = resultValues.newLine
     var doAll = false
     var targetPath = page.dirname
+    //-------------
+    // Parse the detected parameters:
+    // all: List all content from sub-directories as well.
+    // path=<value>: Set the starting directory to <value> instead.
+    //-------------
     for (let par of parameterArray) {
         var param = par.trim()
         if (param === "all") {
@@ -104,8 +182,10 @@ function replacePagesMacro( page, pageContent, line, macroResult, heading, pages
             }
         }
     }
+    //-------------
+    // Find all child pages that fulfill the defined conditions above.
+    //-------------
     const childPagesArray = Helper.getChildPagesOfPath(pages, targetPath, doAll)
-
     for (let child of childPagesArray) {
         if (!exclusionSet.has(child)) {
             const moduleName = child.src.module;
@@ -119,15 +199,35 @@ function replacePagesMacro( page, pageContent, line, macroResult, heading, pages
     return(pageContent)
 }
 
+/**
+ * Replaces the ASAM macro 'autonav' in a navigation file by creating the navigation content based on the modules folder structure.
+ * @param {Object} contentCatalog - The content catalog provided by Antora for this component-version-combination.
+ * @param {*} pages - The array of pages extracted from the contentCatalog.
+ * @param {Object} nav - The navigation file where the macro was found in.
+ * @param {*} component - The component of the navigation file.
+ * @param {*} version - The component version of the navigation file.
+ * @param {*} findModuleMainPage - Optional: If false, creates a structure without a dedicated module start page.
+ * @returns
+ */
 function replaceAutonavMacro( contentCatalog, pages, nav, component, version, findModuleMainPage=true ) {
     const modulePath = nav.dirname+"/pages"
     const moduleName = nav.src.module
     let modulePages = pages.filter(page => page.src.module === moduleName)
-
+    //-------------
+    // Add virtual files for all directories that do not have corresponding adoc files in their root directory.
+    // Then, update the module's pages array accordingly and also add them to the array of pages for later functions.
+    //-------------
     let addedVirtualPages = FileCreator.createVirtualFilesForFolders(contentCatalog,component,version,moduleName,modulePages,modulePath)
     modulePages = [...modulePages,...addedVirtualPages]
     pages = [...pages,...addedVirtualPages]
 
+    //-------------
+    // If settings request a module start page, determine that page with the following rule and then have all other pages be at least one level lower in hierarchy:
+    // 1) A page with the name of the module exists.
+    // 2) A page named "index.adoc" exists
+    // 3) A page named "main.adoc" exists.
+    // Fallback: The first page in modulePages is used.
+    //-------------
     let moduleStartPage = modulePages[0].basename
     const rootLevelPages = modulePages.filter(x => x.src.moduleRootPath === "..").map(x => x.stem)
 
@@ -145,7 +245,6 @@ function replaceAutonavMacro( contentCatalog, pages, nav, component, version, fi
     if (findModuleMainPage) {
         navBody = ["* xref:"+moduleStartPage+"[]"]
     }
-
     modulePages.sort((a,b) => {
         var relA = a.src.path.replace(".adoc","").split("/")
         var relB = b.src.path.replace(".adoc","").split("/")
@@ -157,7 +256,6 @@ function replaceAutonavMacro( contentCatalog, pages, nav, component, version, fi
             if (relA[i] < relB[i]) return -1
         }
     })
-
     modulePages.forEach( (page) => {
         let currentLevel = findModuleMainPage ? 2 : 1
         let moduleRootPath = page.src.moduleRootPath
@@ -173,8 +271,31 @@ function replaceAutonavMacro( contentCatalog, pages, nav, component, version, fi
     return pages
 }
 
-
+/**
+ * Traverses through the adoc files of a component-version-combination and replaces all found ASAM macros.
+ * This covers the following macros:
+ * autonav
+ * reference
+ * related
+ * role_related
+ * pages
+ *
+ * @param {*} contentCatalog - The complete content catalog provided by Antora.
+ * @param {*} pages - The array of pages for this component-version-combination.
+ * @param {*} navFiles - The navigation files for this component-version-combination.
+ * @param {*} keywordPageMap - A map containing links between keywords and the pages they are listed in.
+ * @param {*} rolePageMap - A map containing links between roles and the pages they are listed in.
+ * @param {*} macrosRegEx - A map of regular expressions for the supported macros.
+ * @param {*} macrosHeadings - A map of headings for the supported macros.
+ * @param {*} logger - A logger for creating log entries.
+ * @param {*} component - The current component.
+ * @param {*} version - The current version.
+ * @returns {*} - The updated pages.
+ */
 function findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywordPageMap, rolePageMap, macrosRegEx, macrosHeadings, logger, component, version) {
+    //-------------
+    // Apply the autonav detection on the navigation files first and replace any match.
+    //-------------
     const re = macrosRegEx.find(x => x.macro === "autonav").re;
     for (let nav of navFiles) {
         var m;
@@ -192,7 +313,9 @@ function findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywor
             pages = replaceAutonavMacro(contentCatalog, pages, nav, component, version, findModuleMainPage)
         }
     }
-
+    //-------------
+    // Evaluate each page line by line and apply the corresponding macro replacement where necessary.
+    //-------------
     for (const page of pages) {
         var pageContent = page.contents.toString().split("\n")
         for (const line of pageContent) {

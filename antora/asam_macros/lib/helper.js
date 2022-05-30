@@ -1,5 +1,28 @@
 'use strict'
+//-------------
+//-------------
+// This is a collection of helper functions for the asam_macros extension.
+// The following functions are included:
+// * excludeNegatedAttributes
+// * excludeSelf
+// * addNewBulletPoint
+// * parseCustomXrefMacro
+// * getChildPagesOfPath
+//
+// All included functions are exposed in the module.
+//-------------
+//-------------
+// Author: Philip Windecker
+//-------------
+//-------------
 
+/**
+ * Excludes all attributes that are negated with an exclamation mark from the provided list of attributes.
+ * @param {Set} exclusionSet - Optional: A set of excluded attributes from a previous function call.
+ * @param {*} attributes - A list of attributes extracted for this macro.
+ * @param {*} keywordPageMap - A map of pages associated with all determined keywords.
+ * @returns {Set} - The created or updated exclusionSet containing the excluded pages based on the provided negated attributes.
+ */
 function excludeNegatedAttributes( exclusionSet = new Set(), attributes, keywordPageMap ) {
     const attributesArray = attributes.split(",").filter(attr => attr.trim().startsWith("!"))
     for (let attr of attributesArray) {
@@ -13,16 +36,34 @@ function excludeNegatedAttributes( exclusionSet = new Set(), attributes, keyword
     return (exclusionSet)
 }
 
+/**
+ * Excludes the page for which the function was triggered.
+ * @param {*} page - The page where the macro was found in.
+ * @param {*} exclusionSet - Optional: A set of excluded attributes from a previous function call.
+ * @returns {Set} - The created or updated exclusionSet containing the excluded pages based on the provided negated attributes.
+ */
 function excludeSelf( page, exclusionSet = new Set() ) {
     exclusionSet.add(page)
     return exclusionSet
 }
 
+/**
+ * Adds a new bullet point in front of the provided content.
+ * @param {String} content - The string (content) that is to be turned into a bullet point
+ * @returns {String} - The updated string.
+ */
 function addNewBulletPoint( content ) {
     return "* ".concat(content)
 }
 
-function parseCustomXrefMacro( macroResult, line, heading ) {
+/**
+ * Parses the result from the regular expression and converts them into a standardized object. Additionally, it creates the suggested start for the new line based on the parsed line and the provided heading.
+ * @param {*} macroResult - Result from a regular expression with [1]: attributes and [2]: parameters.
+ * @param {String} line - The line for which the regular expression matched.
+ * @param {String} heading - Optional: A heading for the first new line that replaces the custom macro.
+ * @returns {Object} - The compiled object with .attributes, .parameters, .indexStart, .indexStop, and .newLine.
+ */
+function parseCustomXrefMacro( macroResult, line, heading="" ) {
     var resultValues = new Object;
     resultValues.attributes = macroResult[1]
     resultValues.parameters = macroResult[2]
@@ -33,6 +74,13 @@ function parseCustomXrefMacro( macroResult, line, heading ) {
     return resultValues
 }
 
+/**
+ * Determines all pages for a given directory. With doAll=true, traverses through all sub-directories as well.
+ * @param {Array} pages - The list of all pages that should be considered. May be the complete list of pages for a component-version-combination.
+ * @param {String} path - The path at which the function shall start looking for child pages.
+ * @param {Boolean} doAll - Optional: If true, makes the function traverse through all sub-directories as well.
+ * @returns {Array} - The found child pages, if any.
+ */
 function getChildPagesOfPath( pages, path, doAll=false ) {
     var childPages = new Array();
     if (doAll) {

@@ -1,13 +1,49 @@
 'use strict'
-
+//-------------
+//-------------
+// This is a collection of helper functions for the consistent_numbering extension.
+// The following functions are included:
+// * setStartingChapterIndex
+// * determineNextChapterIndex
+// * getRelativeSectionNumberWithIncludes
+// * unsetSectnumsAttributeInFile
+// * addTitleoffsetAttributeToPage
+// * checkForSectnumsAttribute
+// * checkForRoleInLine
+// * getIncludedPagesContentForExtensionFeatures
+//
+// All included functions are exposed in the module.
+//-------------
+//-------------
+// Author: Philip Windecker
+//-------------
+//-------------
 const ContentAnalyzer = require('../../../core/content_analyzer.js')
 const ContentManipulator = require('../../../core/content_manipulator.js')
 
+/**
+ * Determines the correct starting index of a chapter/section depending on the style (ends with "." or not).
+ * @param {String} style - The chosen section number style. If "iso", will not contain the default "." at the end.
+ * @param {String} value - The value where the style is to be applied to.
+ * @returns {String} - The updated value.
+ */
 function setStartingChapterIndex( style, value ) {
     return style === "iso" ? value : value+"."
 }
 
+/**
+ * Determine the next chapter index based on the current value and the new target level.
+ * For Appendices, also determine the correct starting letter.
+ * @param {Number} targetLevel - The level of section or page heading.
+ * @param {String} chapterIndex - The current chapter index for which the next value is to be determined.
+ * @param {String} style - The chosen section number style. If "iso", will not contain the default "." at the end."
+ * @param {String} appendixCaption - Optional: Applies to appendices. If set, the first element of the index will be a letter.
+ * @returns {String} - The next chapter index value.
+ */
 function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appendixCaption="" ) {
+    //-------------
+    // Apply style behavior and, if requested, determine the current Appendix value.
+    //-------------
     let chapterElements = chapterIndex.split(".")
     if (style !== "iso") {chapterElements.pop()}
     const currentChapterIndexLength = Math.max(1,chapterElements.length)
@@ -21,18 +57,19 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appen
             }
         }
     }
-    // Add 1s to the end if the current number is shorter than the target number
+    //-------------
+    // Add 1s to the end if the current number is shorter than the target number.
+    // Otherwise, increase the targetlevel if it is a number (letters are increased above) and cut all now obsolete levels.
+    //-------------
     if (currentChapterIndexLength < targetLevel) {
         for (let i in [...Array(targetLevel-currentChapterIndexLength)]) {
             chapterElements.splice(-1,0,"1")
         }
     }
     else {
-        // Increase if the targetlevel is a number (letters are increased above)
         if (!isNaN(parseInt(chapterElements[targetLevel-1]))) {
             chapterElements[targetLevel-1] = (parseInt(chapterElements[targetLevel-1]) + 1).toString()
         }
-        // Cut all elements beyond the target
         if (currentChapterIndexLength > targetLevel) {
             chapterElements = chapterElements.slice(0,targetLevel)
         }
@@ -44,10 +81,24 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appen
     return chapterIndex
 }
 
+/**
+ * Determines the number of relevant sections up to a maximum section value.
+ * This function also parses all included files that may be relevant depending on their accumulated leveloffset value.
+ * @param {*} pages - An array of pages.
+ * @param {Object} page - The current page.
+ * @param {Number} targetSectionLevel - The sectionlevel that is currently relevant.
+ * @param {String} startText - Optional: If set, finds a specific anchor of type [#anchor] or [[anchor]].
+ * @returns {Array} - The determined number of sections for the targetSectionLevel and below.
+ */
 function getRelativeSectionNumberWithIncludes(pages,page,targetSectionLevel,startText="") {
     let currentTargetSectionLevel = targetSectionLevel
     let relativeIndex = startText ? [1] : [0]
     let content = page.contents.toString()
+    const reSectionStart = /^(=+)\s[^\n]+/
+    const reIncludeStart = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/
+    //-------------
+    // If the parameter startText is defined, limit the content to everything above that anchor.
+    //-------------
     if (startText){
         const indexType1 = content.indexOf("[#"+startText+"]")
         const indexType2 = content.indexOf("[["+startText+"]]")
@@ -58,15 +109,23 @@ function getRelativeSectionNumberWithIncludes(pages,page,targetSectionLevel,star
             content = content.slice(0,indexType2)
         }
     }
-    const reSectionStart = /^(=+)\s[^\n]+/
+    //-------------
+    // Reverse through the remaining content line by line and get all relevant sections.
+    // If any files are included and they are adoc files, also traverse through them to determine the complete number of sections the page will have after Asciidoctor has compiled the final content.
+    //-------------
     content.split("\n").reverse().forEach(line => {
         const sectionSearchResult = line.match(reSectionStart)
-        const includeSearchResult = line.match(/^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/)
+        const includeSearchResult = line.match(reIncludeStart)
+        //-------------
+        // Handle an included file in case the included sections could be of relevance (i.e. they are level 2 after inclusion).
+        // This takes the leveloffset attribute into account.
+        // NOTE: This does NOT handle included files with tags correctly!
+        //-------------
         if (includeSearchResult && includeSearchResult.length > 0) {
             const leveloffset = includeSearchResult[3] ? targetSectionLevel - includeSearchResult[3] : targetSectionLevel
             if (leveloffset > 0)
             {
-                const targetPage = ContentAnalyzer.determineTargetPageFromIncludeMacro ( pages, page, includeSearchResult[1] )
+                const targetPage = ContentAnalyzer.determineTargetPageFromIncludeMacro(pages, page, includeSearchResult[1])
                 if (targetPage){
                     let includedSectionNumbers = getRelativeSectionNumberWithIncludes(pages,targetPage,leveloffset)
                     for (let i in includedSectionNumbers) {
@@ -75,6 +134,9 @@ function getRelativeSectionNumberWithIncludes(pages,page,targetSectionLevel,star
                 }
             }
         }
+        //-------------
+        // Handle a found section depending on its level vs. the target level.
+        //-------------
         if (sectionSearchResult && sectionSearchResult.length > 0) {
             const foundSectionLevel = sectionSearchResult[1].split("=").length - 1
             if (foundSectionLevel === currentTargetSectionLevel) {
@@ -92,16 +154,33 @@ function getRelativeSectionNumberWithIncludes(pages,page,targetSectionLevel,star
     return relativeIndex
 }
 
+/**
+ * Adds "sectnums!" to a page's header.
+ * @param {Object} page - The page that needs to unset the sectnums attribute in its header.
+ */
 function unsetSectnumsAttributeInFile( page ) {
     let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)
     ContentManipulator.addAttributeWithValueToPage( page, newContent, indexOfTitle, "sectnums", "", true)
 }
 
+/**
+ * Set the 'titleoffset' attribute in a page's header.
+ * This attribute is used by an Asciidoctor extension to then add its value as a prefix to the page's title when compiling the final result.
+ * @param {Object} page - The page where the titleoffset attribute is to be set.
+ * @param {String} value - The value the titleoffset attribute is to be set to.
+ */
 function addTitleoffsetAttributeToPage( page, value) {
     let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)
     ContentManipulator.addAttributeWithValueToPage(page, newContent, indexOfTitle, "titleoffset", value)
 }
 
+/**
+ * Checks if the sectnums attribute is set or unset in a given line and, if so, applies its implications in the context of consistent numbering.
+ * @param {Array} content - The content of a file/page.
+ * @param {String} line - The line that needs to be checked for the sectnums attribute.
+ * @param {Boolean} previousValue - Optional: Sets the default return value in case the sectnums attribute is not matched.
+ * @returns {Array} - [The return value (Boolean), the changed content, hasChanged]
+ */
 function checkForSectnumsAttribute( content, line, previousValue=true ) {
     const reSectnums = /^\s*:sectnums(!)?:/;
     const result = line.match(reSectnums)
@@ -118,6 +197,13 @@ function checkForSectnumsAttribute( content, line, previousValue=true ) {
     return [returnValue, content, hasChanged]
 }
 
+/**
+ * Checks if a section role attribute is defined in a given line and, if so, applies its implications in the context of consistent numbering.
+ * @param {Array} content - The content of a file/page.
+ * @param {String} line - The line that needs to be checked for occurring section roles.
+ * @param {String} currentRole - The currently valid role (i.e. section number behavior).
+ * @returns {Array} - [The determined active role, the changed content, hasChanged]
+ */
 function checkForRoleInLine( content, line, currentRole ) {
     const reRoles = /^\s*\[([^\]]+)\]/;
     const result = line.match(reRoles)
@@ -129,6 +215,15 @@ function checkForRoleInLine( content, line, currentRole ) {
     return [returnValue, content, hasChanged]
 }
 
+/**
+ * Determines the number of images and tables that follow ASAM's anchor conventions as well as level 2 sections.
+ * Also traverses through included files.
+ * TODO: Join with features of getRelativeSectionNumberWithIncludes as that one is currently unused.
+ * @param {*} pages - - An array of pages.
+ * @param {Object} page - The current page.
+ * @param {Number} leveloffset - A given leveleoffset for sections and other numbers.
+ * @returns {Array} - [Number of relevant sections, number of images, number of tables]
+ */
 function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0 ) {
     const contentSum = page.contents.toString()
     let newContent = contentSum.split("\n")
@@ -136,8 +231,10 @@ function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0
     let numberOfImages = 0
     let numberOfTables = 0.
     let ignoreLine = false
+    //-------------
+    // Ignore everything between "ifndef::use-antora-rules[]" and the next "endif::[]"
+    //-------------
     for(let line of newContent) {
-        // Find level 2 sections
         if (line.indexOf("ifndef::") > -1 && line.indexOf("use-antora-rules") > -1) {
             ignoreLine = true
         }
@@ -146,12 +243,23 @@ function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0
         }
         if (!ignoreLine)
         {
+            //-------------
+            // Find all sections that will be level 2 in final result.
+            //-------------
             if ((leveloffset === 0 && line.startsWith("== ")) || (leveloffset === 1 && line.startsWith("= "))) {
                 numberOfLevelTwoSections += 1
             }
+            //-------------
+            // A page containing the attribute "pagesmacro" gets its number of level 2 sections reduced.
+            // The reason is that the pages macro creates a level 2 section that is to be excluded from the count.
+            // NOTE: This will break if the pages macro is used in a partial or included page!
+            //-------------
             else if (line.match(/^:pagesmacro:/)) {
                 numberOfLevelTwoSections -= 1
             }
+            //-------------
+            // Also look for included files and handle them accordingly, depending on the optional leveloffset attribute.
+            //-------------
             else if (line.match(/^\s*include::/)) {
                 const re = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?/
                 let result = line.match(re)
@@ -173,6 +281,9 @@ function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0
                     numberOfTables += numberOfTablesIncluded
                 }
             }
+            //-------------
+            // Find all valid images (with "fig-" caption) and tables (with "tab-" caption).
+            //-------------
             else {
                 const reFigures = /\[#fig-[^\]]+\]/g
                 if ([...line.matchAll(reFigures)].length > 0) {
