@@ -1,8 +1,25 @@
 'use strict'
-
+//-------------
+//-------------
+// Module for generating a list of all pages not contained in any navigation file and, optionally, adding them under a new entry.
+// This module provides a central function, 'find_orphan_pages'.
+//
+//-------------
+//-------------
+// Author: Dan Allen
+// Source: https://gitlab.com/antora/antora/-/blob/main/docs/modules/extend/examples/unlisted-pages-extension.js
+//-------------
+//-------------
 const ContentAnalyzer = require('../../core/content_analyzer.js')
 
-function find_orphan_pages( contentCatalog, addToNavigation, logger ) {
+/**
+ * Find and list all pages not included in any navigation file. If addToNavigation is set, also add them as a new entry to the navigation tree.
+ * @param {Object} contentCatalog - The content catalog provided by Antora.
+ * @param {Boolean} addToNavigation - States if the found pages are to be collectively added under a new entry in the navigation tree.
+ * @param {String} unlistedPagesHeading - If addToNavigation is true, this is the name under which the orphan pages are to be collected under.
+ * @param {*} logger - A logger for logging output.
+ */
+function find_orphan_pages( contentCatalog, addToNavigation, unlistedPagesHeading, logger ) {
 contentCatalog.getComponents().forEach(({ versions }) => {
     versions.forEach(({ name: component, version, navigation: nav, url: defaultUrl }) => {
       const navEntriesByUrl = ContentAnalyzer.getNavEntriesByUrl(nav)
@@ -23,7 +40,7 @@ contentCatalog.getComponents().forEach(({ versions }) => {
       //-------------
       if (unlistedPages.length && addToNavigation) {
         nav.push({
-          content: parsedConfig.unlistedPagesHeading,
+          content: unlistedPagesHeading,
           items: unlistedPages.map((page) => {
             return { content: page.asciidoc.navtitle, url: page.pub.url, urlType: 'internal' }
           }),

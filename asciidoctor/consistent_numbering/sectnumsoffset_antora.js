@@ -4,7 +4,6 @@ module.exports = function (registry) {
       var verbose = false
       self.process(function (doc) {
         // Check if sectnums and sectnumoffset is found. Only act if true
-        // if (doc.getTitle() && doc.getTitle().indexOf("General Architecture")>-1) {verbose = true}
         if (verbose){console.log("Title: ",doc.getTitle())}
         if (verbose){console.log("has imageoffset attribute: ",doc.hasAttribute("imageoffset"))}
         if (verbose){console.log("has tableoffset attribute: ",doc.hasAttribute("tableoffset"))}
@@ -36,6 +35,13 @@ module.exports = function (registry) {
       })
     })
 
+    /**
+     * Updates and applies the image offset to each image.
+     * @param {*} doc - The document.
+     * @param {Number} imageOffset - The image offset value.
+     * @param {Boolean} verbose - Optional: If true, will print verbose output in the console.
+     * @returns {Number} . The updated imageOffset.
+     */
     function updateImageOffset( doc, imageOffset, verbose=false ) {
         let newImageOffset = imageOffset
         for (let block of doc.getBlocks()) {
@@ -55,6 +61,13 @@ module.exports = function (registry) {
         return (newImageOffset)
     }
 
+    /**
+     * Updates and applies the table offset to each table.
+     * @param {*} doc - The document.
+     * @param {Number} tableOffset - The table offset value.
+     * @param {Boolean} verbose - Optional: If true, will print verbose output in the console.
+     * @returns {Number} - The updated tableOffset.
+     */
     function updateTableOffset( doc, tableOffset, verbose=false ) {
         let newTableOffset = tableOffset
         for (let block of doc.getBlocks()) {

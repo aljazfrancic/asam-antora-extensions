@@ -1,1 +1,18 @@
 = Doxygen converter
+Doxygen already outputs content in HTML form.
+However, to use this in an Antora environment, the body must be extracted and included correctly.
+Also, separating or augmenting the sections used in the output allows Asciidoctor to create the TOC automatically.
+
+This extension provides the features to Antora to
+
+. Build the Doxygen content from a given source in a given version
+// TODO: Remove building from Antora pipeline and get generated content either from the source or a different repo / location. This will massively save time and remove the need to add doxygen-specific features to the Antora Docker image.
+. Update the generated content to work with Antora
+. Add the created (relevant) content to the Antora content
+. Run this for all relevant components and versions, using attributes set in the respective component descriptor.
+
+== Configuration
+TODO
+
+== How it works
+TODO

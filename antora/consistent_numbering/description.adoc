@@ -11,6 +11,7 @@ This extension provides options to
 
 == Configuration
 To activate all sequential numbering, add the following configuration to the extension attributes:
+
 [source, YAML]
 ----
 numbered_titles: true

@@ -3,3 +3,37 @@ The ASAM Antora extension finds all pages not listed in any nav.adoc and puts a 
 If configured, these pages can also automatically be listed under a separated navigation entry (e.g. "orphans") at the end of the Antora document.
 
 For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-orphan_pages.html[ASAM Project Guide^]
+
+== Configuration
+The orphan_pages extension is always active.
+
+To add the found orphan pages to the navigation, add the following configuration to the extension attributes:
+[source, YAML]
+----
+add_to_navigation: true
+----
+
+By default, the standard name under which orphan pages are then added, is 'Unlisted pages'.
+To give it a different name, add the following configuration to the extension attributes:
+
+[source, YAML]
+----
+unlisted_pages_heading: "Orphan pages"
+----
+
+.Configuration for adding orphan pages under the label "Lost and found"
+====
+[source,YAML]
+----
+antora:
+  extensions:
+  - require: './asam-antora-extensions/asam-antora_extension.js'
+    add_to_navigation: true
+    unlisted_pages_heading: "Lost and found"
+----
+====
+
+== How it works
+This is an extension provided by the Antora project.
+It is documented in full https://docs.antora.org/antora/latest/extend/extension-tutorial/[here^].
+The source code can be found in the https://gitlab.com/antora/antora/-/blob/main/docs/modules/extend/examples/unlisted-pages-extension.js[Antora repository^]
