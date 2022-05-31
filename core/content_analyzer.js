@@ -1,5 +1,40 @@
 'use strict'
+//-------------
+//-------------
+// Core module for analyzing adoc content.
+// Contains the following functions:
+// determineTargetPageFromIncludeMacro (exposed)
+// getAnchorsFromPage (exposed)
+// getAllKeywordsAsArray (exposed)
+// getReferenceNameFromSource (exposed)
+// getAltTextFromTitle (exposed)
+// getAltNumberFromTitle (exposed)
+// getPageContentForExtensionFeatures (exposed)
+// getNavEntriesByUrl (exposed)
+// isPublishableFile (exposed)
+// determinePageForXrefInLine (exposed)
+// generateMapForRegEx
+// getKeywordPageMapForPages (exposed)
+// getRolePageMapForPages
+// getAnchorPageMapForPages
+// updateMapEntry
+// addOrUpdateAnchorMapEntry (exposed)
+// generateMapsForPages (exposed)
+//
+//-------------
+//-------------
+// Author: Philip Windecker
+//-------------
+//-------------
 
+
+/**
+ * Analyze a path of an include macro and identifies the linked file, if it exists.
+ * @param {*} pages - An array of all pages.
+ * @param {Object} thisPage - The page where the include macro was found.
+ * @param {*} includePath - The path extracted from the page.
+ * @returns {Object} - The identified page.
+ */
 function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath ) {
     if (!Array.isArray(includePath)) {
         includePath = includePath.split("/")
@@ -15,6 +50,12 @@ function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath ) {
     return includedPage
 }
 
+/**
+ * Extracts all manually defined anchors from an AsciiDoc file. Also traverses through included files.
+ * @param {*} pages - An array of all pages.
+ * @param {Object} page - The current page.
+ * @returns {Map} - A map of anchors and the page(s) where they were found.
+ */
 function getAnchorsFromPage( pages, page ) {
     var re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)\]|anchor:([^\[]+)\[/
     var resultMap = new Map
@@ -61,6 +102,11 @@ function getAnchorsFromPage( pages, page ) {
     return resultMap
 }
 
+/**
+ * Returns the values of the keywords attribute of a file.
+ * @param {Object} page - The page that is analyzed.
+ * @returns {*} - The match of the regular expression, where the first group contains the list of keywords and res.line is the line the attribute was found in.
+ */
 function getAllKeywordsAsArray( page ) {
     var re = /^\s*:keywords:(.*)/
     var content = page.contents.toString().split("\n")
@@ -77,6 +123,13 @@ function getAllKeywordsAsArray( page ) {
     return(res)
 }
 
+/**
+ * Retrieves the name associated with an anchor so it can be used as label when linking to other pages.
+ * @param {*} pages - An array of all pages.
+ * @param {Object} page - The current page.
+ * @param {String} anchor - The anchor in question.
+ * @returns {String} - The extracted alt text.
+ */
 function getReferenceNameFromSource( pages, page, anchor ) {
     const reSectionEqualSigns = /^\s*(=+)\s+(.*)$/m
     const reCaptionLabel = /^\.(\S.+)$/m
@@ -91,48 +144,51 @@ function getReferenceNameFromSource( pages, page, anchor ) {
     // Use special anchor formats: sec, top, fig, tab, ...
     let result
     let returnValue = ""
-    let altLink
-
+    //-------------
+    //Only act on anchors that match one of the ASAM anchor types (matching reAnchorType).
+    //-------------
     if (resultAnchorType){
         switch (resultAnchorType[1]) {
             case "fig":
-                // console.log("found figure: ", anchor);
-                result = resultNextCaption
-                // console.log(result[1])
+                result = resultNextCaption;
                 break;
             case "tab":
-                // console.log("found table: ", anchor);
-                result = resultNextCaption
-                // console.log(result[1])
+                result = resultNextCaption;
                 break;
             case "top":
-                // console.log("found top anchor: ", anchor)
-                returnValue = getAltTextFromTitle( page, content )
+                returnValue = getAltTextFromTitle( page, content );
                 break;
             case "sec":
-                result = resultForNextHeading
-                const pageNumber = getAltNumberFromTitle(page,content)
-                let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages,page,result[1].split("=").length-1,anchor)
+                result = resultForNextHeading;
+                const pageNumber = getAltNumberFromTitle(page,content);
+                let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages,page,result[1].split("=").length-1,anchor);
                 if (relativeSectionNumber.length > 1){
-                    relativeSectionNumber[0]=""
-                    returnValue = "Section " + pageNumber+relativeSectionNumber.join(".")
+                    relativeSectionNumber[0]="";
+                    returnValue = "Section " + pageNumber+relativeSectionNumber.join(".");
                 }
                 else {
-                    returnValue = "Section " + pageNumber
+                    returnValue = "Section " + pageNumber;
                 }
                 break;
             default:
-                console.log("non-standard anchor type detected: ", anchor)
-                returnValue = getAltTextFromTitle( page, content )
+                console.log("non-standard anchor type detected: ", anchor);
+                returnValue = getAltTextFromTitle( page, content );
                 break;
         }
     }
     else {
-        returnValue = getAltTextFromTitle( page, content )
+        returnValue = getAltTextFromTitle( page, content );
     }
-    return ([returnValue, altLink])
+    return (returnValue)
 }
 
+/**
+ * Determines the alt text for a link from the tile of a page. This includes set titleprefix and titleoffset attributes.
+ * Defaults to the filename if all else fails.
+ * @param {Object} page - The page for which the title needs to be extracted.
+ * @param {String} content - The contents of that page.
+ * @returns {String} - The extracted title.
+ */
 function getAltTextFromTitle( page, content ) {
     const re1 = /:titleprefix:\s*([^\n]+)/m
     const re2 = /:titleoffset:\s*([^\n]+)/m
@@ -153,11 +209,23 @@ function getAltTextFromTitle( page, content ) {
     return returnValue
 }
 
+/**
+ * Extracts the section number from the title of a numbered page.
+ * @param {Object} page - The page for which the number needs to be extracted.
+ * @param {String} content - The contents of that page.
+ * @returns {String} - The extracted number(s)
+ */
 function getAltNumberFromTitle( page, content ) {
     let value = getAltTextFromTitle(page,content)
     return value.split(" ")[1]
 }
 
+/**
+ * Extracts the line index of the title, the index of the navtitle attribute, and the index of the reftext attribute, if applicable.
+ * It also returns the contents of that page as an array.
+ * @param {Object} page - The page that is analyzed.
+ * @returns {Array} - [Content as array, indexOfTitle, indexOfNavtitle, indexOfReftext]
+ */
 function getPageContentForExtensionFeatures( page ) {
     const contentSum = page.contents.toString()
     let newContent = contentSum.split("\n")
@@ -182,18 +250,38 @@ function getPageContentForExtensionFeatures( page ) {
     return [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext]
 }
 
+/**
+ * Extracts links by url from an array of items.
+ * Function provided by Antora project.
+ * @param {Array} items - The items that need to be analyzed.
+ * @param {Object} accum - A previously already aggregated Object of extracted links.
+ * @returns {Object} - The extracted links.
+ */
 function getNavEntriesByUrl (items = [], accum = {}) {
     items.forEach((item) => {
         if (item.urlType === 'internal') accum[item.url.split('#')[0]] = item
         getNavEntriesByUrl(item.items, accum)
     })
     return accum
-    }
+}
 
+/**
+ * Determines if a page is publishable, i.e. it does not start with "_" or ".".
+ * @param {Object} page - The page that is to be analyzed.
+ * @returns {Boolean} - States if a page will be published.
+ */
 function isPublishableFile( page ) {
     return (page.src.relative.indexOf("/_") < 0 && page.src.relative.indexOf("/.") < 0 && !page.src.relative.startsWith("_") && !page.src.relative.startsWith("."))
 }
 
+/**
+ * Determines the page for an xref entry from a line.
+ * @param {String} line - The line where the xref macro is located.
+ * @param {Number} indexOfXref - the index of the xref in the line.
+ * @param {*} pages - An array of all pages.
+ * @param {Object} nav - The relevant navigation file.
+ * @returns {Object} - The matched page.
+ */
 function determinePageForXrefInLine(line, indexOfXref, pages, nav) {
     const endOfXref = line.indexOf("[")
     const targetFile = line.slice(indexOfXref + 5, endOfXref)
@@ -201,6 +289,13 @@ function determinePageForXrefInLine(line, indexOfXref, pages, nav) {
     return foundPage
 }
 
+/**
+ * Generates a map for a regular expression where each matched keyword is an entry and each page it was matched in a value for that entry.
+ * @param {*} re - A regular expression that is to be matched for each page.
+ * @param {*} pages - An array of relevant pages.
+ * @param {Boolean} exclusive - Optional: If true, the function will only look for the first match in the file.
+ * @returns {Map} - A map of matched keywords and the pages where that match occurred.
+ */
 function generateMapForRegEx(re,pages,exclusive=false) {
     var generatedMap = new Map;
     for (let page of pages.filter((page) => page.out)) {
@@ -232,6 +327,12 @@ function generateMapForRegEx(re,pages,exclusive=false) {
     return (generatedMap)
 }
 
+/**
+ * Generates a map for the 'keywords' attribute.
+ * @param {Boolean} useKeywords - The function is only executed if this is set to true.
+ * @param {*} pages - An array of relevant pages.
+ * @returns {Map} - A map of 'keywords' and the pages where they were found in.
+ */
 function getKeywordPageMapForPages (useKeywords, pages = {}) {
     if (!useKeywords) {
         return (new Map())
@@ -241,12 +342,23 @@ function getKeywordPageMapForPages (useKeywords, pages = {}) {
     return keywordMap
 }
 
+/**
+ * Generates a map for the 'role' shorthand.
+ * @param {*} pages - An array of relevant pages
+ * @returns {Map} - A map of 'roles' and the pages where they were found in.
+ */
 function getRolePageMapForPages (pages = {}) {
     var re = new RegExp("{role-([^}]*)}")
     var rolesMap = generateMapForRegEx(re,pages)
     return rolesMap
 }
 
+/**
+ * Generates a map for all anchors with ASAM notation.
+ * @param {*} pages - An array of relevant pages.
+ * @param {*} navFiles - An array of relevant navigation files.
+ * @returns {Map} - A map of anchors and the pages where they were found in.
+ */
 function getAnchorPageMapForPages( pages, navFiles ) {
     var anchorMap = new Map;
     for (let page of pages.filter((page) => page.out)) {
@@ -270,11 +382,25 @@ function getAnchorPageMapForPages( pages, navFiles ) {
     return anchorMap
 }
 
+/**
+ * Updates a map entry by adding a new value to it. Does not work for anchor maps.
+ * @param {Map} inputMap - The map that needs to be updated.
+ * @param {String} key - The key that is to receive an additional value
+ * @param {*} addedValue - The new added value.
+ * @returns {Map} - The updated map.
+ */
 const updateMapEntry = (inputMap, key, addedValue) => {
     const newValue = inputMap.get(key).add(addedValue)
     return (inputMap.set(key,newValue))
 }
 
+/**
+ * Adds or updates an anchor map entry by merging it with another map.
+ * @param {Map} anchorMap - The anchor map where one or more entries have to be added.
+ * @param {*} updateMap - An additional anchor map that needs to be merged with the original one.
+ * @param {Object} overridePage - Optional: If set, replaces the value for each key in the updateMap with a new set containing the overridePage.
+ * @returns {Map} - The updated anchor map.
+ */
 function addOrUpdateAnchorMapEntry( anchorMap, updateMap, overridePage = null ) {
     for (let key of updateMap.keys()) {
         if (overridePage) {
@@ -291,6 +417,12 @@ function addOrUpdateAnchorMapEntry( anchorMap, updateMap, overridePage = null ) 
     return anchorMap
 }
 
+/**
+ * Generator for all relevant maps.
+ * This function generates maps for keywords, roles, and anchors.
+ * @param {Object} mapInput - A set of configuration parameters relevant for the map generator. Must contain 'useKeywords', 'pages', and 'navFiles'.
+ * @returns {Object} - Object containing the determined maps: keywordPageMap, rolePageMap, anchorPageMap.
+ */
 function generateMapsForPages( mapInput ) {
     let keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords,mapInput.pages)
     const rolePageMap = getRolePageMapForPages(mapInput.pages)

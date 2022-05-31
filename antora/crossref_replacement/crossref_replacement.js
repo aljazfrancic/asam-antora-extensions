@@ -34,9 +34,9 @@ function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
             if (anchorMap.get(ref[1])) {
                 const referencePage = [...anchorMap.get(ref[1])][0]
                 if (page !== referencePage) {
-                    let [autoAltText, altLink] = ContentAnalyzer.getReferenceNameFromSource( pages, referencePage, ref[1] )
+                    let autoAltText = ContentAnalyzer.getReferenceNameFromSource( pages, referencePage, ref[1] )
                     const altText = ref[3] ? ref[3] : autoAltText
-                    const anchorLink = altLink ? altLink : ref[1]
+                    const anchorLink = ref[1]
                     const replacementXref = "xref:"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+anchorLink+"["+altText+"]"
                     content = content.replace(ref[0],replacementXref)
                 }

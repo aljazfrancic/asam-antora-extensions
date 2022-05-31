@@ -210,14 +210,13 @@ function replacePagesMacro( page, pageContent, line, macroResult, heading, pages
  * @returns
  */
 function replaceAutonavMacro( contentCatalog, pages, nav, component, version, findModuleMainPage=true ) {
-    const modulePath = nav.dirname+"/pages"
     const moduleName = nav.src.module
     let modulePages = pages.filter(page => page.src.module === moduleName)
     //-------------
     // Add virtual files for all directories that do not have corresponding adoc files in their root directory.
     // Then, update the module's pages array accordingly and also add them to the array of pages for later functions.
     //-------------
-    let addedVirtualPages = FileCreator.createVirtualFilesForFolders(contentCatalog,component,version,moduleName,modulePages,modulePath)
+    let addedVirtualPages = FileCreator.createVirtualFilesForFolders(contentCatalog,component,version,moduleName,modulePages)
     modulePages = [...modulePages,...addedVirtualPages]
     pages = [...pages,...addedVirtualPages]
 
