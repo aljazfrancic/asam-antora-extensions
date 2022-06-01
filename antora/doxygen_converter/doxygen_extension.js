@@ -6,7 +6,11 @@ const fs = require("fs");
 // const File = require('../file')
 const FileCreator = require('../../core/file_creator.js')
 
-
+/**
+ * Creates Doxygen output and converts it to Antora pages.
+ * @param {String} workdir - The work directory in relation to where the Antora pipeline is running. Typically used with specific Docker images.
+ * @param {Object} contentAggregate - The aggregated content provided by Antora.
+ */
 function convertDoxygen(workdir, contentAggregate) {
         // ----------------
         // Define variables
@@ -49,6 +53,8 @@ function convertDoxygen(workdir, contentAggregate) {
                     // b) convert its content using cmake to html (doxygen), then
                     // c) move the generated content to the target folder
                     // ----------------
+                    // TODO: Replace this part if the doxygen generator is not triggered by the Antora pipeline anymore.
+                    // May be replaced with a function retrieving the content per component-version-combination instead, if not stored in the same repo anyway.
                     process.chdir(converterDirectory)
                     fs.mkdirSync(temporaryDirectory, { recursive: true })
                     let doxygen_generator = exec(`sh local_build_doxygen.sh ${interfaceVersion} ${documentDate} ${temporaryDirectory} ${targetOutputDirectory}`, {stdio: 'inherit'})
@@ -60,6 +66,7 @@ function convertDoxygen(workdir, contentAggregate) {
                     // b) delete the obsolete html files and then
                     // c) return the updated content as virtual files
                     // ----------------
+                    // TODO: Integrate the python features directly into this function.
                     const python = spawnSync('python3', ['doxygen_converter.py', targetOutputDirectory, convertedOutputDirectory, navOutputDirectory,imgDirOffset+imgDirectory, pathInModule])
                     console.log(python.stdout.toString())
                     console.log(python.stderr.toString())

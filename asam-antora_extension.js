@@ -23,8 +23,8 @@ const ContentAnalyzer = require('./core/content_analyzer.js')
 const Macros = require('./antora/asam_macros/asam_macros.js')
 const ConsistentNumbering = require('./antora/consistent_numbering/numbered_titles.js');
 const CrossrefReplacement = require('./antora/crossref_replacement/crossref_replacement.js')
-const Doxygen = require("./antora/doxygen_converter/doxygen_extension.js") // TODO
-const EA = require("./antora/ea_converter/ea_extension.js") // TODO
+const Doxygen = require("./antora/doxygen_converter/doxygen_extension.js")
+const EA = require("./antora/ea_converter/ea_extension.js")
 const Keywords = require('./antora/keywords_overview/keywords_overview.js');
 const Orphans = require('./antora/orphan_pages/orphan_pages.js');
 //-------------
