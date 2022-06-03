@@ -5,7 +5,6 @@
 // The following functions are included:
 // * setStartingChapterIndex
 // * determineNextChapterIndex
-// * getRelativeSectionNumberWithIncludes
 // * unsetSectnumsAttributeInFile
 // * addTitleoffsetAttributeToPage
 // * checkForSectnumsAttribute
@@ -82,79 +81,6 @@ function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appen
 }
 
 /**
- * Determines the number of relevant sections up to a maximum section value.
- * This function also parses all included files that may be relevant depending on their accumulated leveloffset value.
- * @param {*} pages - An array of pages.
- * @param {Object} page - The current page.
- * @param {Number} targetSectionLevel - The sectionlevel that is currently relevant.
- * @param {String} startText - Optional: If set, finds a specific anchor of type [#anchor] or [[anchor]].
- * @returns {Array} - The determined number of sections for the targetSectionLevel and below.
- */
-function getRelativeSectionNumberWithIncludes(pages,page,targetSectionLevel,startText="") {
-    let currentTargetSectionLevel = targetSectionLevel
-    let relativeIndex = startText ? [1] : [0]
-    let content = page.contents.toString()
-    const reSectionStart = /^(=+)\s[^\n]+/
-    const reIncludeStart = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/
-    //-------------
-    // If the parameter startText is defined, limit the content to everything above that anchor.
-    //-------------
-    if (startText){
-        const indexType1 = content.indexOf("[#"+startText+"]")
-        const indexType2 = content.indexOf("[["+startText+"]]")
-        if (indexType1 > -1) {
-            content = content.slice(0,indexType1);
-        }
-        else if(indexType2 > -1) {
-            content = content.slice(0,indexType2)
-        }
-    }
-    //-------------
-    // Reverse through the remaining content line by line and get all relevant sections.
-    // If any files are included and they are adoc files, also traverse through them to determine the complete number of sections the page will have after Asciidoctor has compiled the final content.
-    //-------------
-    content.split("\n").reverse().forEach(line => {
-        const sectionSearchResult = line.match(reSectionStart)
-        const includeSearchResult = line.match(reIncludeStart)
-        //-------------
-        // Handle an included file in case the included sections could be of relevance (i.e. they are level 2 after inclusion).
-        // This takes the leveloffset attribute into account.
-        // NOTE: This does NOT handle included files with tags correctly!
-        //-------------
-        if (includeSearchResult && includeSearchResult.length > 0) {
-            const leveloffset = includeSearchResult[3] ? targetSectionLevel - includeSearchResult[3] : targetSectionLevel
-            if (leveloffset > 0)
-            {
-                const targetPage = ContentAnalyzer.determineTargetPageFromIncludeMacro(pages, page, includeSearchResult[1])
-                if (targetPage){
-                    let includedSectionNumbers = getRelativeSectionNumberWithIncludes(pages,targetPage,leveloffset)
-                    for (let i in includedSectionNumbers) {
-                        relativeIndex[i] += includedSectionNumbers[i]
-                    }
-                }
-            }
-        }
-        //-------------
-        // Handle a found section depending on its level vs. the target level.
-        //-------------
-        if (sectionSearchResult && sectionSearchResult.length > 0) {
-            const foundSectionLevel = sectionSearchResult[1].split("=").length - 1
-            if (foundSectionLevel === currentTargetSectionLevel) {
-                relativeIndex[0] = relativeIndex[0] + 1
-            }
-            else if(foundSectionLevel === currentTargetSectionLevel - 1) {
-                relativeIndex.reverse()
-                relativeIndex.push(1)
-                relativeIndex.reverse()
-                currentTargetSectionLevel = foundSectionLevel
-            }
-            // else {console.log("irrelevant section")}
-        }
-    })
-    return relativeIndex
-}
-
-/**
  * Adds "sectnums!" to a page's header.
  * @param {Object} page - The page that needs to unset the sectnums attribute in its header.
  */
@@ -218,7 +144,7 @@ function checkForRoleInLine( content, line, currentRole ) {
 /**
  * Determines the number of images and tables that follow ASAM's anchor conventions as well as level 2 sections.
  * Also traverses through included files.
- * TODO: Join with features of getRelativeSectionNumberWithIncludes as that one is currently unused.
+ * TODO: Join with features of getRelativeSectionNumberWithIncludes from content_analyzer.js (core).
  * @param {*} pages - - An array of pages.
  * @param {Object} page - The current page.
  * @param {Number} leveloffset - A given leveleoffset for sections and other numbers.
@@ -302,7 +228,6 @@ function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0
 module.exports = {
     setStartingChapterIndex,
     determineNextChapterIndex,
-    getRelativeSectionNumberWithIncludes,
     unsetSectnumsAttributeInFile,
     addTitleoffsetAttributeToPage,
     checkForSectnumsAttribute,
