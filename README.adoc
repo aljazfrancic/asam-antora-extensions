@@ -119,7 +119,7 @@ Apply these in the respective nav.adoc file.
 Check the Editorial Guide in the Project Guide for more information.
 
 |Doxygen output conversion
-|link:doxygen_converter/doxygen_extension.js[doxygen_extension.js]
+|link:antora/doxygen_converter/doxygen_extension.js[doxygen_extension.js]
 |None
 |no
 |The `workdir` attribute is shared with the Enterprise Architect extension.
@@ -128,7 +128,7 @@ This can be the case if the Antora Docker image is set up this way.
 Note that this extension runs per component/version and requires additional configuration in each antora.yml file.
 
 |Enterprise Architect output conversion
-|link:ea_converter/ea_extension.js[ea_extension.js]
+|link:antora/ea_converter/ea_extension.js[ea_extension.js]
 |None
 |no
 |The `workdir` attribute is shared with the Doxygen extension.
@@ -137,11 +137,24 @@ This can be the case if the Antora Docker image is set up this way.
 Note that this extension runs per component/version and requires additional configuration in each antora.yml file.
 
 |Support for tabs-based tables
-|None
 |link:ascciidoctor/tabs-block/extension.js[extension.js]
+|None
 |yes
 |Requires the link:ascciidoctor/tabs-block/behavior.js[behavior.js] script to be included in the Antora UI.
 This is the case by default for the standard ASAM Antora UI.
+
+|Converting Asciidoctor mapping to Antora navigation
+|link:antora/nav_from_index/nav_from_index.js[nav_from_index.js]
+|None
+|yes
+|Converts an mapping with includes for Asciidoctor into a navigation file for Antora with xrefs.
+
+|List of figures and tables
+|link:antora/loft/loft.js[loft.js]
+|None
+|no
+|Creates a list of figures and tables that comply with the ASAM anchor requirements.
+
 
 |===
 
@@ -205,3 +218,11 @@ include::antora/keywords_overview/description.adoc[leveloffset=+2]
 ---
 
 include::antora/orphan_pages/description.adoc[leveloffset=+2]
+
+---
+
+include::antora/nav_from_index/description.adoc[leveloffset=+2]
+
+---
+
+include::antora/loft/description.adoc[leveloffset=+2]

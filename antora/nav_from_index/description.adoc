@@ -1,0 +1,39 @@
+= Navigation from index
+This extension scans all pages and finds passages marked with the AsciiDoc attribute "antora_mapping".
+All content between ":antora_mapping: true" and either a negation of the attribute (":!antora_mapping:" or ":antora_mapping!:") or the end of the page are considered input for the navigation file for this page's module.
+
+== Configuration
+The nav_from_index extension is always active.
+
+To convert a part of a page to a navigation file, mark that section as follows:
+[source]
+----
+:antora_mapping: true
+== A heading
+\include::some_file.adoc[leveloffset=+1]
+=== Some lower heading
+\include::some_other_file.adoc[leveloffset=+2]
+:!antora_mapping:
+----
+
+The content between ":antora_mapping: true" and ":!antora_mapping:" will be converted.
+
+The outcome of the content example above is then:
+
+[source]
+----
+* A heading
+* xref:some_file.adoc[]
+** Some lower heading
+** xref:some_other_file.adoc[]
+----
+
+== How it works
+The extension scans each file for each component-version-combination.
+If the attribute "antora_mapping" is found, every following line will be analyzed and converted, if necessary.
+
+Exceptions that will not be converted are:
+
+* a line with `ifdef::use-antora-rules[]`
+* a line with `endif::[]`
+* an empty line
