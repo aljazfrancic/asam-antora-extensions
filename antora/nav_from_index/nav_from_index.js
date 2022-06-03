@@ -10,8 +10,17 @@
 // Author: Philip Windecker
 //-------------
 //-------------
+const FileCreator = require('../../core/file_creator.js')
 
-
+/**
+ * Parses all files and replaces the nav.adoc file entry in case the antora_mapping attribute is set.
+ * Replaces everything between ":antora_mapping: true" and one of the following:
+ * - ":!antora_mapping:"
+ * - ":antora_mapping!:"
+ * - EOF
+ * @param {*} pages - Array of all pages in a component-version-combination.
+ * @param {*} navFiles - Array of all navigation files in a component-version-combination.
+ */
 function createAntoraNavigationFromIndex( pages, navFiles ) {
     for (let page of pages) {
         const reAntoraMapping = /:(!)?antora_mapping(!)?:(.*)/;
@@ -20,13 +29,13 @@ function createAntoraNavigationFromIndex( pages, navFiles ) {
         const reExceptions = /ifndef::use-antora-rules\[\]|endif::\[\]/
         const reLeveloffset = /leveloffset=\+([^\],;]*)/
         let pageContent = page.contents.toString().split("\n")
-        let considerForMapping = False
+        let considerForMapping = false
         let newNavContent = []
         for (let line of pageContent) {
             const result = reAntoraMapping.exec(line)
             const resExceptions = reExceptions.exec(line)
-            if (result[1] || result[2]) {considerForMapping = False}
-            else if (result) {considerForMapping = True}
+            if (result && (result[1] || result[2])) {considerForMapping = false}
+            else if (result) {considerForMapping = true}
             else if (resExceptions) {continue}
             else if (considerForMapping) {
                 const resInclude = reInclude.exec(line)
@@ -34,22 +43,28 @@ function createAntoraNavigationFromIndex( pages, navFiles ) {
                 if (resInclude) {
                     const xrefLink = resInclude[1]
                     const resLeveloffset = reLeveloffset.exec(line)
-                    const level = resLeveloffset ? resLeveloffset[1] + 1 : 1
-                    newNavContent.push("*"*level + " xref:"+xrefLink+"[]")
+                    const level = resLeveloffset ? parseInt(resLeveloffset[1]) : 1
+                    newNavContent.push("*".repeat(level) + " xref:"+xrefLink+"[]")
                 }
                 else if (resSection) {
                     const level = (line.match(/=/g)||[]).length -1
                     const sectionText = line.substring(level+1).trim()
-                    newNavContent.push("*"*level + " " +sectionText)
+                    newNavContent.push("*".repeat(level) + " " +sectionText)
                 }
+                else if (line.trim().length>0) {newNavContent.push(line)}
             }
         }
-        console.log(newNavContent)
+        if (newNavContent.length>0) {
+            if (navFiles && navFiles.length > 0) {
+                let nav = navFiles.filter(x => {x.src.module === page.src.component})
+                if (nav && nav.length > 0) {nav[0].contents = Buffer.from(newNavContent.join("\n"))}
+                else {navFiles[0].contents = Buffer.from(newNavContent.join("\n"))}
+            }
+            else {
+                console.warn("Cannot convert mapping to navigation. Missing nav file for",page.src.path)
+            }
+        }
     }
-    // const modulePath = page.src.relative
-
-    // const linkText = `xref:${moduleName}:${modulePath}[]`
-
 }
 
 module.exports = {

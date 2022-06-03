@@ -102,6 +102,10 @@ module.exports.register = function ({ config }) {
                 //-------------
                 navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
                 //-------------
+                // Addon AsciiNav: Parse files and create navigation if attribute "antora_mapping" is used.
+                //-------------
+                AsciiNav.createAntoraNavigationFromIndex(pages, navFiles)
+                //-------------
                 // Addon ConsistentNumbering: Generate and apply consistent numbers for sections, titles, and (if activated) figures and tables
                 // Required setting: numbered_titles: true
                 // Optional setting: section_number_style: "iso"
@@ -117,7 +121,6 @@ module.exports.register = function ({ config }) {
                 if (anchorPageMap.size > 0 && parsedConfig.localToGlobalReferences) {
                     pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
                 }
-                AsciiNav.createAntoraNavigationFromIndex(pages, navFiles)
             })
         })
       })
