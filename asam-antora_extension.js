@@ -21,6 +21,7 @@ const ContentAnalyzer = require('./core/content_analyzer.js')
 // 2) Addons
 //-------------
 const Macros = require('./antora/asam_macros/asam_macros.js')
+const AsciiNav = require('./antora/nav_from_index/nav_from_index.js')
 const ConsistentNumbering = require('./antora/consistent_numbering/numbered_titles.js');
 const CrossrefReplacement = require('./antora/crossref_replacement/crossref_replacement.js')
 const Doxygen = require("./antora/doxygen_converter/doxygen_extension.js")
@@ -116,6 +117,7 @@ module.exports.register = function ({ config }) {
                 if (anchorPageMap.size > 0 && parsedConfig.localToGlobalReferences) {
                     pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
                 }
+                AsciiNav.createAntoraNavigationFromIndex(pages, navFiles)
             })
         })
       })
