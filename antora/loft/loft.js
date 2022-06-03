@@ -26,12 +26,18 @@ function createLoft(contentCatalog, anchorPageMap, navFiles, pages, component, v
     let figuresPage = createListOfFiguresPage(contentCatalog, pages, figureMap, targetModule, component, version)
     let tablesPage = createListOfTablesPage(contentCatalog, pages, tableMap, targetModule, component, version)
 
-    navFiles[0].contents = Buffer.from(navFiles[0].contents.toString().concat("\n",`* xref:${figuresPage.src.relative}[]`,"\n",`* xref:${tablesPage.src.relative}[]`))
+    if (figuresPage) {
+        navFiles[0].contents = Buffer.from(navFiles[0].contents.toString().concat("\n",`* xref:${figuresPage.src.relative}[]`))
+    }
+
+    if (tablesPage) {
+        navFiles[0].contents = Buffer.from(navFiles[0].contents.toString().concat("\n",`* xref:${tablesPage.src.relative}[]`))
+    }
 
 }
 
 function createListOfFiguresPage( contentCatalog, pages, figureMap, targetModule, component, version ){
-    if (!figureMap || figureMap.length === 0) {return {}}
+    if (!figureMap || figureMap.length === 0) {return null;}
     let newContent = ['= List of figures']
     newContent.push('')
     newContent.push('[%header, cols="10,90", grid=none, frame=none]')
@@ -48,11 +54,18 @@ function createListOfFiguresPage( contentCatalog, pages, figureMap, targetModule
         newContent.push(`|Figure ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
         entryIndex += 1
     }
+    newContent.push("|===")
+    let targetPage = pages.find(x => x.src.relative === "loft/list_of_figures.adoc")
+    console.log(targetPage)
+    if (targetPage) {
+        targetPage.contents = Buffer.from(newContent.join("\n"))
+        return null;
+    }
     return (FileCreator.createNewVirtualFile(contentCatalog, "list_of_figures.adoc", "loft", targetModule, component, version, newContent.join("\n"), base))
 }
 
 function createListOfTablesPage( contentCatalog, pages, tableMap, targetModule, component, version ){
-    if (!tableMap || tableMap.length === 0) {return {}}
+    if (!tableMap || tableMap.length === 0) {return null;}
     let newContent = ['= List of tables']
     newContent.push('')
     newContent.push('[%header, cols="10,90", grid=none, frame=none]')
@@ -68,6 +81,12 @@ function createListOfTablesPage( contentCatalog, pages, tableMap, targetModule, 
         const title = ContentAnalyzer.getReferenceNameFromSource(pages, page, anchor)
         newContent.push(`|Table ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
         entryIndex += 1
+    }
+    newContent.push("|===")
+    let targetPage = pages.find(x => x.src.relative === "loft/list_of_tables.adoc")
+    if (targetPage) {
+        targetPage.contents = Buffer.from(newContent.join("\n"))
+        return null;
     }
     return (FileCreator.createNewVirtualFile(contentCatalog, "list_of_tables.adoc", "loft", targetModule, component, version, newContent.join("\n"), base))
 }
