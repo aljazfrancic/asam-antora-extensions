@@ -151,9 +151,11 @@ function getReferenceNameFromSource( pages, page, anchor ) {
         switch (resultAnchorType[1]) {
             case "fig":
                 result = resultNextCaption;
+                if (result) {returnValue = result[1]}
                 break;
             case "tab":
                 result = resultNextCaption;
+                if (result) {returnValue = result[1]}
                 break;
             case "top":
                 returnValue = getAltTextFromTitle( page, content );
@@ -175,6 +177,7 @@ function getReferenceNameFromSource( pages, page, anchor ) {
                 returnValue = getAltTextFromTitle( page, content );
                 break;
         }
+
     }
     else {
         returnValue = getAltTextFromTitle( page, content );
