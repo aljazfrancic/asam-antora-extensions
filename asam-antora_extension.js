@@ -28,6 +28,7 @@ const Doxygen = require("./antora/doxygen_converter/doxygen_extension.js")
 const EA = require("./antora/ea_converter/ea_extension.js")
 const Keywords = require('./antora/keywords_overview/keywords_overview.js');
 const Orphans = require('./antora/orphan_pages/orphan_pages.js');
+const Loft = require("./antora/loft/loft.js");
 //-------------
 //-------------
 // Register this module in antora so it is used by the Antora pipeline.
@@ -105,6 +106,12 @@ module.exports.register = function ({ config }) {
                 // Addon AsciiNav: Parse files and create navigation if attribute "antora_mapping" is used.
                 //-------------
                 AsciiNav.createAntoraNavigationFromIndex(pages, navFiles)
+                //-------------
+                // Addon Loft: Creates a List Of Figures and Tables
+                //-------------
+                if (parsedConfig.loft) {
+                    Loft.createLoft(anchorPageMap, navFiles)
+                }
                 //-------------
                 // Addon ConsistentNumbering: Generate and apply consistent numbers for sections, titles, and (if activated) figures and tables
                 // Required setting: numbered_titles: true
