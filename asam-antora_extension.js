@@ -28,6 +28,7 @@ const Doxygen = require("./antora/doxygen_converter/doxygen_extension.js")
 const EA = require("./antora/ea_converter/ea_extension.js")
 const Keywords = require('./antora/keywords_overview/keywords_overview.js');
 const Orphans = require('./antora/orphan_pages/orphan_pages.js');
+const LostAndFound = require('./antora/orphan_pages/orphan_files.js')
 const Loft = require("./antora/loft/loft.js");
 //-------------
 //-------------
@@ -128,6 +129,7 @@ module.exports.register = function ({ config }) {
                 if (anchorPageMap.size > 0 && parsedConfig.localToGlobalReferences) {
                     pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
                 }
+                LostAndFound.listAllUnusedPartials(contentCatalog, component, version, logger)
             })
         })
       })
