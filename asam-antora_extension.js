@@ -129,7 +129,14 @@ module.exports.register = function ({ config }) {
                 if (anchorPageMap.size > 0 && parsedConfig.localToGlobalReferences) {
                     pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
                 }
-                LostAndFound.listAllUnusedPartials(contentCatalog, component, version, logger)
+                //-------------
+                // Addon LostAndFound: Lists content that is not used.
+                // Note that this currently focusses on Asciidoc files only.
+                // Since some features may require adoc content in non-adoc files, this is not conclusive whether a partial is actually used or not!
+                //-------------
+                if (parsedConfig.listUnusedPartials){
+                    LostAndFound.listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, logger)
+                }
             })
         })
       })

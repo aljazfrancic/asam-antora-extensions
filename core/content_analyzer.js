@@ -39,7 +39,9 @@ function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath ) {
     if (!Array.isArray(includePath)) {
         includePath = includePath.split("/")
     }
-    let currentPath = thisPage.out.dirname.split("/")
+    let currentPath = thisPage.src.path.split("/")
+    currentPath.pop()
+    if (thisPage.out) {currentPath = thisPage.out.dirname.split("/")}
     includePath.forEach(part => {
         if (part === "..") {currentPath = currentPath.slice(0,-1)}
         else if (part ===".") {}
