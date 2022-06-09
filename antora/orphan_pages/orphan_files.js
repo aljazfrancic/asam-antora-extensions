@@ -1,4 +1,15 @@
 'use strict'
+//-------------
+//-------------
+// Module addition for generating a list of all adoc partials not included anywhere in the output.
+// It also allows listing pages and partials with the "draft" tag.
+// This module provides a central function, 'listAllUnusedPartialsAndDraftPages'.
+//
+//-------------
+//-------------
+// Author: Philip Windecker
+//-------------
+//-------------
 
 const ContentAnalyzer = require('../../core/content_analyzer.js')
 
@@ -17,7 +28,8 @@ function listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, 
     const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].asciidoc.attributes
     const pages = contentCatalog.findBy({ component, version, family: 'page' }).filter((page) => page.out)
     const unpublished = contentCatalog.findBy({ component, version, family: 'page' }).filter((page) => !page.out)
-    const partials = contentCatalog.findBy({ component, version ,family: 'partial'}).filter((partial) => partial.mediaType === "text/asciidoc")
+    const adocPartials = contentCatalog.findBy({ component, version ,family: 'partial'}).filter((partial) => partial.mediaType === "text/asciidoc")
+    const allPartials = contentCatalog.findBy({ component, version ,family: 'partial'})
     const contentFiles = contentCatalog.findBy({component,version})
     let includedPartials = []
     let publishedDraftPages = [],
@@ -37,10 +49,13 @@ function listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, 
             unpublishedDraftPages.push(page)
         }
     })
-    partials.forEach((page) => {
-        if (listPagesWithDraftFlag(page)) {
-            draftPartials.push(page)
+    adocPartials.forEach((partial) => {
+        if (listPagesWithDraftFlag(partial)) {
+            draftPartials.push(partial)
         }
+    })
+    allPartials.forEach((partial) => {
+        includedPartials = includedPartials.concat(listAllPartialsUsedInPlantumlFiles(contentFiles,allPartials, partial, componentAttributes, logger))
     })
     includedPartials = [...new Set(includedPartials)];
     const notIncludedPartials = contentCatalog
@@ -151,6 +166,44 @@ function listPagesWithDraftFlag(page) {
         if (reDraft.exec(line)) {return true}
     }
     return false
+}
+
+/**
+ * Lists all partials that are included in (osc2) plantuml files.
+ * @param {*} contentFiles - All relevant files.
+ * @param {*} partials - All relevant partials.
+ * @param {*} partial - The current partial.
+ * @param {*} componentAttributes - The attributes set in the component or the site.yml.
+ * @param {*} logger - The logger for creating logs.
+ * @returns {Array} - The files that are correctly included in this partial.
+ */
+function listAllPartialsUsedInPlantumlFiles(contentFiles,partials, partial, componentAttributes, logger) {
+    const reInclude = /adoc- [^:]+: (.+\.adoc) *'\/|adoc-\S+ (.*\.adoc) *'\//m;
+    const reIgnore = /adoc-fileignore/m;
+    const partialContent = partial.contents.toString().split("\n")
+    let includedFiles = []
+    for (let line of partialContent) {
+        const resIgnore = reIgnore.exec(line)
+        if (resIgnore) {return null}
+        let resInclude = reInclude.exec(line)
+        let includedFile
+        if (resInclude) {
+            if(!resInclude[1] && resInclude[2]) {resInclude[1] = resInclude[2]}
+            for (let i=0; i < partial.src.relative.split("/").length - 3; i++ ) {resInclude[1] = "../"+resInclude[1];}
+            includedFile = ContentAnalyzer.determineTargetPageFromIncludeMacro(contentFiles, partial, resInclude[1], false)
+            if (line.includes("map_set_map_file")) {console.log(includedFile); console.log(partial.src.relative.split("/").length); console.log(resInclude[1])}
+            if(includedFile) {
+                includedFiles.push(includedFile)
+                if (line.includes("map_set_map_file")) {console.log("pushed"); console.log(includedFiles.indexOf(includedFile))}
+                let subIncludes = listIncludedPartialsAndPages(contentFiles, partials, includedFile, componentAttributes, logger)
+                if (subIncludes) {
+                    includedFiles = includedFiles.concat(subIncludes)
+                }
+                if (line.includes("map_set_map_file")) {console.log("check"); console.log(includedFiles.indexOf(includedFile))}
+            }
+        }
+    }
+    return includedFiles
 }
 
 module.exports = {
