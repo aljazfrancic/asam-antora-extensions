@@ -89,6 +89,7 @@ May be configured to include also all pages in all subfolders, or start in a spe
 |None
 |yes
 |This is based on a provided example from Antora.
+Additionally, it optionally lists unused partials as well as files with the "draft" tag.
 
 |Creating a <<Keyword-overview page>>
 |link:antora/keywords_overview/keywords_overview.js[keywords_overview.js]
