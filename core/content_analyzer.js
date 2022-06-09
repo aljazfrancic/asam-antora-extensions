@@ -33,9 +33,10 @@
  * @param {*} pages - An array of all pages.
  * @param {Object} thisPage - The page where the include macro was found.
  * @param {*} includePath - The path extracted from the page.
+ * @param {Boolean} published - Optional: If false, also considers content that is not published. Useful for partials.
  * @returns {Object} - The identified page.
  */
-function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath ) {
+function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath, published = true ) {
     if (!Array.isArray(includePath)) {
         includePath = includePath.split("/")
     }
@@ -48,9 +49,11 @@ function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath ) {
         else {currentPath.push(part)}
     })
     const targetPath = currentPath.join("/")
-    let includedPage = pages.filter(page => page.out && page.out.dirname +"/"+ page.src.basename === targetPath)[0]
+    let includedPage = published ? pages.filter(page => page.out && page.out.dirname +"/"+ page.src.basename === targetPath)[0] : pages.filter(page => page.src.path === targetPath)[0]
     return includedPage
 }
+
+
 
 /**
  * Extracts all manually defined anchors from an AsciiDoc file. Also traverses through included files.
