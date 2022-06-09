@@ -2,7 +2,18 @@
 
 const ContentAnalyzer = require('../../core/content_analyzer.js')
 
+/**
+ * Lists all partials that are not included in any hosted Antora page directly or indirectly.
+ * Additionally, it lists all pages and partials where the tag "draft" is used to comment out parts.
+ * @param {Object} contentCatalog - The aggregated and classified content catalog by Antora.
+ * @param {String} component - The current Antora component.
+ * @param {String} version - The current Antora component version.
+ * @param {*} logger - The logger for creating logs.
+ */
 function listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, logger) {
+    //-------------
+    // Create sets of relevant pages and partials for the analysis.
+    //-------------
     const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].asciidoc.attributes
     const pages = contentCatalog.findBy({ component, version, family: 'page' }).filter((page) => page.out)
     const unpublished = contentCatalog.findBy({ component, version, family: 'page' }).filter((page) => !page.out)
@@ -12,6 +23,9 @@ function listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, 
     let publishedDraftPages = [],
         unpublishedDraftPages = [],
         draftPartials = []
+    //-------------
+    // Analyze all pages and partials.
+    //-------------
     pages.forEach((page) => {
         includedPartials = includedPartials.concat(listIncludedPartialsAndPages(contentFiles,pages, page, componentAttributes, logger))
         if (listPagesWithDraftFlag(page)) {
@@ -28,11 +42,13 @@ function listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, 
             draftPartials.push(page)
         }
     })
-
     includedPartials = [...new Set(includedPartials)];
     const notIncludedPartials = contentCatalog
         .findBy({component, version, family: 'partial', mediaType: "text/asciidoc"})
         .filter((partial) => (!includedPartials.includes(partial)))
+    //-------------
+    // Print the results to the console via the logger.
+    //-------------
     notIncludedPartials.forEach((file) => {logger.warn({ file:file.src, source: file.src.origin }, "not included partial detected")})
     publishedDraftPages.forEach((page) => {logger.warn({ file:page.src, source: page.src.origin }, "published page with draft section detected")})
     unpublishedDraftPages.forEach((page) => {logger.warn({ file:page.src, source: page.src.origin }, "unpublished page with draft section detected")})
@@ -40,6 +56,16 @@ function listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, 
 
 }
 
+/**
+ * Lists all included pages and partials for a page, applying attributes in include lines first.
+ * @param {Array} contentFiles - All relevant files.
+ * @param {Array} pages - All relevant published pages.
+ * @param {Object} page - The current page.
+ * @param {Object} componentAttributes - The attributes set in the component or the site.yml.
+ * @param {*} logger - The logger for creating logs.
+ * @param {Object} inheritedAttributes - The already aggregated attributes from this page. If child page, pass the attributes of the parent page that have been set up to this line.
+ * @returns {Array} - The files that are correctly included in this page.
+ */
 function listIncludedPartialsAndPages(contentFiles,pages, page, componentAttributes, logger, inheritedAttributes = {}) {
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[[^\]]*\]/m;
     const reIncludeAlt = /^\s*include::([^\[]*{[^}]+}[^\]]*)\[[^\]]*\]/m;
@@ -99,12 +125,25 @@ function listIncludedPartialsAndPages(contentFiles,pages, page, componentAttribu
     return includedFiles
 }
 
+/**
+ * Determines the file the link of an include is pointing to in case this is a partial with Antora url.
+ * @param {Array} contentFiles - An array of all relevant files.
+ * @param {Object} thisPage - The current page.
+ * @param {String} pathPrefix - A prefix for the path, as determined from the include macro.
+ * @param {String} includePath - The path after the prefix, as determined from the include macro.
+ * @returns {Object} - The determined partial, if any.
+ */
 function determineTargetPartialFromIncludeMacro(contentFiles, thisPage, pathPrefix, includePath) {
     const prefixParts = pathPrefix.split(":")
     return contentFiles.find(file => file.src.family === "partial" && file.src.module === prefixParts.length > 1 ? prefixParts.at(-2) : thisPage.src.module &&
     file.src.relative === includePath)
 }
 
+/**
+ * Checks a virtual file on the use of "ifdef::draft[]".
+ * @param {Object} page - The current page.
+ * @returns {Boolean} - States whether the "draft" flag was found or not.
+ */
 function listPagesWithDraftFlag(page) {
     const pageContent = page.contents.toString().split("\n")
     const reDraft = /ifdef::draft\[\]/
