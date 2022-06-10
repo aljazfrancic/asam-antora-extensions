@@ -120,7 +120,7 @@ function listIncludedPartialsAndPages(contentFiles,pages, page, componentAttribu
                 includedFile = ContentAnalyzer.determineTargetPageFromIncludeMacro(contentFiles, page, resInclude[2])
             }
             else {
-                includedFile = determineTargetPartialFromIncludeMacro(contentFiles, page, resInclude[1],resInclude[2])
+                includedFile = ContentAnalyzer.determineTargetPartialFromIncludeMacro(contentFiles, page, resInclude[1],resInclude[2])
             }
             if(includedFile) {
                 includedFiles.push(includedFile)
@@ -138,20 +138,6 @@ function listIncludedPartialsAndPages(contentFiles,pages, page, componentAttribu
         }
     }
     return includedFiles
-}
-
-/**
- * Determines the file the link of an include is pointing to in case this is a partial with Antora url.
- * @param {Array} contentFiles - An array of all relevant files.
- * @param {Object} thisPage - The current page.
- * @param {String} pathPrefix - A prefix for the path, as determined from the include macro.
- * @param {String} includePath - The path after the prefix, as determined from the include macro.
- * @returns {Object} - The determined partial, if any.
- */
-function determineTargetPartialFromIncludeMacro(contentFiles, thisPage, pathPrefix, includePath) {
-    const prefixParts = pathPrefix.split(":")
-    return contentFiles.find(file => file.src.family === "partial" && file.src.module === prefixParts.length > 1 ? prefixParts.at(-2) : thisPage.src.module &&
-    file.src.relative === includePath)
 }
 
 /**

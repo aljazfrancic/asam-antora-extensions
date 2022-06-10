@@ -20,6 +20,7 @@
 // updateMapEntry
 // addOrUpdateAnchorMapEntry (exposed)
 // generateMapsForPages (exposed)
+// determineTargetPartialFromIncludeMacro (exposed)
 //
 //-------------
 //-------------
@@ -511,6 +512,20 @@ function generateMapsForPages( mapInput ) {
     return { keywordPageMap, rolePageMap, anchorPageMap }
 }
 
+/**
+ * Determines the file the link of an include is pointing to in case this is a partial with Antora url.
+ * @param {Array} contentFiles - An array of all relevant files.
+ * @param {Object} thisPage - The current page.
+ * @param {String} pathPrefix - A prefix for the path, as determined from the include macro.
+ * @param {String} includePath - The path after the prefix, as determined from the include macro.
+ * @returns {Object} - The determined partial, if any.
+ */
+ function determineTargetPartialFromIncludeMacro(contentFiles, thisPage, pathPrefix, includePath) {
+    const prefixParts = pathPrefix.split(":")
+    return contentFiles.find(file => file.src.family === "partial" && file.src.module === prefixParts.length > 1 ? prefixParts.at(-2) : thisPage.src.module &&
+    file.src.relative === includePath)
+}
+
 
 module.exports = {
     determineTargetPageFromIncludeMacro,
@@ -525,5 +540,6 @@ module.exports = {
     getNavEntriesByUrl,
     generateMapsForPages,
     getKeywordPageMapForPages,
-    addOrUpdateAnchorMapEntry
+    addOrUpdateAnchorMapEntry,
+    determineTargetPartialFromIncludeMacro
 }
