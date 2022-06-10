@@ -71,6 +71,7 @@ function tabsBlock () {
   })
 }
 
+
 module.exports.register = (registry, context) => {
   registry.block('tabs', tabsBlock)
 }

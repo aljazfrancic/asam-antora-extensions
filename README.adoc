@@ -1,7 +1,8 @@
-= ASAM Antora And Asciidoctor Extensions
+= ASAM's Antora and Asciidoctor extensions
 
-This repository contains the ASAM Antora and Asciidoctor extensions.
-These are a collection of features that can be added to the Antora pipeline through the playbook and/or the CLI as well as Asciidoctor extensions that work together with the Antora extensions.
+This repository contains ASAM's Antora and Asciidoctor extensions.
+It contains a collection of features that can be added to the Antora pipeline through the playbook and/or the CLI as well as Asciidoctor extensions that work together with the Antora extensions.
+They are designed to be used with Antora, not base Asciidoctor!
 
 TIP: For more information on how to write an Antora extension, see https://docs.antora.org/antora/latest/extend/extensions/[the official extension guide] and check out the relevant https://gitlab.com/antora/antora/-/tree/main/packages[package repositories], particularly their `devdocs` folders.
 
@@ -12,17 +13,154 @@ However, not all functions that ASAM requires for an efficient and partially aut
 For this reason, an Antora extension was created.
 
 
-== ASAM extension features
-The ASAM Antora extension adds the following features to Antora:
+== Structure
+The extensions in this repo are bundled in three main extensions:
 
-* Support for the <<ASAM Antora macros>>
-* Identifying and (optional) listing <<Orphan pages>>
-* Creating a <<Keyword-overview page>>
-* <<Sequential numbering in Antora>>
-* Section numbers in <<ISO-2145 style>>
-* Replacement of <<Local to global reference replacement,local references with global references>> for cross-page referencing
+* link:asam-antora_extension.js[]: Collects all extensions for the Antora pipeline.
+* link:asam-asciidoctor_extensions-registered.js[]: Contains all extensions that use the "register" function in Asciidoctor.
+* link:asam-asciidoctor_extensions.js[]: Contains all extensions that register as anonymous functions in Asciidoctor.
 
-NOTE: All following examples assume the extension is located under "./antora_extensions", where "." is the location of the "site.yml" file (the Antora playbook).
+To get access to all the features, you must add all three to the Antora site.yml file under the asciidoctor and antora extensions attribute respectively.
+See <<Setup>> below for more information.
+
+All addons or sub-extensions are sorted by type ("antora" or "asciidoctor") and contained in their individual folders.
+If an extension consists of multiple functions, these may be further split into feature functions and helper functions.
+Note that some feature require both an Antora and an Asciidoctor extension to work as expected.
+
+In addition to the extension scripts, the folder "core" also contains core features that are shared between multiple extensions.
+These, in particular, deal with the interpretation and change of base .adoc content.
+
+
+== Setup
+To add the ASAM extensions to an Antora project, follow these steps:
+
+. Download or check out this repository into the project.
+Alternatively, add it as a submodule and update it to point to master, not a specific commit.
+. You need to activate the extensions in your project file ('site.yml').
+To do so, the asciidoc.extensions attribute and the antora.extensions attribute must be updated.
+If your project file already contains these entries, you only need to add the missing lines (see below).
+Otherwise, open the project's 'site.yml' file and edit it as follows:
++
+[source,YAML]
+----
+asciidoc:
+  extensions:
+  # there may be other extensions above or below
+  - './path-to-extensions/asam-asciidoctor_extensions-registered.js'
+  - './path-to-extensions/asam-asciidoctor_extensions.js'
+
+  # ...
+antora:
+  extensions:
+  # add the following line
+  - require: './path-to-extensions/asam-antora_extension.js'
+    # add any number of config values for the Antora extensions here without bullet points
+----
+, where you replace `path-to-extensions` with the path to the copied/checked out extensions and add any attributes you require in separate lines after the Antora extension.
+. Optionally, add configuration of Asciidoctor attributes either to the site.yml (to apply them to each and every page of every component and every version) or to one or more component descriptors (to apply them to each and every page in that component-version-combination).
+If you want to be able to unset a set attribute on a lower level, set it with an `@` sign (see https://docs.antora.org/antora/latest/component-attributes/#soft-set).
+Check the table below and the list of features at the end of this document for more information on available settings and their implications.
+
+NOTE: Some extensions have dependencies that the  official Antora Docker image does not contain.
+The Antora image provided by ASAM, however, is already set up that every extension's dependencies are supported and included.
+ASAM, therefore, recommends always using the provided Docker image when building an Antora project.
+
+
+== ASAM extensions
+This repository contains the following extensions:
+
+[cols="3h,1,1,3,1,6"]
+|===
+|Feature |Antora |Asciidoctor | Active by default |Notes
+
+|Support for the <<ASAM Antora macros>>
+|link:antora/asam_macros/asam_macros.js[asam_macros.js]
+|None
+|yes
+a| * autonav: Automatic navigation file creation based on folder structure
+* related: Creates section for related pages based on keywords attribute.
+* reference: Creates bullet-point list for related pages based on keywords attribute.
+* role-related: Creates list of pages with a specific user role listed in them.
+* pages: Creates a list of all pages in a given folder.
+May be configured to include also all pages in all subfolders, or start in a specific subfolder.
+
+|Identifying and (optional) listing <<Orphan pages>>
+|link:antora/orphan_pages/orphan_pages.js[orphan_pages.js]
+|None
+|yes
+|This is based on a provided example from Antora.
+Additionally, it optionally lists unused partials as well as files with the "draft" tag.
+
+|Creating a <<Keyword-overview page>>
+|link:antora/keywords_overview/keywords_overview.js[keywords_overview.js]
+|None
+|no
+|Requires that at least one page in each component-version-combination has the keywords attribute.
+
+|<<Sequential numbering in Antora>>
+|link:antora/consistent_numbering/numbered_titles.js[numbered_titles.js]
+|link:asciidoctor/consistent_numbering/sectnumsoffset_antora.js[sectnumsoffset_antora.js]
+|yes
+|This is required and reused by Antora features for <<ISO-2145 style>>.
+To make most use of this extension, activate section numbers with the `sectnums` attribute either in the site.yml, in the component descriptor, or for each file selectively.
+The extension also supports some standard Asciidoctor section styles, like "appendix" and "bibliography".
+Apply these in the respective nav.adoc file.
+
+|Section numbers in <<ISO-2145 style>>
+|link:antora/consistent_numbering/numbered_titles.js[numbered_titles.js]
+|link:asciidoctor/consistent_numbering/sectnums_to_iso.js[sectnums_to_iso.js]
+|no
+|This requires and reuses Antora features from <<Sequential numbering in Antora>>
+
+|Replacement of <<Local to global reference replacement,local references with global references>> for cross-page referencing
+|link:antora/crossref_replacement/crossref_replacement.js[crossref_replacement.js]
+|None
+|no
+|This will only work with anchors following the ASAM schema.
+Check the Editorial Guide in the Project Guide for more information.
+
+|Doxygen output conversion
+|link:antora/doxygen_converter/doxygen_extension.js[doxygen_extension.js]
+|None
+|no
+|The `workdir` attribute is shared with the Enterprise Architect extension.
+It must be set if the Antora pipeline does not run in the folder where the site.yml file lies but accesses it from another folder.
+This can be the case if the Antora Docker image is set up this way.
+Note that this extension runs per component/version and requires additional configuration in each antora.yml file.
+
+|Enterprise Architect output conversion
+|link:antora/ea_converter/ea_extension.js[ea_extension.js]
+|None
+|no
+|The `workdir` attribute is shared with the Doxygen extension.
+It must be set if the Antora pipeline does not run in the folder where the site.yml file lies but accesses it from another folder.
+This can be the case if the Antora Docker image is set up this way.
+Note that this extension runs per component/version and requires additional configuration in each antora.yml file.
+
+|Support for tabs-based tables
+|link:ascciidoctor/tabs-block/extension.js[extension.js]
+|None
+|yes
+|Requires the link:ascciidoctor/tabs-block/behavior.js[behavior.js] script to be included in the Antora UI.
+This is the case by default for the standard ASAM Antora UI.
+
+|Converting Asciidoctor mapping to Antora navigation
+|link:antora/nav_from_index/nav_from_index.js[nav_from_index.js]
+|None
+|yes
+|Converts an mapping with includes for Asciidoctor into a navigation file for Antora with xrefs.
+
+|List of figures and tables
+|link:antora/loft/loft.js[loft.js]
+|None
+|no
+|Creates a list of figures and tables that comply with the ASAM anchor requirements.
+
+
+|===
+
+
+NOTE: All following examples assume the extension is located under "./asam-antora_extensions", where "." is the location of the "site.yml" file (the Antora playbook).
 
 
 == General configuration
@@ -38,7 +176,7 @@ The following table describes general configuration on using the extension:
 
 |enabled
 |De-/activates this extension by default.
-If deactivated, the extension must be explicitely called from the CLI.
+If deactivated, the extension must be explicitly called from the CLI.
 Only relevant in combination with `id`.
 |true
 |`enabled: false`
@@ -54,106 +192,38 @@ Only relevant in combination with `id`.
 ----
 ====
 
-== Pipeline features
-This section describes the features of the extensions that work directly through the pipeline without using macros in .adoc files.
 
-=== Orphan pages
-The ASAM Antora extension finds all pages not listed in any nav.adoc and puts a warning in the console output.
-If configured, these pages can also automatically be listed under a separated navigation entry (e.g. "orphans") at the end of the Antora document.
+== Extensions in detail
+include::antora/asam_macros/description.adoc[leveloffset=+2]
 
-For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-orphan_pages.html[ASAM Project Guide^]
+---
 
-=== Keyword-overview page
-The ASAM Antora extension generates an overview page that lists all keywords used in the Antora pages.
-The location and the (virtual) filename can be configured in the site.yml (Antora playbook).
+include::antora/consistent_numbering/description.adoc[leveloffset=+2]
 
-For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-keyword_overview.html[ASAM Project Guide^]
+---
 
-=== Sequential numbering
-The ASAM Antora extension adds a title number (`titleoffset`) to each page based on the order in the navigation tree (per component and version).
-Afterwards, the "sectnumsoffset_antora" extensions for Asciidoctor then uses the title offset as well as an optional (manually defined) `sectnumoffset` attribute on the page to re-number all level 2 sections within each page.
+include::antora/crossref_replacement/description.adoc[leveloffset=+2]
 
-For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-sequential_sectnums.html[ASAM Project Guide^]
+---
 
+include::antora/doxygen_converter/description.adoc[leveloffset=+2]
 
-== Global anchor link replacement
-The pipeline replaces local references in AsciiDoc files (`<<reference,text>>`) in case the link must point to another page.
-Since the original intention of including all files in one single main.adoc does not work in Antora (or rather: it does not make sense), this helps with translating an Asciidoctor project to an Antora version.
+---
 
-NOTE: The current implementation only works if the link can point to a page where the anchor is located natively.
-If the link is imported with an `include` macro, the extension does not find it currently.
+include::antora/ea_converter/description.adoc[leveloffset=+2]
 
-== ASAM Antora macros
-IMPORTANT: ASAM macros are not supported in partials as they are replaced through Antora rather than Asciidoctor, but partials are included by Asciidoctor at a later stage.
+---
 
-=== The "related" macro
-Creates a subsection called "Related Topics" and filles it automatically with cross-references to (other) pages containing the listed keywords.
-Works similar to the macro `reference`, but adds said subsection.
+include::antora/keywords_overview/description.adoc[leveloffset=+2]
 
-For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/macros/macro-related.html[ASAM Project Guide^]
+---
 
-=== The "reference" macro
-Creates an automatically generated list with cross-references to (other) pages containing the listed keywords.
-Works similar to the macro `related` but does not add a subsection.
+include::antora/orphan_pages/description.adoc[leveloffset=+2]
 
-For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/macros/macro-reference.html[ASAM Project Guide^]
+---
 
-=== The "pages" macro
-Creates an automatically generated list under a new section "Pages" with cross-references to (other) pages in the defined folder.
-If no folder is defined, the file's folder is used instead.
+include::antora/nav_from_index/description.adoc[leveloffset=+2]
 
-In addition to this replacement, an attribute `:pagemacro:` is automatically set so that the section numbering feature will exclude this section title automatically.
+---
 
-For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/macros/macro-pages.html[ASAM Project Guide^]
-
-=== The "role_related" macro
-Creates an automatically generated list under a new section "Role-related topics" with cross-references to (other) pages containing the relevant role.
-
-For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/macros/macro-role_related.html[ASAM Project Guide^]
-
-=== The "autonav" macro
-If added as a comment line to a nav.adoc file, replaces the files content with an automatically generated pages summary containing all pages and folders in the module.
-The path structure is preserved.
-
-For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/macros/macro-autonav.html[ASAM Project Guide^]
-
-
-== Sequential numbering in Antora
-To use the following features, add the sectnumsoffset_antora extension to the asciidoctor extensions in the site.yml and add the attribtute `numbered_titles: true` to the asam-antora-extensions settings.
-
-For more, see https://asam-ev.github.io/asam-project-guide/asamprojectguide/project-guide/extensions/pipeline-sequential_sectnums.html[ASAM Project Guide^]
-
-=== Automatic page numbers
-Antora has sorted (through the navigation file(s)) article pages but is not capable of assigning page numbers automatically.
-Similarly, the sectnums feature of Asciidoctor only works within one document, not over separate adoc files that are aggregated by Antora.
-
-This extension assigns a value to each page depending on the position and level within the navigation structure (per component and version).
-It also sets a page attribute that is accessed by the sectnumsoffset_antora extension for Asciidoctor.
-The Asciidoctor extension takes this attribute and applies it to the sections as well as the page title.
-The attribute can also be set manually in each file.
-However, manual changes are currently NOT passed on through the chain to following pages.
-
-=== Sequential figure and table numbering
-Since Asciidoctor counts all images and tables only within each page, their caption numbers start at 1 on every new Antora page by default.
-In case of standards, these numbers must be sequential (and unique) within each standard, not each page.
-
-== ISO-2145 style
-By default, section numbers in Asciidoctor have a trailing dot (".").
-To be in line with ISO 2145, sections in standards have to be numbered without this trailing dot.
-The Antora extension in combination with the sectnums_to_iso extension for Asciidoctor address this problem.
-
-To use this feature, add the sectnums_to_iso extension to the asciidoctor extensions in the site.yml and add the attribute `section-number-style: iso` to the asam-antora-extensions settings.
-
-TIP: It is recommended to use this feature in combination with the <<Sequential numbering in Antora>>.
-
-
-== Local to global reference replacement
-Using Asciidoctor, it is typical to create one main file and include content from separate files.
-With this approach, each section or chapter can be managed separately while still compiling everything into a single final document.
-However, in Antora these sections or chapters stay separate in most cases since the idea is to be able to access them individually and independently.
-
-When working with documents originially intended for a single-file-inclusion strategy, local references that only work if other files are also included will not work for the individual pages in Antora.
-To circumvent this problem, the ASAM Antora extensions analyze all pages and try to find the source file of the reference.
-If the content is included in multiple pages, pages in the navigation structured are prioritized over unlisted pages.
-
-Note, however, that this approach has limitations and should only be used if switching to a more Antora-native approach is too difficult!
+include::antora/loft/description.adoc[leveloffset=+2]
