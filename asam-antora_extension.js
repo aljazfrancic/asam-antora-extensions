@@ -76,29 +76,31 @@ module.exports.register = function ({ config }) {
                     pages: pages,
                     navFiles: navFiles
                 }
+                console.log("Generating content overview maps...")
                 let { keywordPageMap, rolePageMap, anchorPageMap } = ContentAnalyzer.generateMapsForPages( mapInput )
                 //-------------
                 // Addon Keywords: Create initial keywords overview page.
                 // Required setting: keywords: create_overview: true
                 // Optional settings: keywords: path: ""; keywords: module: "ROOT"; keywords: filename: "0_used-keywords.adoc"
                 //-------------
-                pages = Keywords.createKeywordsOverviewPage(parsedConfig.keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, parsedConfig.targetPath, parsedConfig.targetName, parsedConfig.targetModule, component, version)
-                //-------------
-                // Addon Keywords: Get updated keyword page map
-                //-------------
-                keywordPageMap = ContentAnalyzer.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
+                if (parsedConfig.keywordOverviewPageRequested){
+                    console.log("Creating a keyword overview page...")
+                    pages = Keywords.createKeywordsOverviewPage(parsedConfig.keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, parsedConfig.targetPath, parsedConfig.targetName, parsedConfig.targetModule, component, version)
+                    keywordPageMap = ContentAnalyzer.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
+                }
                 //-------------
                 // Addon Macros: Replace all custom macros. NOTE: This requires the keywords extension!
                 //-------------
+                console.log("Replacing custom macros...")
                 pages = Macros.findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywordPageMap, rolePageMap, CON.macrosRegEx, CON.macrosHeadings, logger, component, version )
-                //-------------
-                // Addon Keywords: Get updated keyword page map
-                //-------------
                 keywordPageMap = ContentAnalyzer.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
                 //-------------
                 // Addon Keywords: Create final keywords overview page.
                 //-------------
-                pages = Keywords.createKeywordsOverviewPage(parsedConfig.keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, parsedConfig.targetPath, parsedConfig.targetName, parsedConfig.targetModule, component, version)
+                if (parsedConfig.keywordOverviewPageRequested){
+                    console.log("Updating the keyword overview page again...")
+                    pages = Keywords.createKeywordsOverviewPage(parsedConfig.keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, parsedConfig.targetPath, parsedConfig.targetName, parsedConfig.targetModule, component, version)
+                }
                 //-------------
                 // Get updated nav files. This is important because one of the macros may have added an additional navigation file or changed an existing one.
                 //-------------
@@ -106,11 +108,13 @@ module.exports.register = function ({ config }) {
                 //-------------
                 // Addon AsciiNav: Parse files and create navigation if attribute "antora_mapping" is used.
                 //-------------
+                console.log("Check if Asciidoctor mapping page needs to be converted to Antora navigation file...")
                 AsciiNav.createAntoraNavigationFromIndex(pages, navFiles)
                 //-------------
                 // Addon Loft: Creates a List Of Figures and Tables
                 //-------------
                 if (parsedConfig.loft) {
+                    console.log("Creating list of figures and tables...")
                     Loft.createLoft(contentCatalog, anchorPageMap, navFiles, pages, component, version)
                 }
                 //-------------
@@ -119,6 +123,7 @@ module.exports.register = function ({ config }) {
                 // Optional setting: section_number_style: "iso"
                 //-------------
                 if (parsedConfig.numberedTitles) {
+                    console.log("Create sequential section numbers, titles, and captions...")
                     ConsistentNumbering.applySectionAndTitleNumbers(pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component)
                 }
                 //-------------
@@ -127,6 +132,7 @@ module.exports.register = function ({ config }) {
                 // Required setting: local_to_global_references: true
                 //-------------
                 if (anchorPageMap.size > 0 && parsedConfig.localToGlobalReferences) {
+                    console.log("Replace local references to global anchors with xref macro...")
                     pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
                 }
                 //-------------
@@ -135,6 +141,7 @@ module.exports.register = function ({ config }) {
                 // Since some features may require adoc content in non-adoc files, this is not conclusive whether a partial is actually used or not!
                 //-------------
                 if (parsedConfig.listUnusedPartials){
+                    console.log("List unused partials and draft pages...")
                     LostAndFound.listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, logger)
                 }
             })
@@ -150,6 +157,7 @@ module.exports.register = function ({ config }) {
         //-------------
         // Execute all features for each component-version-combination
         //-------------
+        console.log("List orphan pages...")
         Orphans.find_orphan_pages(contentCatalog,parsedConfig.addToNavigation, parsedConfig.unlistedPagesHeading, logger)
       })
   }

@@ -82,12 +82,21 @@ function listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, 
  * @returns {Array} - The files that are correctly included in this page.
  */
 function listIncludedPartialsAndPages(contentFiles,pages, page, componentAttributes, logger, inheritedAttributes = {}) {
+    //-------------
+    // Define regular expressions and get file content
+    //-------------
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[[^\]]*\]/m;
     const reIncludeAlt = /^\s*include::([^\[]*{[^}]+}[^\]]*)\[[^\]]*\]/m;
     const reAttribute = /^:(!)?([^:!]+)(!)?:(.*)$/m
     const reAttributeApplied = /{([^}]+)}/gm;
     const pageContent = page.contents.toString().split("\n")
     let includedFiles = []
+    //-------------
+    // Check each line for matches.
+    // If include macro with asciidoctor attributes is found, replace attributes if possible.
+    // If include macro without attributes is found or one with attributes could be converted, identify the partial or page it points to.
+    // If an attribute declaration has been found, add it to a growing object containing the page's attributes valid at this line.
+    //-------------
     for (let line of pageContent) {
         let resInclude = reInclude.exec(line)
         const resIncludeAlt = reIncludeAlt.exec(line)
@@ -137,6 +146,9 @@ function listIncludedPartialsAndPages(contentFiles,pages, page, componentAttribu
             else {inheritedAttributes[resAttribute[2]] = resAttribute[4]}
         }
     }
+    //-------------
+    // Return the determined list of included files (pages and partials).
+    //-------------
     return includedFiles
 }
 
@@ -164,10 +176,18 @@ function listPagesWithDraftFlag(page) {
  * @returns {Array} - The files that are correctly included in this partial.
  */
 function listAllPartialsUsedInPlantumlFiles(contentFiles,partials, partial, componentAttributes, logger) {
+    //-------------
+    // Set up regular expressions and get the file's content
+    //-------------
     const reInclude = /adoc- [^:]+: (.+\.adoc) *'\/|adoc-\S+ (.*\.adoc) *'\//m;
     const reIgnore = /adoc-fileignore/m;
     const partialContent = partial.contents.toString().split("\n")
     let includedFiles = []
+    //-------------
+    // For each line, check if either regex matches.
+    // If the file is to be ignored, exit the function without result.
+    // Otherwise, if the line points to another file relative to the output file created by uml2adoc, determine that file, if possible.
+    //-------------
     for (let line of partialContent) {
         const resIgnore = reIgnore.exec(line)
         if (resIgnore) {return null}
@@ -177,18 +197,18 @@ function listAllPartialsUsedInPlantumlFiles(contentFiles,partials, partial, comp
             if(!resInclude[1] && resInclude[2]) {resInclude[1] = resInclude[2]}
             for (let i=0; i < partial.src.relative.split("/").length - 3; i++ ) {resInclude[1] = "../"+resInclude[1];}
             includedFile = ContentAnalyzer.determineTargetPageFromIncludeMacro(contentFiles, partial, resInclude[1], false)
-            if (line.includes("map_set_map_file")) {console.log(includedFile); console.log(partial.src.relative.split("/").length); console.log(resInclude[1])}
             if(includedFile) {
                 includedFiles.push(includedFile)
-                if (line.includes("map_set_map_file")) {console.log("pushed"); console.log(includedFiles.indexOf(includedFile))}
                 let subIncludes = listIncludedPartialsAndPages(contentFiles, partials, includedFile, componentAttributes, logger)
                 if (subIncludes) {
                     includedFiles = includedFiles.concat(subIncludes)
                 }
-                if (line.includes("map_set_map_file")) {console.log("check"); console.log(includedFiles.indexOf(includedFile))}
             }
         }
     }
+    //-------------
+    // Return the list of identified files.
+    //-------------
     return includedFiles
 }
 
