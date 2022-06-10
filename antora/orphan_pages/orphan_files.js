@@ -179,7 +179,7 @@ function listAllPartialsUsedInPlantumlFiles(contentFiles,partials, partial, comp
     //-------------
     // Set up regular expressions and get the file's content
     //-------------
-    const reInclude = /adoc- [^:]+: (.+\.adoc) *'\/|adoc-\S+ (.*\.adoc) *'\//m;
+    const reInclude = /adoc-[^:]+: (.+\.adoc) *'\/|adoc-\S+ (.*\.adoc) *'\//m;
     const reIgnore = /adoc-fileignore/m;
     const partialContent = partial.contents.toString().split("\n")
     let includedFiles = []
