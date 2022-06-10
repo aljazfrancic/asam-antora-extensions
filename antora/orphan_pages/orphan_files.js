@@ -87,8 +87,6 @@ function listIncludedPartialsAndPages(contentFiles,pages, page, componentAttribu
     //-------------
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[[^\]]*\]/m;
     const reIncludeAlt = /^\s*include::([^\[]*{[^}]+}[^\]]*)\[[^\]]*\]/m;
-    const reAttribute = /^:(!)?([^:!]+)(!)?:(.*)$/m
-    const reAttributeApplied = /{([^}]+)}/gm;
     const pageContent = page.contents.toString().split("\n")
     let includedFiles = []
     //-------------
@@ -98,30 +96,13 @@ function listIncludedPartialsAndPages(contentFiles,pages, page, componentAttribu
     // If an attribute declaration has been found, add it to a growing object containing the page's attributes valid at this line.
     //-------------
     for (let line of pageContent) {
+        ContentAnalyzer.updatePageAttributes(inheritedAttributes, line)
         let resInclude = reInclude.exec(line)
         const resIncludeAlt = reIncludeAlt.exec(line)
-        const resAttribute = reAttribute.exec(line)
         let includedFile
         if (resIncludeAlt) {
-            reAttributeApplied.lastIndex = 0;
             let newLine = line
-            let m;
-            let i = 0
-            while ((m = reAttributeApplied.exec(newLine)) !== null) {
-                if (m.index === reAttributeApplied.lastIndex && i >= 20) {
-                    reAttributeApplied.lastIndex++;
-                    i = 0;
-                }
-                else if (m.index === reAttributeApplied.lastIndex) {i++;}
-                const replacement = componentAttributes[m[1]] ? componentAttributes[m[1]].trim() : (inheritedAttributes[m[1]] ? inheritedAttributes[m[1]].trim() : undefined)
-                if (replacement) {
-                    newLine = newLine.replace(m[0],replacement)
-                    reAttributeApplied.lastIndex = 0
-                }
-                else{
-                    logger.warn({ file: page.src, source: page.src.origin }, `could not resolve ${line}`)
-                }
-            }
+            newLine = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
             resInclude = reInclude.exec(newLine)
         }
         if (resInclude) {
@@ -138,12 +119,6 @@ function listIncludedPartialsAndPages(contentFiles,pages, page, componentAttribu
                     includedFiles = includedFiles.concat(subIncludes)
                 }
             }
-        }
-        else if (resAttribute) {
-            if(resAttribute[1] || resAttribute[3]) {
-                delete inheritedAttributes[resAttribute[2]]
-            }
-            else {inheritedAttributes[resAttribute[2]] = resAttribute[4]}
         }
     }
     //-------------
@@ -179,7 +154,7 @@ function listAllPartialsUsedInPlantumlFiles(contentFiles,partials, partial, comp
     //-------------
     // Set up regular expressions and get the file's content
     //-------------
-    const reInclude = /adoc- [^:]+: (.+\.adoc) *'\/|adoc-\S+ (.*\.adoc) *'\//m;
+    const reInclude = /adoc-[^:]+: (.+\.adoc) *'\/|adoc-\S+ (.*\.adoc) *'\//m;
     const reIgnore = /adoc-fileignore/m;
     const partialContent = partial.contents.toString().split("\n")
     let includedFiles = []

@@ -37,6 +37,7 @@ function createLoft(contentCatalog, anchorPageMap, navFiles, pages, component, v
 }
 
 function createListOfFiguresPage( contentCatalog, pages, figureMap, targetModule, component, version ){
+    console.log(figureMap.keys())
     if (!figureMap || figureMap.length === 0) {return null;}
     let newContent = ['= List of figures']
     newContent.push('')

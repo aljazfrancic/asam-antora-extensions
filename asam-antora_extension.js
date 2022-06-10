@@ -68,13 +68,17 @@ module.exports.register = function ({ config }) {
                 //-------------
                 let pages = contentCatalog.findBy({ component, version, family: 'page'})
                 let navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
+                let catalog =  contentCatalog.findBy({ component, version})
+                const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].asciidoc.attributes
                 //-------------
                 // Analyze the pages and create maps for the addons.
                 //-------------
                 let mapInput = {
+                    catalog: catalog,
                     useKeywords: parsedConfig.useKeywords,
                     pages: pages,
-                    navFiles: navFiles
+                    navFiles: navFiles,
+                    componentAttributes: componentAttributes
                 }
                 console.log("Generating content overview maps...")
                 let { keywordPageMap, rolePageMap, anchorPageMap } = ContentAnalyzer.generateMapsForPages( mapInput )

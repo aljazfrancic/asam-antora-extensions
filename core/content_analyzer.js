@@ -2,25 +2,6 @@
 //-------------
 //-------------
 // Core module for analyzing adoc content.
-// Contains the following functions:
-// determineTargetPageFromIncludeMacro (exposed)
-// getAnchorsFromPage (exposed)
-// getAllKeywordsAsArray (exposed)
-// getReferenceNameFromSource (exposed)
-// getAltTextFromTitle (exposed)
-// getAltNumberFromTitle (exposed)
-// getPageContentForExtensionFeatures (exposed)
-// getNavEntriesByUrl (exposed)
-// isPublishableFile (exposed)
-// determinePageForXrefInLine (exposed)
-// generateMapForRegEx
-// getKeywordPageMapForPages (exposed)
-// getRolePageMapForPages
-// getAnchorPageMapForPages
-// updateMapEntry
-// addOrUpdateAnchorMapEntry (exposed)
-// generateMapsForPages (exposed)
-// determineTargetPartialFromIncludeMacro (exposed)
 //
 //-------------
 //-------------
@@ -28,10 +9,9 @@
 //-------------
 //-------------
 
-
 /**
  * Analyze a path of an include macro and identifies the linked file, if it exists.
- * @param {*} pages - An array of all pages.
+ * @param {Array} pages - An array of all pages.
  * @param {Object} thisPage - The page where the include macro was found.
  * @param {*} includePath - The path extracted from the page.
  * @param {Boolean} published - Optional: If false, also considers content that is not published. Useful for partials.
@@ -54,20 +34,69 @@ function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath, pub
     return includedPage
 }
 
+/**
+ * Updates a page's list of attributes based on the provided line from the content.
+ * @param {Object} pageAttributes - The currently valid attributes.
+ * @param {String} line - The line to be analyzed.
+ */
+function updatePageAttributes(pageAttributes, line) {
+    const reAttribute = /^:(!)?([^:!]+)(!)?:(.*)$/
+    const resAttribute = reAttribute.exec(line)
+    if (resAttribute){
+        if(resAttribute[1] || resAttribute[3]) {
+            delete pageAttributes[resAttribute[2]]
+        }
+        else {pageAttributes[resAttribute[2]] = resAttribute[4]}
+        console.log(resAttribute)
+        console.log(pageAttributes)
+    }
+}
 
+/**
+ * Replace all attributes in a line with their value, if possible.
+ * @param {Object} componentAttributes - All attributes set in the component or the site.
+ * @param {Object} pageAttributes - All attributes set up to the provided line.
+ * @param {String} line - The line where any attributes should be replaced.
+ * @returns {String} - The updated line, if possible.
+ */
+function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
+    const reAttributeApplied = /{([^}]+)}/gm;
+    reAttributeApplied.lastIndex = 0;
+    let newLine = line
+    let m;
+    let i = 0
+    while ((m = reAttributeApplied.exec(newLine)) !== null) {
+        if (m.index === reAttributeApplied.lastIndex && i >= 20) {
+            reAttributeApplied.lastIndex++;
+            i = 0;
+        }
+        else if (m.index === reAttributeApplied.lastIndex) {i++;}
+        const replacement = componentAttributes[m[1]] ? componentAttributes[m[1]].trim() : (pageAttributes[m[1]] ? pageAttributes[m[1]].trim() : undefined)
+        if (replacement) {
+            newLine = newLine.replace(m[0],replacement)
+            reAttributeApplied.lastIndex = 0
+        }
+        else{
+            console.warn(`Could not replace ${m[1]} in line ${newLine}`)
+        }
+    }
+    return newLine
+}
 
 /**
  * Extracts all manually defined anchors from an AsciiDoc file. Also traverses through included files.
- * @param {*} pages - An array of all pages.
- * @param {Object} page - The current page.
+ * @param {*} catalog - An array of all pages and partials.
+ * @param {Object} targetFile - The current page.
  * @returns {Map} - A map of anchors and the page(s) where they were found.
  */
-function getAnchorsFromPage( pages, page ) {
-    var re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)\]|anchor:([^\[]+)\[/
-    var resultMap = new Map
-    var results = []
+function getAnchorsFromPageOrPartial( catalog, targetFile, componentAttributes, inheritedAttributes = {} ) {
+    const re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)\]|anchor:([^\[]+)\[/
+    const reRelativeInclude = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?.*\]/
+    const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[[^\]]*\]/m;
+    let resultMap = new Map
+    let results = []
     let ignoreLine = false
-    for (var line of page.contents.toString().split("\n")) {
+    for (let line of targetFile.contents.toString().split("\n")) {
         if (line.indexOf("ifndef::") > -1 && line.indexOf("use-antora-rules") > -1) {
             ignoreLine = true
         }
@@ -75,12 +104,23 @@ function getAnchorsFromPage( pages, page ) {
             ignoreLine = false
         }
         if (ignoreLine) {continue;}
-        const includeSearchResult = line.match(/^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/)
-        if (includeSearchResult && includeSearchResult.length > 0) {
-            const targetPage = determineTargetPageFromIncludeMacro ( pages, page, includeSearchResult[1] )
+        updatePageAttributes(inheritedAttributes, line)
+        if (line.match(reInclude) && line.match(reInclude).length > 0) {
+            console.log(inheritedAttributes)
+            line = replaceAllAttributesInLine(componentAttributes, inheritedAttributes,line)
+        }
+        const includeSearchResultRelative = line.match(reRelativeInclude)
+        const includeSearchResult = line.match(reInclude)
+        if (includeSearchResultRelative && includeSearchResultRelative.length > 0) {
+            let targetPage = determineTargetPageFromIncludeMacro ( catalog, targetFile, includeSearchResultRelative[1] )
             if (targetPage) {
-                const partialAnchorMap = getAnchorsFromPage(pages,targetPage)
-                resultMap = addOrUpdateAnchorMapEntry( resultMap, partialAnchorMap, page )
+                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog,targetPage, componentAttributes, inheritedAttributes)
+                resultMap = addOrUpdateAnchorMapEntry( resultMap, partialAnchorMap, targetFile )
+            }
+            else if (includeSearchResult && includeSearchResult.length > 0) {
+                targetPage = determineTargetPartialFromIncludeMacro ( catalog, targetFile, includeSearchResult[1], includeSearchResult[2] )
+                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog,targetPage, componentAttributes, inheritedAttributes)
+                resultMap = addOrUpdateAnchorMapEntry( resultMap, partialAnchorMap, targetFile )
             }
         }
         else {
@@ -98,10 +138,10 @@ function getAnchorsFromPage( pages, page ) {
 
             const resultValue = e1 ? e1 : e2 ? e2 : e3
             if (resultMap.has(resultValue)) {
-                resultMap = updateMapEntry(resultMap,resultValue,page)
+                resultMap = updateMapEntry(resultMap,resultValue,targetFile)
             }
             else {
-                resultMap.set(resultValue, new Set([page]))
+                resultMap.set(resultValue, new Set([targetFile]))
             }
         }
     }
@@ -437,11 +477,13 @@ function getRolePageMapForPages (pages = {}) {
 
 /**
  * Generates a map for all anchors with ASAM notation.
- * @param {*} pages - An array of relevant pages.
+ * @param {Array} catalog - An array of relevant pages and partials.
+ * @param {Array} pages - An array of relevant pages.
  * @param {*} navFiles - An array of relevant navigation files.
+ * @param {Object} componentAttributes - The attributes defined in the component or site.
  * @returns {Map} - A map of anchors and the pages where they were found in.
  */
-function getAnchorPageMapForPages( pages, navFiles ) {
+function getAnchorPageMapForPages( catalog, pages, navFiles, componentAttributes ) {
     var anchorMap = new Map;
     for (let page of pages.filter((page) => page.out)) {
         let hasPriority = false
@@ -451,7 +493,7 @@ function getAnchorPageMapForPages( pages, navFiles ) {
                 break;
             }
         }
-        let updateMap = getAnchorsFromPage(pages, page)
+        let updateMap = getAnchorsFromPageOrPartial(catalog, page, componentAttributes)
         if (updateMap && updateMap.size > 0) {
             if (hasPriority) {
                 anchorMap = addOrUpdateAnchorMapEntry(updateMap,anchorMap)
@@ -508,7 +550,7 @@ function addOrUpdateAnchorMapEntry( anchorMap, updateMap, overridePage = null ) 
 function generateMapsForPages( mapInput ) {
     let keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords,mapInput.pages)
     const rolePageMap = getRolePageMapForPages(mapInput.pages)
-    let anchorPageMap = getAnchorPageMapForPages(mapInput.pages, mapInput.navFiles)
+    let anchorPageMap = getAnchorPageMapForPages(mapInput.catalog, mapInput.pages, mapInput.navFiles, mapInput.componentAttributes)
     return { keywordPageMap, rolePageMap, anchorPageMap }
 }
 
@@ -529,7 +571,7 @@ function generateMapsForPages( mapInput ) {
 
 module.exports = {
     determineTargetPageFromIncludeMacro,
-    getAnchorsFromPage,
+    getAnchorsFromPage: getAnchorsFromPageOrPartial,
     getAllKeywordsAsArray,
     getReferenceNameFromSource,
     getAltTextFromTitle,
@@ -541,5 +583,7 @@ module.exports = {
     generateMapsForPages,
     getKeywordPageMapForPages,
     addOrUpdateAnchorMapEntry,
-    determineTargetPartialFromIncludeMacro
+    determineTargetPartialFromIncludeMacro,
+    updatePageAttributes,
+    replaceAllAttributesInLine
 }
