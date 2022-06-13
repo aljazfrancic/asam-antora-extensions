@@ -40,15 +40,13 @@ function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath, pub
  * @param {String} line - The line to be analyzed.
  */
 function updatePageAttributes(pageAttributes, line) {
-    const reAttribute = /^:(!)?([^:!]+)(!)?:(.*)$/
-    const resAttribute = reAttribute.exec(line)
+    const reAttribute = /^\s*:(!)?([^:!]+)(!)?:(.*)$/m
+    const resAttribute = line.match(reAttribute)
     if (resAttribute){
         if(resAttribute[1] || resAttribute[3]) {
             delete pageAttributes[resAttribute[2]]
         }
         else {pageAttributes[resAttribute[2]] = resAttribute[4]}
-        console.log(resAttribute)
-        console.log(pageAttributes)
     }
 }
 
@@ -77,7 +75,7 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
             reAttributeApplied.lastIndex = 0
         }
         else{
-            console.warn(`Could not replace ${m[1]} in line ${newLine}`)
+            console.warn(`Could not replace "${m[1]}" in line: ${newLine}`)
         }
     }
     return newLine
@@ -86,17 +84,19 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
 /**
  * Extracts all manually defined anchors from an AsciiDoc file. Also traverses through included files.
  * @param {*} catalog - An array of all pages and partials.
- * @param {Object} targetFile - The current page.
- * @returns {Map} - A map of anchors and the page(s) where they were found.
+ * @param {Object} thisFile - The current page.
+ * @returns {Map} - A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
-function getAnchorsFromPageOrPartial( catalog, targetFile, componentAttributes, inheritedAttributes = {} ) {
+function getAnchorsFromPageOrPartial( catalog, thisFile, componentAttributes, inheritedAttributes = {} ) {
     const re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)\]|anchor:([^\[]+)\[/
-    const reRelativeInclude = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?.*\]/
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[[^\]]*\]/m;
     let resultMap = new Map
     let results = []
     let ignoreLine = false
-    for (let line of targetFile.contents.toString().split("\n")) {
+    const splitContent = thisFile.contents.toString().split("\n")
+    let lineOffset = 0
+    for (let line of splitContent) {
+        const currentLineIndex = splitContent.indexOf(line)
         if (line.indexOf("ifndef::") > -1 && line.indexOf("use-antora-rules") > -1) {
             ignoreLine = true
         }
@@ -105,27 +105,35 @@ function getAnchorsFromPageOrPartial( catalog, targetFile, componentAttributes, 
         }
         if (ignoreLine) {continue;}
         updatePageAttributes(inheritedAttributes, line)
-        if (line.match(reInclude) && line.match(reInclude).length > 0) {
-            console.log(inheritedAttributes)
+        let includeSearchResult = line.match(reInclude)
+        if (includeSearchResult && includeSearchResult.length > 0) {
             line = replaceAllAttributesInLine(componentAttributes, inheritedAttributes,line)
+            includeSearchResult = line.match(reInclude)
         }
-        const includeSearchResultRelative = line.match(reRelativeInclude)
-        const includeSearchResult = line.match(reInclude)
-        if (includeSearchResultRelative && includeSearchResultRelative.length > 0) {
-            let targetPage = determineTargetPageFromIncludeMacro ( catalog, targetFile, includeSearchResultRelative[1] )
-            if (targetPage) {
-                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog,targetPage, componentAttributes, inheritedAttributes)
-                resultMap = addOrUpdateAnchorMapEntry( resultMap, partialAnchorMap, targetFile )
+        if (includeSearchResult && includeSearchResult.length > 0) {
+            let targetFile
+            if (includeSearchResult[1]) {
+                targetFile = determineTargetPartialFromIncludeMacro ( catalog, thisFile, includeSearchResult[1], includeSearchResult[2] )
             }
-            else if (includeSearchResult && includeSearchResult.length > 0) {
-                targetPage = determineTargetPartialFromIncludeMacro ( catalog, targetFile, includeSearchResult[1], includeSearchResult[2] )
-                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog,targetPage, componentAttributes, inheritedAttributes)
-                resultMap = addOrUpdateAnchorMapEntry( resultMap, partialAnchorMap, targetFile )
+            else {
+                targetFile = determineTargetPageFromIncludeMacro ( catalog, thisFile, includeSearchResult[2], false )
+            }
+            if (targetFile) {
+                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog,targetFile, componentAttributes, inheritedAttributes)
+                partialAnchorMap.forEach((entry) => {
+                    entry.line = entry.line + currentLineIndex + lineOffset
+                })
+                resultMap = mergeAnchorMapEntries( resultMap, partialAnchorMap, thisFile )
+                lineOffset += targetFile.contents.toString().split("\n").length
+            }
+            else {
+                console.warn("could not find",includeSearchResult)
             }
         }
         else {
             const result = re.exec(line);
             if (result) {
+                result.line = currentLineIndex + lineOffset
                 results.push(result)
             }
         }
@@ -135,17 +143,29 @@ function getAnchorsFromPageOrPartial( catalog, targetFile, componentAttributes, 
             const e1 = entry[1]
             const e2 = entry[4]
             const e3 = entry[5]
+            const line = entry.line
 
             const resultValue = e1 ? e1 : e2 ? e2 : e3
             if (resultMap.has(resultValue)) {
-                resultMap = updateMapEntry(resultMap,resultValue,targetFile)
+                updateAnchorMapEntry(resultMap,resultValue,thisFile, line)
             }
             else {
-                resultMap.set(resultValue, new Set([targetFile]))
+                resultMap.set(resultValue, {source: thisFile, line: line})
             }
         }
     }
     return resultMap
+}
+
+function updateAnchorMapEntry(inputMap,key,addedValue, line) {
+    let entry = inputMap.get(key)
+    if (entry.usedIn) {
+        entry.usedIn.push(addedValue)
+    }
+    else {
+        entry.usedIn = [addedValue]
+    }
+    entry.line = line
 }
 
 /**
@@ -292,7 +312,7 @@ function getReferenceNameFromSource( pages, page, anchor ) {
                 }
                 break;
             default:
-                console.log("non-standard anchor type detected: ", anchor);
+                console.warn("non-standard anchor type detected: ", anchor);
                 returnValue = getAltTextFromTitle( page, content );
                 break;
         }
@@ -496,10 +516,10 @@ function getAnchorPageMapForPages( catalog, pages, navFiles, componentAttributes
         let updateMap = getAnchorsFromPageOrPartial(catalog, page, componentAttributes)
         if (updateMap && updateMap.size > 0) {
             if (hasPriority) {
-                anchorMap = addOrUpdateAnchorMapEntry(updateMap,anchorMap)
+                anchorMap = mergeAnchorMapEntries(updateMap,anchorMap)
             }
             else {
-                anchorMap = addOrUpdateAnchorMapEntry(anchorMap, updateMap)
+                anchorMap = mergeAnchorMapEntries(anchorMap, updateMap)
             }
         }
     }
@@ -525,17 +545,27 @@ const updateMapEntry = (inputMap, key, addedValue) => {
  * @param {Object} overridePage - Optional: If set, replaces the value for each key in the updateMap with a new set containing the overridePage.
  * @returns {Map} - The updated anchor map.
  */
-function addOrUpdateAnchorMapEntry( anchorMap, updateMap, overridePage = null ) {
+function mergeAnchorMapEntries( anchorMap, updateMap, overridePage = null ) {
     for (let key of updateMap.keys()) {
         if (overridePage) {
-            updateMap.set(key, new Set([overridePage]))
+            if (updateMap.get(key).usedIn) {
+                updateMap.get(key).usedIn.push(overridePage)
+            }
+            else {
+                updateMap.get(key).usedIn = [overridePage]
+            }
         }
-        if (anchorMap.has(key)) {
-            const mergedSet = new Set([...anchorMap.get(key),...updateMap.get(key)])
-            anchorMap = anchorMap.set(key, mergedSet)
+        if (anchorMap.get(key)) {
+            anchorMap.get(key).line = anchorMap.get(key).line + updateMap.get(key).line
+            if (anchorMap.get(key).usedIn) {
+                anchorMap.get(key).usedIn = updateMap.get(key).usedIn ? anchorMap.get(key).usedIn.concat(updateMap.get(key).usedIn) : anchorMap.get(key).usedIn.push(updateMap.get(key).source)
+            }
+            else {
+                anchorMap.get(key).usedIn = updateMap.get(key).usedIn ? updateMap.get(key).usedIn : [updateMap.get(key).source]
+            }
         }
         else {
-            anchorMap.set(key,updateMap.get(key))
+            anchorMap.set(key, updateMap.get(key))
         }
     }
     return anchorMap
@@ -582,7 +612,7 @@ module.exports = {
     getNavEntriesByUrl,
     generateMapsForPages,
     getKeywordPageMapForPages,
-    addOrUpdateAnchorMapEntry,
+    addOrUpdateAnchorMapEntry: mergeAnchorMapEntries,
     determineTargetPartialFromIncludeMacro,
     updatePageAttributes,
     replaceAllAttributesInLine
