@@ -17,20 +17,20 @@
  * @param {Boolean} published - Optional: If false, also considers content that is not published. Useful for partials.
  * @returns {Object} - The identified page.
  */
-function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath, published = true ) {
+function determineTargetPageFromIncludeMacro(pages, thisPage, includePath, published = true) {
     if (!Array.isArray(includePath)) {
         includePath = includePath.split("/")
     }
     let currentPath = thisPage.src.path.split("/")
     currentPath.pop()
-    if (thisPage.out) {currentPath = thisPage.out.dirname.split("/")}
+    if (thisPage.out) { currentPath = thisPage.out.dirname.split("/") }
     includePath.forEach(part => {
-        if (part === "..") {currentPath = currentPath.slice(0,-1)}
-        else if (part ===".") {}
-        else {currentPath.push(part)}
+        if (part === "..") { currentPath = currentPath.slice(0, -1) }
+        else if (part === ".") { }
+        else { currentPath.push(part) }
     })
     const targetPath = currentPath.join("/")
-    let includedPage = published ? pages.filter(page => page.out && page.out.dirname +"/"+ page.src.basename === targetPath)[0] : pages.filter(page => page.src.path === targetPath)[0]
+    let includedPage = published ? pages.filter(page => page.out && page.out.dirname + "/" + page.src.basename === targetPath)[0] : pages.filter(page => page.src.path === targetPath)[0]
     return includedPage
 }
 
@@ -42,11 +42,11 @@ function determineTargetPageFromIncludeMacro ( pages, thisPage, includePath, pub
 function updatePageAttributes(pageAttributes, line) {
     const reAttribute = /^\s*:(!)?([^:!]+)(!)?:(.*)$/m
     const resAttribute = line.match(reAttribute)
-    if (resAttribute){
-        if(resAttribute[1] || resAttribute[3]) {
+    if (resAttribute) {
+        if (resAttribute[1] || resAttribute[3]) {
             delete pageAttributes[resAttribute[2]]
         }
-        else {pageAttributes[resAttribute[2]] = resAttribute[4]}
+        else { pageAttributes[resAttribute[2]] = resAttribute[4] }
     }
 }
 
@@ -68,13 +68,13 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
             reAttributeApplied.lastIndex++;
             i = 0;
         }
-        else if (m.index === reAttributeApplied.lastIndex) {i++;}
+        else if (m.index === reAttributeApplied.lastIndex) { i++; }
         const replacement = componentAttributes[m[1]] ? componentAttributes[m[1]].trim() : (pageAttributes[m[1]] ? pageAttributes[m[1]].trim() : undefined)
         if (replacement) {
-            newLine = newLine.replace(m[0],replacement)
+            newLine = newLine.replace(m[0], replacement)
             reAttributeApplied.lastIndex = 0
         }
-        else{
+        else {
             console.warn(`Could not replace "${m[1]}" in line: ${newLine}`)
         }
     }
@@ -87,7 +87,7 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
  * @param {Object} thisFile - The current page.
  * @returns {Map} - A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
-function getAnchorsFromPageOrPartial( catalog, thisFile, componentAttributes, inheritedAttributes = {} ) {
+function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inheritedAttributes = {}) {
     const re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)\]|anchor:([^\[]+)\[/
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[[^\]]*\]/m;
     let resultMap = new Map
@@ -103,31 +103,31 @@ function getAnchorsFromPageOrPartial( catalog, thisFile, componentAttributes, in
         else if (ignoreLine && line.indexOf("endif::") > -1) {
             ignoreLine = false
         }
-        if (ignoreLine) {continue;}
+        if (ignoreLine) { continue; }
         updatePageAttributes(inheritedAttributes, line)
         let includeSearchResult = line.match(reInclude)
         if (includeSearchResult && includeSearchResult.length > 0) {
-            line = replaceAllAttributesInLine(componentAttributes, inheritedAttributes,line)
+            line = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
             includeSearchResult = line.match(reInclude)
         }
         if (includeSearchResult && includeSearchResult.length > 0) {
             let targetFile
             if (includeSearchResult[1]) {
-                targetFile = determineTargetPartialFromIncludeMacro ( catalog, thisFile, includeSearchResult[1], includeSearchResult[2] )
+                targetFile = determineTargetPartialFromIncludeMacro(catalog, thisFile, includeSearchResult[1], includeSearchResult[2])
             }
             else {
-                targetFile = determineTargetPageFromIncludeMacro ( catalog, thisFile, includeSearchResult[2], false )
+                targetFile = determineTargetPageFromIncludeMacro(catalog, thisFile, includeSearchResult[2], false)
             }
             if (targetFile) {
-                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog,targetFile, componentAttributes, inheritedAttributes)
+                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog, targetFile, componentAttributes, inheritedAttributes)
                 partialAnchorMap.forEach((entry) => {
                     entry.line = entry.line + currentLineIndex + lineOffset
                 })
-                resultMap = mergeAnchorMapEntries( resultMap, partialAnchorMap, thisFile )
+                resultMap = mergeAnchorMapEntries(resultMap, partialAnchorMap, thisFile)
                 lineOffset += targetFile.contents.toString().split("\n").length
             }
             else {
-                console.warn("could not find",includeSearchResult)
+                console.warn("could not find", includeSearchResult)
             }
         }
         else {
@@ -147,17 +147,17 @@ function getAnchorsFromPageOrPartial( catalog, thisFile, componentAttributes, in
 
             const resultValue = e1 ? e1 : e2 ? e2 : e3
             if (resultMap.has(resultValue)) {
-                updateAnchorMapEntry(resultMap,resultValue,thisFile, line)
+                updateAnchorMapEntry(resultMap, resultValue, thisFile, line)
             }
             else {
-                resultMap.set(resultValue, {source: thisFile, line: line})
+                resultMap.set(resultValue, { source: thisFile, line: line })
             }
         }
     }
     return resultMap
 }
 
-function updateAnchorMapEntry(inputMap,key,addedValue, line) {
+function updateAnchorMapEntry(inputMap, key, addedValue, line) {
     let entry = inputMap.get(key)
     if (entry.usedIn) {
         entry.usedIn.push(addedValue)
@@ -173,20 +173,20 @@ function updateAnchorMapEntry(inputMap,key,addedValue, line) {
  * @param {Object} page - The page that is analyzed.
  * @returns {*} - The match of the regular expression, where the first group contains the list of keywords and res.line is the line the attribute was found in.
  */
-function getAllKeywordsAsArray( page ) {
+function getAllKeywordsAsArray(page) {
     var re = /^\s*:keywords:(.*)/
     var content = page.contents.toString().split("\n")
     var i = 0
     var res;
     for (let line of content) {
         res = re.exec(line)
-        if (res){
+        if (res) {
             break;
         }
         i++;
     }
     res.line = i
-    return(res)
+    return (res)
 }
 
 /**
@@ -198,7 +198,7 @@ function getAllKeywordsAsArray( page ) {
  * @param {String} startText - Optional: If set, finds a specific anchor of type [#anchor] or [[anchor]].
  * @returns {Array} - The determined number of sections for the targetSectionLevel and below.
  */
- function getRelativeSectionNumberWithIncludes(pages,page,targetSectionLevel,startText="") {
+function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, startText = "") {
     let currentTargetSectionLevel = targetSectionLevel
     let relativeIndex = startText ? [1] : [0]
     let content = page.contents.toString()
@@ -207,14 +207,14 @@ function getAllKeywordsAsArray( page ) {
     //-------------
     // If the parameter startText is defined, limit the content to everything above that anchor.
     //-------------
-    if (startText){
-        const indexType1 = content.indexOf("[#"+startText+"]")
-        const indexType2 = content.indexOf("[["+startText+"]]")
+    if (startText) {
+        const indexType1 = content.indexOf("[#" + startText + "]")
+        const indexType2 = content.indexOf("[[" + startText + "]]")
         if (indexType1 > -1) {
-            content = content.slice(0,indexType1);
+            content = content.slice(0, indexType1);
         }
-        else if(indexType2 > -1) {
-            content = content.slice(0,indexType2)
+        else if (indexType2 > -1) {
+            content = content.slice(0, indexType2)
         }
     }
     //-------------
@@ -231,11 +231,10 @@ function getAllKeywordsAsArray( page ) {
         //-------------
         if (includeSearchResult && includeSearchResult.length > 0) {
             const leveloffset = includeSearchResult[3] ? targetSectionLevel - includeSearchResult[3] : targetSectionLevel
-            if (leveloffset > 0)
-            {
+            if (leveloffset > 0) {
                 const targetPage = determineTargetPageFromIncludeMacro(pages, page, includeSearchResult[1])
-                if (targetPage){
-                    let includedSectionNumbers = getRelativeSectionNumberWithIncludes(pages,targetPage,leveloffset)
+                if (targetPage) {
+                    let includedSectionNumbers = getRelativeSectionNumberWithIncludes(pages, targetPage, leveloffset)
                     for (let i in includedSectionNumbers) {
                         relativeIndex[i] += includedSectionNumbers[i]
                     }
@@ -250,7 +249,7 @@ function getAllKeywordsAsArray( page ) {
             if (foundSectionLevel === currentTargetSectionLevel) {
                 relativeIndex[0] = relativeIndex[0] + 1
             }
-            else if(foundSectionLevel === currentTargetSectionLevel - 1) {
+            else if (foundSectionLevel === currentTargetSectionLevel - 1) {
                 relativeIndex.reverse()
                 relativeIndex.push(1)
                 relativeIndex.reverse()
@@ -269,12 +268,12 @@ function getAllKeywordsAsArray( page ) {
  * @param {String} anchor - The anchor in question.
  * @returns {String} - The extracted alt text.
  */
-function getReferenceNameFromSource( pages, page, anchor ) {
+function getReferenceNameFromSource(pages, page, anchor) {
     const reSectionEqualSigns = /^\s*(=+)\s+(.*)$/m
     const reCaptionLabel = /^\.(\S.+)$/m
     const reAnchorType = /([^-\]]+)-?[^\]]*/m
 
-    let content =page.contents.toString()
+    let content = page.contents.toString()
     const resultAnchorType = anchor.match(reAnchorType)
     const indexOfAnchor = content.indexOf(anchor)
     const resultForNextHeading = content.slice(indexOfAnchor).match(reSectionEqualSigns)
@@ -286,26 +285,26 @@ function getReferenceNameFromSource( pages, page, anchor ) {
     //-------------
     //Only act on anchors that match one of the ASAM anchor types (matching reAnchorType).
     //-------------
-    if (resultAnchorType){
+    if (resultAnchorType) {
         switch (resultAnchorType[1]) {
             case "fig":
                 result = resultNextCaption;
-                if (result) {returnValue = result[1]}
+                if (result) { returnValue = result[1] }
                 break;
             case "tab":
                 result = resultNextCaption;
-                if (result) {returnValue = result[1]}
+                if (result) { returnValue = result[1] }
                 break;
             case "top":
-                returnValue = getAltTextFromTitle( page, content );
+                returnValue = getAltTextFromTitle(page, content);
                 break;
             case "sec":
                 result = resultForNextHeading;
-                const pageNumber = getAltNumberFromTitle(page,content);
-                let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages,page,result[1].split("=").length-1,anchor);
-                if (relativeSectionNumber.length > 1){
-                    relativeSectionNumber[0]="";
-                    returnValue = "Section " + pageNumber+relativeSectionNumber.join(".");
+                const pageNumber = getAltNumberFromTitle(page, content);
+                let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages, page, result[1].split("=").length - 1, anchor);
+                if (relativeSectionNumber.length > 1) {
+                    relativeSectionNumber[0] = "";
+                    returnValue = "Section " + pageNumber + relativeSectionNumber.join(".");
                 }
                 else {
                     returnValue = "Section " + pageNumber;
@@ -313,13 +312,13 @@ function getReferenceNameFromSource( pages, page, anchor ) {
                 break;
             default:
                 console.warn("non-standard anchor type detected: ", anchor);
-                returnValue = getAltTextFromTitle( page, content );
+                returnValue = getAltTextFromTitle(page, content);
                 break;
         }
 
     }
     else {
-        returnValue = getAltTextFromTitle( page, content );
+        returnValue = getAltTextFromTitle(page, content);
     }
     return (returnValue)
 }
@@ -331,19 +330,19 @@ function getReferenceNameFromSource( pages, page, anchor ) {
  * @param {String} content - The contents of that page.
  * @returns {String} - The extracted title.
  */
-function getAltTextFromTitle( page, content ) {
+function getAltTextFromTitle(page, content) {
     const re1 = /:titleprefix:\s*([^\n]+)/m
     const re2 = /:titleoffset:\s*([^\n]+)/m
     const re3 = /^=\s+([^\n\r]+)/m
 
     let returnValue
     let result = content.match(re1)
-    if (!result || result.length <=1) {
+    if (!result || result.length <= 1) {
         result = content.match(re2)
     }
     const resultAlt = content.match(re3)
     if (result && result.length > 1) {
-        returnValue = "Section "+result[1]
+        returnValue = "Section " + result[1]
     }
     else {
         returnValue = resultAlt && resultAlt.length > 1 ? resultAlt[1] : page.src.stem
@@ -357,8 +356,8 @@ function getAltTextFromTitle( page, content ) {
  * @param {String} content - The contents of that page.
  * @returns {String} - The extracted number(s)
  */
-function getAltNumberFromTitle( page, content ) {
-    let value = getAltTextFromTitle(page,content)
+function getAltNumberFromTitle(page, content) {
+    let value = getAltTextFromTitle(page, content)
     return value.split(" ")[1]
 }
 
@@ -368,13 +367,13 @@ function getAltNumberFromTitle( page, content ) {
  * @param {Object} page - The page that is analyzed.
  * @returns {Array} - [Content as array, indexOfTitle, indexOfNavtitle, indexOfReftext]
  */
-function getPageContentForExtensionFeatures( page ) {
+function getPageContentForExtensionFeatures(page) {
     const contentSum = page.contents.toString()
     let newContent = contentSum.split("\n")
     let indexOfTitle = 0
     let indexOfNavtitle = -1
     let indexOfReftext = -1
-    for(let line of newContent) {
+    for (let line of newContent) {
         // Find title
         if (line.startsWith("= ")) {
             indexOfTitle = newContent.indexOf(line)
@@ -399,7 +398,7 @@ function getPageContentForExtensionFeatures( page ) {
  * @param {Object} accum - A previously already aggregated Object of extracted links.
  * @returns {Object} - The extracted links.
  */
-function getNavEntriesByUrl (items = [], accum = {}) {
+function getNavEntriesByUrl(items = [], accum = {}) {
     items.forEach((item) => {
         if (item.urlType === 'internal') accum[item.url.split('#')[0]] = item
         getNavEntriesByUrl(item.items, accum)
@@ -412,7 +411,7 @@ function getNavEntriesByUrl (items = [], accum = {}) {
  * @param {Object} page - The page that is to be analyzed.
  * @returns {Boolean} - States if a page will be published.
  */
-function isPublishableFile( page ) {
+function isPublishableFile(page) {
     return (page.src.relative.indexOf("/_") < 0 && page.src.relative.indexOf("/.") < 0 && !page.src.relative.startsWith("_") && !page.src.relative.startsWith("."))
 }
 
@@ -438,7 +437,7 @@ function determinePageForXrefInLine(line, indexOfXref, pages, nav) {
  * @param {Boolean} exclusive - Optional: If true, the function will only look for the first match in the file.
  * @returns {Map} - A map of matched keywords and the pages where that match occurred.
  */
-function generateMapForRegEx(re,pages,exclusive=false) {
+function generateMapForRegEx(re, pages, exclusive = false) {
     var generatedMap = new Map;
     for (let page of pages.filter((page) => page.out)) {
         var results = []
@@ -457,7 +456,7 @@ function generateMapForRegEx(re,pages,exclusive=false) {
                 for (let keyword of split_results) {
                     const keywordTrimmed = keyword.trim()
                     if (generatedMap.has(keywordTrimmed)) {
-                        generatedMap = updateMapEntry(generatedMap,keywordTrimmed,page)
+                        generatedMap = updateMapEntry(generatedMap, keywordTrimmed, page)
                     }
                     else {
                         generatedMap.set(keywordTrimmed, new Set([page]))
@@ -475,12 +474,12 @@ function generateMapForRegEx(re,pages,exclusive=false) {
  * @param {*} pages - An array of relevant pages.
  * @returns {Map} - A map of 'keywords' and the pages where they were found in.
  */
-function getKeywordPageMapForPages (useKeywords, pages = {}) {
+function getKeywordPageMapForPages(useKeywords, pages = {}) {
     if (!useKeywords) {
         return (new Map())
     }
     var re = new RegExp("^\s*:keywords:(.*)")
-    var keywordMap = generateMapForRegEx(re,pages,true)
+    var keywordMap = generateMapForRegEx(re, pages, true)
     return keywordMap
 }
 
@@ -489,9 +488,9 @@ function getKeywordPageMapForPages (useKeywords, pages = {}) {
  * @param {*} pages - An array of relevant pages
  * @returns {Map} - A map of 'roles' and the pages where they were found in.
  */
-function getRolePageMapForPages (pages = {}) {
+function getRolePageMapForPages(pages = {}) {
     var re = new RegExp("{role-([^}]*)}")
-    var rolesMap = generateMapForRegEx(re,pages)
+    var rolesMap = generateMapForRegEx(re, pages)
     return rolesMap
 }
 
@@ -503,7 +502,7 @@ function getRolePageMapForPages (pages = {}) {
  * @param {Object} componentAttributes - The attributes defined in the component or site.
  * @returns {Map} - A map of anchors and the pages where they were found in.
  */
-function getAnchorPageMapForPages( catalog, pages, navFiles, componentAttributes ) {
+function getAnchorPageMapForPages(catalog, pages, navFiles, componentAttributes) {
     var anchorMap = new Map;
     for (let page of pages.filter((page) => page.out)) {
         let hasPriority = false
@@ -516,7 +515,7 @@ function getAnchorPageMapForPages( catalog, pages, navFiles, componentAttributes
         let updateMap = getAnchorsFromPageOrPartial(catalog, page, componentAttributes)
         if (updateMap && updateMap.size > 0) {
             if (hasPriority) {
-                anchorMap = mergeAnchorMapEntries(updateMap,anchorMap)
+                anchorMap = mergeAnchorMapEntries(updateMap, anchorMap)
             }
             else {
                 anchorMap = mergeAnchorMapEntries(anchorMap, updateMap)
@@ -535,7 +534,7 @@ function getAnchorPageMapForPages( catalog, pages, navFiles, componentAttributes
  */
 const updateMapEntry = (inputMap, key, addedValue) => {
     const newValue = inputMap.get(key).add(addedValue)
-    return (inputMap.set(key,newValue))
+    return (inputMap.set(key, newValue))
 }
 
 /**
@@ -545,7 +544,7 @@ const updateMapEntry = (inputMap, key, addedValue) => {
  * @param {Object} overridePage - Optional: If set, replaces the value for each key in the updateMap with a new set containing the overridePage.
  * @returns {Map} - The updated anchor map.
  */
-function mergeAnchorMapEntries( anchorMap, updateMap, overridePage = null ) {
+function mergeAnchorMapEntries(anchorMap, updateMap, overridePage = null) {
     for (let key of updateMap.keys()) {
         if (overridePage) {
             if (updateMap.get(key).usedIn) {
@@ -577,8 +576,8 @@ function mergeAnchorMapEntries( anchorMap, updateMap, overridePage = null ) {
  * @param {Object} mapInput - A set of configuration parameters relevant for the map generator. Must contain 'useKeywords', 'pages', and 'navFiles'.
  * @returns {Object} - Object containing the determined maps: keywordPageMap, rolePageMap, anchorPageMap.
  */
-function generateMapsForPages( mapInput ) {
-    let keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords,mapInput.pages)
+function generateMapsForPages(mapInput) {
+    let keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords, mapInput.pages)
     const rolePageMap = getRolePageMapForPages(mapInput.pages)
     let anchorPageMap = getAnchorPageMapForPages(mapInput.catalog, mapInput.pages, mapInput.navFiles, mapInput.componentAttributes)
     return { keywordPageMap, rolePageMap, anchorPageMap }
@@ -592,27 +591,23 @@ function generateMapsForPages( mapInput ) {
  * @param {String} includePath - The path after the prefix, as determined from the include macro.
  * @returns {Object} - The determined partial, if any.
  */
- function determineTargetPartialFromIncludeMacro(contentFiles, thisPage, pathPrefix, includePath) {
+function determineTargetPartialFromIncludeMacro(contentFiles, thisPage, pathPrefix, includePath) {
     const prefixParts = pathPrefix.split(":")
     return contentFiles.find(file => file.src.family === "partial" && file.src.module === prefixParts.length > 1 ? prefixParts.at(-2) : thisPage.src.module &&
-    file.src.relative === includePath)
+        file.src.relative === includePath)
 }
 
 
 module.exports = {
     determineTargetPageFromIncludeMacro,
-    getAnchorsFromPage: getAnchorsFromPageOrPartial,
     getAllKeywordsAsArray,
     getReferenceNameFromSource,
-    getAltTextFromTitle,
-    getAltNumberFromTitle,
     determinePageForXrefInLine,
     getPageContentForExtensionFeatures,
     isPublishableFile,
     getNavEntriesByUrl,
     generateMapsForPages,
     getKeywordPageMapForPages,
-    addOrUpdateAnchorMapEntry: mergeAnchorMapEntries,
     determineTargetPartialFromIncludeMacro,
     updatePageAttributes,
     replaceAllAttributesInLine
