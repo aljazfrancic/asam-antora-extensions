@@ -610,5 +610,6 @@ module.exports = {
     getKeywordPageMapForPages,
     determineTargetPartialFromIncludeMacro,
     updatePageAttributes,
-    replaceAllAttributesInLine
+    replaceAllAttributesInLine,
+    getAnchorsFromPageOrPartial
 }

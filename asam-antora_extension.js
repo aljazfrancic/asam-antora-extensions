@@ -128,7 +128,7 @@ module.exports.register = function ({ config }) {
                 //-------------
                 if (parsedConfig.numberedTitles) {
                     console.log("Create sequential section numbers, titles, and captions...")
-                    ConsistentNumbering.applySectionAndTitleNumbers(pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component)
+                    ConsistentNumbering.applySectionAndTitleNumbers(catalog, pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component)
                 }
                 //-------------
                 // Addon CrossrefReplacement: Replace Asciidoctor local references ("<<ref>>") where the anchor is now located on a different page.

@@ -21,18 +21,20 @@ const ContentManipulator = require("../../../core/content_manipulator.js")
 // Note: This addon requires the Asciidoctor extension "sectnumoffset_antora" to work!
 /**
  * Updates a page's index attribute for images and tables.
- * @param {*} pages - An array of pages.
+ * @param {*} catalog - An array of pages and partials.
  * @param {Object} page - The current page.
+ * @param {Object} componentAttributes - The list of inherited component attributes.
  * @param {Number} imageIndex - The image index that needs to be applied as offset.
  * @param {Number} tableIndex - The table index that needs to be applied as offset.
  * @returns {Array} - [Updated image index, updated table index, number of level 2 sections ]
  */
-function updateImageAndTableIndex(pages, page, imageIndex=0, tableIndex=0){
+function updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex=0, tableIndex=0){
     let newImageIndex = imageIndex
     let newTableIndex = tableIndex
     addImageOffsetAttributeToPage(page, newImageIndex)
     addTableOffsetAttributeToPage(page, newTableIndex)
-    let [numberOfLevelTwoSections, numberOfImages, numberOfTables] = Helper.getIncludedPagesContentForExtensionFeatures(pages, page)
+    let [numberOfLevelTwoSections, numberOfImages, numberOfTables] = Helper.getIncludedPagesContentForExtensionFeatures(catalog, page, componentAttributes)
+    // if (page.src.stem === "entity") {console.log(numberOfImages, numberOfTables, numberOfLevelTwoSections); throw ""}
     newImageIndex += parseInt(numberOfImages)
     newTableIndex += parseInt(numberOfTables)
     return ([newImageIndex,newTableIndex,numberOfLevelTwoSections])

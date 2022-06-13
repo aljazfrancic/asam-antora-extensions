@@ -145,13 +145,14 @@ function checkForRoleInLine( content, line, currentRole ) {
  * Determines the number of images and tables that follow ASAM's anchor conventions as well as level 2 sections.
  * Also traverses through included files.
  * TODO: Join with features of getRelativeSectionNumberWithIncludes from content_analyzer.js (core).
- * @param {*} pages - - An array of pages.
- * @param {Object} page - The current page.
+ * @param {Array} catalog - - An array of pages and partials.
+ * @param {Object} pagePartial - The current page or partial.
+ * @param {Object} componentAttributes - The list of inherited component attributes.
  * @param {Number} leveloffset - A given leveleoffset for sections and other numbers.
  * @returns {Array} - [Number of relevant sections, number of images, number of tables]
  */
-function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0 ) {
-    const contentSum = page.contents.toString()
+function getIncludedPagesContentForExtensionFeatures( catalog, pagePartial, componentAttributes, leveloffset=0, inheritedAttributes = {} ) {
+    const contentSum = pagePartial.contents.toString()
     let newContent = contentSum.split("\n")
     let numberOfLevelTwoSections = 0
     let numberOfImages = 0
@@ -169,6 +170,8 @@ function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0
         }
         if (!ignoreLine)
         {
+            ContentAnalyzer.updatePageAttributes(inheritedAttributes, line)
+            line = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
             //-------------
             // Find all sections that will be level 2 in final result.
             //-------------
@@ -189,39 +192,44 @@ function getIncludedPagesContentForExtensionFeatures( pages, page, leveloffset=0
             else if (line.match(/^\s*include::/)) {
                 const re = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?/
                 let result = line.match(re)
-                const includePath = result[1].split("/")
                 const includeLeveloffset = result[3] ? parseInt(result[3]) + leveloffset : leveloffset
-                let currentPath = page.out.dirname.split("/")
-                includePath.forEach(part => {
-                    if (part === "..") {currentPath = currentPath.slice(0,-1)}
-                    else if (part ===".") {}
-                    else {currentPath.push(part)}
-                })
-                const targetPath = currentPath.join("/")
-                let filteredPagesList = pages.filter(page => page.out && page.out.dirname +"/"+ page.src.basename === targetPath)
+                let targetPath
+                if (result[1].startsWith(".") || (result[1].match(/\$/g) ||[]).length === 0) {
+                    let currentPath = pagePartial.src.path.split("/")
+                    currentPath.pop()
+                    const includePath = result[1].split("/")
+                    includePath.forEach(part => {
+                        if (part === "..") {currentPath = currentPath.slice(0,-1)}
+                        else if (part ===".") {}
+                        else {currentPath.push(part)}
+                    })
+                    targetPath = currentPath.join("/")
+                }
+                else {
+                    targetPath = result[1].replace("$","s/").split("@")
+                    if (targetPath.length > 1) {targetPath.shift()}
+                    targetPath = targetPath.join("").split(":")
+                    targetPath.splice(-2, 0, "modules")
+                    targetPath = targetPath.join("/")
+                }
+                let filteredPagesList = catalog.filter(file => file.src && file.src.path === targetPath)
                 if (filteredPagesList.length > 0) {
                     let includedPage = filteredPagesList[0]
-                    let [numberOfLevelTwoSectionsIncluded, numberOfImagesIncluded, numberOfTablesIncluded] = getIncludedPagesContentForExtensionFeatures(pages, includedPage, includeLeveloffset)
+                    let [numberOfLevelTwoSectionsIncluded, numberOfImagesIncluded, numberOfTablesIncluded] = getIncludedPagesContentForExtensionFeatures(catalog, includedPage, componentAttributes, includeLeveloffset)
                     numberOfLevelTwoSections += numberOfLevelTwoSectionsIncluded
                     numberOfImages += numberOfImagesIncluded
                     numberOfTables += numberOfTablesIncluded
                 }
             }
-            //-------------
-            // Find all valid images (with "fig-" caption) and tables (with "tab-" caption).
-            //-------------
-            else {
-                const reFigures = /\[#fig-[^\]]+\]/g
-                if ([...line.matchAll(reFigures)].length > 0) {
-                    numberOfImages += [...line.matchAll(reFigures)].length
-                }
-                const reTables = /\[#tab-[^\]]+\]/g
-                if ([...line.matchAll(reTables)].length > 0) {
-                    numberOfTables += [...line.matchAll(reTables)].length
-                }
-            }
         }
     }
+    //-------------
+    // Find all valid images (with "fig-" caption) and tables (with "tab-" caption).
+    //-------------
+    const pageAnchorMap = ContentAnalyzer.getAnchorsFromPageOrPartial(catalog, pagePartial, componentAttributes)
+    numberOfImages = [...pageAnchorMap].filter(([k,v]) => k.startsWith("fig-")).length
+    numberOfTables = [...pageAnchorMap].filter(([k,v]) => k.startsWith("tab-")).length
+
     return [numberOfLevelTwoSections, numberOfImages, numberOfTables]
 }
 
