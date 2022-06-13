@@ -3,6 +3,7 @@ module.exports = function (registry) {
       var self = this
       var verbose = false
       self.process(function (doc) {
+        // if (doc.getTitle() && doc.getTitle().includes("Physical object actors")){verbose = true}
         // Check if sectnums and sectnumoffset is found. Only act if true
         if (verbose){console.log("Title: ",doc.getTitle())}
         if (verbose){console.log("has imageoffset attribute: ",doc.hasAttribute("imageoffset"))}
@@ -45,8 +46,10 @@ module.exports = function (registry) {
     function updateImageOffset( doc, imageOffset, verbose=false ) {
         let newImageOffset = imageOffset
         for (let block of doc.getBlocks()) {
+            if (!block) {break}
+            if(!block.getNodeName) {continue}
             if (verbose){console.log("block: ",block.getNodeName())}
-            if (block.getNodeName() === "section" || block.getNodeName() === "preamble") {
+            if (block.getNodeName() !== "image" && block.hasBlocks()) {
                 newImageOffset = updateImageOffset( block, newImageOffset, verbose)
             }
             else if(block.getNodeName() === "image") {
@@ -71,11 +74,20 @@ module.exports = function (registry) {
     function updateTableOffset( doc, tableOffset, verbose=false ) {
         let newTableOffset = tableOffset
         for (let block of doc.getBlocks()) {
+            if (!block) {break}
+            if(!block.getNodeName) {continue}
             if (verbose){console.log("block: ",block.getNodeName())}
-            if (block.getNodeName() === "section" || block.getNodeName() === "preamble") {
+            // if (verbose){console.log(block.getDocument())}
+            if (verbose){console.log(block.getContext())}
+            if (verbose){console.log(block.getId())}
+            // if (verbose && block.id === "tab-trafficparticipant-abstract-physical_object-basic") {console.log("found table differently")}
+            if (block.getNodeName() !== "table" && block.hasBlocks()) {
+                if (verbose) {console.log("no table")}
+                // if (verbose){console.log("block content: ",block.getNodeName())}
                 newTableOffset = updateTableOffset( block, newTableOffset, verbose)
             }
             else if(block.getNodeName() === "table") {
+                if (verbose) {console.log("found table")}
                 newTableOffset = 1 + newTableOffset
                 block.setNumeral(newTableOffset)
                 if(block.getCaption()) {
