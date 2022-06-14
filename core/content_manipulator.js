@@ -25,6 +25,27 @@ function addAttributeWithValueToPage( page, pageContent, indexOfTitle, attribute
     page.contents = Buffer.from(pageContent.join("\n"))
 }
 
+function updateAttributeWithValueOnPage( page, attribute, value) {
+    let content = page.contents.toString().split("\n")
+    let foundMatch = false
+    for (let line of content) {
+        let m
+        if (m = line.match(new RegExp(`^\s*:${attribute}:(.*)`))) {
+            const index = content.indexOf(line)
+            line = line.replace(m[1], ` ${value}`)
+            content[index] = line
+            page.contents = Buffer.from(content.join("\n"))
+            foundMatch = true
+            break;
+        }
+    }
+
+    if (!foundMatch) {
+        const [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)
+        addAttributeWithValueToPage( page, newContent, indexOfTitle, attribute, value)
+    }
+}
+
 /**
  * Adds a section role (special section type) to a page.
  * @param {Object} page - The page the role is to be added to.
@@ -41,5 +62,6 @@ function addSpecialSectionTypeToPage( page, specialSectionType ){
 
 module.exports = {
     addAttributeWithValueToPage,
-    addSpecialSectionTypeToPage
+    addSpecialSectionTypeToPage,
+    updateAttributeWithValueOnPage
 }

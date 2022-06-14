@@ -622,6 +622,21 @@ function checkForIncludedFileFromLine(catalog, thisFile, line) {
     return targetFile
 }
 
+function getAttributeFromFile(file, attribute, stopAfter = 0) {
+    if (typeof attribute == 'string' || attribute instanceof String) {
+        let attributes = {}
+        let i = 0
+        for (let line of file.contents.toString().split("\n")){
+            if (stopAfter > 0 && i > stopAfter) {break;}
+            updatePageAttributes(attributes, line)
+            if (attribute in attributes) {
+                return attributes[attribute]
+            }
+            i++;
+        }
+    }
+    return null
+}
 
 module.exports = {
     determineTargetPageFromIncludeMacro,
@@ -637,5 +652,6 @@ module.exports = {
     updatePageAttributes,
     replaceAllAttributesInLine,
     getAnchorsFromPageOrPartial,
-    checkForIncludedFileFromLine
+    checkForIncludedFileFromLine,
+    getAttributeFromFile
 }
