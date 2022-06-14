@@ -30,6 +30,7 @@ const Keywords = require('./antora/keywords_overview/keywords_overview.js');
 const Orphans = require('./antora/orphan_pages/orphan_pages.js');
 const LostAndFound = require('./antora/orphan_pages/orphan_files.js')
 const Loft = require("./antora/loft/loft.js");
+const RefStyle = require("./antora/reference_style_mixing/reference_style_mixing.js")
 //-------------
 //-------------
 // Register this module in antora so it is used by the Antora pipeline.
@@ -138,6 +139,16 @@ module.exports.register = function ({ config }) {
                 if (anchorPageMap.size > 0 && parsedConfig.localToGlobalReferences) {
                     console.log("Replace local references to global anchors with xref macro...")
                     pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
+                }
+                //-------------
+                // Addon CrossrefReplacement: Replace Asciidoctor local references ("<<ref>>") where the anchor is now located on a different page.
+                // Note that only in case at least one valid anchor could be found and added to the map, the addon actually runs.
+                // Required setting: local_to_global_references: true
+                //-------------
+                if (parsedConfig.alternateXrefStyle && parsedConfig.alternateXrefStyle !== "") {
+                    console.log(`Applying explicit xref style ${parsedConfig.alternateXrefStyle} for xrefs...`)
+                    // TODO: Add function call
+                    RefStyle.addXrefStyleToSectionAndPageXrefs(catalog, componentAttributes, parsedConfig.alternateXrefStyle)
                 }
                 //-------------
                 // Addon LostAndFound: Lists content that is not used.
