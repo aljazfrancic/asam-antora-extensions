@@ -56,9 +56,7 @@ function applyXrefStyle (catalog, componentAttributes, file, style, appendixCapt
         title = `"${title}"`
     }
     ContentManipulator.updateAttributeWithValueOnPage(file, "navtitle", navtitle)
-    if(file.src.stem === "workflow_auditors-regulators") {console.log(title)}
     ContentManipulator.updateAttributeWithValueOnPage(file, "reftext", title)
-    if(file.src.stem === "workflow_auditors-regulators") {console.log(file.contents.toString())}
     for (let line of content) {
         ContentAnalyzer.updatePageAttributes(inheritedAttributes, line)
         let newLine = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
