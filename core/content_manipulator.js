@@ -21,7 +21,7 @@ const ContentAnalyzer = require('./content_analyzer.js')
  */
 function addAttributeWithValueToPage( page, pageContent, indexOfTitle, attribute, value, unset=false ) {
     const attr = unset ? ":"+attribute+"!: "+value : ":"+attribute+": "+value.toString()
-    pageContent.splice(indexOfTitle+1,0,attr)
+    pageContent.splice(indexOfTitle+1,0,attr+"\r")
     page.contents = Buffer.from(pageContent.join("\n"))
 }
 

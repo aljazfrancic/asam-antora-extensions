@@ -312,7 +312,7 @@ function getReferenceNameFromSource(pages, page, anchor) {
                 break;
             default:
                 console.warn("non-standard anchor type detected: ", anchor);
-                returnValue = getAltTextFromTitle(page, content);
+                returnValue = getAltTextFromTitle( page, content );
                 break;
         }
 
