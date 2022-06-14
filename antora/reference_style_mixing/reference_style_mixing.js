@@ -2,42 +2,48 @@
 
 const ContentAnalyzer = require("../../core/content_analyzer.js")
 
-function addXrefStyleToSectionAndPageXrefs (catalog, style) {
+function addXrefStyleToSectionAndPageXrefs (catalog, componentAttributes, style) {
+    const pages = catalog.filter(x => x.src.family === "page")
     switch(style) {
         case 'full':
-            console.log("Replacing with full")
         case 'short':
-            console.log("Replacing with short")
         case 'basic':
-            console.log("Replacing with basic")
-            applyXrefStyle(catalog, style)
+            pages.forEach((page) => {
+                applyXrefStyle(catalog, componentAttributes, page, style)
+            })
             break;
         default:
-            console.warn("ERROR - invalid xref style selected. No changes will be applied!")
+            console.warn("ERROR - invalid xref style selected. No changes will be applied!");
             break;
     }
 }
 
-function applyXrefStyle (catalog, componenAttributes, style) {
+function applyXrefStyle (catalog, componentAttributes, file, style, inheritedAttributes = {}) {
     const re = /xref:(.*).adoc(#.*)?(\[)(.*,\s*)*(xrefstyle=([^,\]]*))?(, *.*)*\]/gm
-    for (let file of catalog) {
-        ContentAnalyzer.attribu
-        if (!file.contents) {
-            continue
-        }
-        let content = file.contents.toString().split("\n")
-        for (let line of content) {
-            re.lastIndex = 0
-            let match
-            while (match = re.exec(line) !== null) {
-                if (match.index === re.lastIndex) {
-                    re.lastIndex++;
-                }
-                if (match[5] || match[4] || match[7]) {continue;}
-
+    if (!file.contents) {
+        return
+    }
+    let content = file.contents.toString().split("\n")
+    for (let line of content) {
+        ContentAnalyzer.updatePageAttributes(inheritedAttributes, line)
+        let newLine = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
+        re.lastIndex = 0
+        let match
+        while (match = re.exec(newLine) !== null) {
+            if (match.index === re.lastIndex) {
+                re.lastIndex++;
+            }
+            if (match[5] || match[4] || match[7]) {continue;}
+            else {
+                const start = newLine.indexOf("[",match.index) +1
+                newLine = newLine.slice(0,start) + `xrefstyle=${style}` + newLine.slice(start)
             }
         }
 
+        let targetFile = ContentAnalyzer.checkForIncludedFileFromLine(catalog, file, line)
+        if (targetFile) {
+            applyXrefStyle(catalog, componentAttributes, targetFile, style, inheritedAttributes)
+        }
     }
 }
 

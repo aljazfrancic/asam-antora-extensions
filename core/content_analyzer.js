@@ -46,7 +46,7 @@ function updatePageAttributes(pageAttributes, line) {
         if (resAttribute[1] || resAttribute[3]) {
             delete pageAttributes[resAttribute[2]]
         }
-        else { pageAttributes[resAttribute[2]] = resAttribute[4] }
+        else { pageAttributes[resAttribute[2]] = resAttribute[4] ? resAttribute[4] : "" }
     }
 }
 
@@ -58,25 +58,29 @@ function updatePageAttributes(pageAttributes, line) {
  * @returns {String} - The updated line, if possible.
  */
 function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
-    const reAttributeApplied = /{([^}]+)}/gm;
+    const reAttributeApplied = /(\/\/.*)?{([^}]+)}/gm;
     reAttributeApplied.lastIndex = 0;
     let newLine = line
     let m;
     let i = 0
     while ((m = reAttributeApplied.exec(newLine)) !== null) {
+        if (m[1]) {break;}
         if (m.index === reAttributeApplied.lastIndex && i >= 20) {
             reAttributeApplied.lastIndex++;
             i = 0;
         }
         else if (m.index === reAttributeApplied.lastIndex) { i++; }
-        const replacement = componentAttributes[m[1]] ? componentAttributes[m[1]].trim() : (pageAttributes[m[1]] ? pageAttributes[m[1]].trim() : undefined)
+        const replacement = componentAttributes[m[2]] ? componentAttributes[m[2]].trim() : (pageAttributes[m[2]] ? pageAttributes[m[2]].trim() : undefined)
         if (replacement) {
             newLine = newLine.replace(m[0], replacement)
             reAttributeApplied.lastIndex = 0
         }
-        else {
-            console.warn(`Could not replace "${m[1]}" in line: ${newLine}`)
+        else if (m[2] === "nbsp") {
+
         }
+        // else {
+        //     console.warn(`Could not replace "${m[2]}" in line: ${newLine}`)
+        // }
     }
     return newLine
 }
@@ -593,8 +597,29 @@ function generateMapsForPages(mapInput) {
  */
 function determineTargetPartialFromIncludeMacro(contentFiles, thisPage, pathPrefix, includePath) {
     const prefixParts = pathPrefix.split(":")
-    return contentFiles.find(file => file.src.family === "partial" && file.src.module === prefixParts.length > 1 ? prefixParts.at(-2) : thisPage.src.module &&
-        file.src.relative === includePath)
+    return contentFiles.find(file => file.src.family === "partial" && file.src.module === prefixParts.length > 1 ? prefixParts.at(-2) : thisPage.src.module && file.src.relative === includePath)
+}
+
+function checkForIncludedFileFromLine(catalog, thisFile, line) {
+    let targetFile;
+    const re = /^\s*include::((\S*partial\$)|(\S*page\$))?([^\[]+\.adoc)\[[^\]]*\]/
+    const match = line.match(re)
+    if (match) {
+        const includePath = match[4]
+        if (match[2]) {
+            const prefixParts = match[1].split(":")
+            targetFile = catalog.find(file => file.src.family === "partial" && file.src.module === prefixParts.length > 1 ? prefixParts.at(-2) : thisFile.src.module && file.src.relative === includePath)
+        }
+        else if (match[3]) {
+            const prefixParts = match[1].split(":")
+            targetFile = catalog.find(file => file.src.family === "page" && file.src.module === prefixParts.length > 1 ? prefixParts.at(-2) : thisFile.src.module && file.src.relative === includePath)
+        }
+        else {
+            targetFile = determineTargetPageFromIncludeMacro(catalog, thisFile, includePath, false)
+        }
+
+    }
+    return targetFile
 }
 
 
@@ -611,5 +636,6 @@ module.exports = {
     determineTargetPartialFromIncludeMacro,
     updatePageAttributes,
     replaceAllAttributesInLine,
-    getAnchorsFromPageOrPartial
+    getAnchorsFromPageOrPartial,
+    checkForIncludedFileFromLine
 }
