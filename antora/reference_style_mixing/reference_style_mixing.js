@@ -31,7 +31,7 @@ function addXrefStyleToSectionAndPageXrefs (catalog, componentAttributes, style)
 }
 
 function applyXrefStyle (catalog, componentAttributes, file, style, appendixCaption, inheritedAttributes = {}) {
-    const re = /xref:(.*).adoc(#.*)?(\[)(.*,\s*)*(xrefstyle=([^,\]]*))?(, *.*)*\]/gm
+    const re = /xref:(.*\.adoc)(#.*)?(\[)(.*,\s*)*(xrefstyle=([^,\]]*))?(, *.*)*\]/gm
     if (!file.contents) {
         return
     }
@@ -62,14 +62,58 @@ function applyXrefStyle (catalog, componentAttributes, file, style, appendixCapt
         let newLine = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
         re.lastIndex = 0
         let match
-        while (match = re.exec(newLine) !== null) {
+        while ((match = re.exec(newLine)) !== null) {
+            if (line.includes("#top-lc-syntax-grammar")) {console.log(match.index)}
             if (match.index === re.lastIndex) {
                 re.lastIndex++;
             }
             if (match[5] || match[4] || match[7]) {continue;}
+            // else if (match[2]) {
+            //     const start = newLine.indexOf("[",match.index) +1
+            //     let label = ""
+            //     console.log("anchor found: "+match[2])
+            //     const targetPath = ContentAnalyzer.getSrcPathFromFileId(match[1])
+            //     if (!targetPath.module) {targetPath.module = file.src.module}
+            //     const xrefTarget = catalog.find(x => x.src.module == targetPath.module && x.src.relative === targetPath.relative)
+            //     if (xrefTarget) {
+            //         const reAnchor = new RegExp(`\[\[${match[2].slice(1)}(,([^\]]*))?\]\]|\[${match[2]}\]|anchor:${match[2].slice(1)}\[`)
+            //         const xrefContent =xrefTarget.contents.toString()
+            //         const startIndex = xrefContent.match(reAnchor)
+            //         if (startIndex) {
+            //             let titleMatch
+            //             const forwardContent = xrefContent.slice(startIndex).split("\n")
+            //             const backwardContent = xrefContent.slice(0,startIndex).split("\n").reverse()
+            //             const reTitle = /^=+ +(.*)|^\.(\S.*)/
+            //             for (let i = 0; i <= 3; i++) {
+            //                 titleMatch = forwardContent[i].match(reTitle)
+            //                 if (titleMatch) {
+            //                     break;
+            //                 }
+            //             }
+            //             if (!titleMatch) {
+            //                 for (let i = 0; i <= 3; i++) {
+            //                     titleMatch = backwardContent[i].match(reTitle)
+            //                     if (titleMatch) {
+            //                         break;
+            //                     }
+            //                 }
+            //             }
+            //             if (titleMatch[1]) {
+            //                 label = titleMatch[1].trim().starts
+            //             }
+            //             else if (titleMatch[2])
+            //         }
+            //         else {
+            //             console.warn("could not solve anchor in xref")
+            //         }
+            //     }
+            //     newLine = newLine.slice(0,start) + label + newLine.slice(start)
+            //     content[content.indexOf(line)] = newLine
+            // }
             else {
                 const start = newLine.indexOf("[",match.index) +1
                 newLine = newLine.slice(0,start) + `xrefstyle=${style}` + newLine.slice(start)
+                content[content.indexOf(line)] = newLine
             }
         }
 
@@ -78,6 +122,7 @@ function applyXrefStyle (catalog, componentAttributes, file, style, appendixCapt
             applyXrefStyle(catalog, componentAttributes, targetFile, style, appendixCaption, inheritedAttributes)
         }
     }
+    file.contents = Buffer.from(content.join("\n"))
 }
 
 module.exports = {

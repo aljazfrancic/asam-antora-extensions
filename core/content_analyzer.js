@@ -638,6 +638,37 @@ function getAttributeFromFile(file, attribute, stopAfter = 0) {
     return null
 }
 
+function getSrcPathFromFileId(fileId) {
+    let splitFileId = fileId.split("@")
+    let version,
+        component,
+        antoraModule,
+        type,
+        relative
+
+    if (splitFileId.length === 2) {
+        version = splitFileId[0]
+        splitFileId.shift()
+    }
+
+    splitFileId = splitFileId[0].split(":")
+    if (splitFileId.length == 3) {
+        component = splitFileId[0]
+        splitFileId.shift()
+    }
+    if (splitFileId.length == 2) {
+        antoraModule = splitFileId[0]
+        splitFileId.shift()
+    }
+    splitFileId = splitFileId[0].split("$")
+    if (splitFileId.length === 2) {
+        type = splitFileId[0]
+        splitFileId.shift()
+    }
+    relative = splitFileId[0]
+    return {version: version, component: component, module: antoraModule, type: type, relative: relative}
+}
+
 module.exports = {
     determineTargetPageFromIncludeMacro,
     getAllKeywordsAsArray,
@@ -653,5 +684,6 @@ module.exports = {
     replaceAllAttributesInLine,
     getAnchorsFromPageOrPartial,
     checkForIncludedFileFromLine,
-    getAttributeFromFile
+    getAttributeFromFile,
+    getSrcPathFromFileId
 }
