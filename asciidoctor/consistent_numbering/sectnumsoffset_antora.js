@@ -4,6 +4,7 @@ module.exports = function (registry) {
       var verbose = false
       self.process(function (doc) {
         // Check if sectnums and sectnumoffset is found. Only act if true
+        // if (doc && doc.getTitle && doc.getTitle() === "Workflows for auditors/regulators") {verbose = true}
         if (verbose){console.log("Title: ",doc.getTitle())}
         if (verbose){console.log("has imageoffset attribute: ",doc.hasAttribute("imageoffset"))}
         if (verbose){console.log("has tableoffset attribute: ",doc.hasAttribute("tableoffset"))}
@@ -15,8 +16,11 @@ module.exports = function (registry) {
             let imageOffset = Math.abs(doc.getAttribute("imageoffset",0))
             let tableOffset = Math.abs(doc.getAttribute("tableoffset",0))
 
+            if (verbose){console.log("titleoffset attribute: ",titleOffset)}
+            if (verbose){console.log("titleprefix attribute: ",titlePrefix)}
             if (verbose){console.log("imageOffset attribute: ",imageOffset)}
             if (verbose){console.log("tableoffset attribute: ",tableOffset)}
+            if (verbose){console.log("attributes: ", doc.getAttributes())}
 
             if (titlePrefix) {
                 pageTitle = doc.setTitle(titlePrefix + " " + pageTitle)
@@ -24,11 +28,13 @@ module.exports = function (registry) {
             else if (titleOffset) {
                 pageTitle = doc.setTitle(titleOffset+" "+pageTitle)
             }
-            titleOffset = titleOffset.endsWith(".") ? titleOffset : titleOffset+"."
-            doc.getSections().filter(s => s.getLevel() === 1).forEach(sect => {
-                offsetValue = 1 + offsetValue
-                sect.setNumeral(titleOffset+offsetValue)
-            })
+            if (titleOffset) {
+                titleOffset = titleOffset.endsWith(".") ? titleOffset : titleOffset+"."
+                doc.getSections().filter(s => s.getLevel() === 1).forEach(sect => {
+                    offsetValue = 1 + offsetValue
+                    sect.setNumeral(titleOffset+offsetValue)
+                })
+            }
             imageOffset = updateImageOffset(doc, imageOffset, verbose)
             tableOffset = updateTableOffset(doc, tableOffset, verbose)
         }

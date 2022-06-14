@@ -254,7 +254,7 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
                 newTableIndex = b
                 numberOfLevelTwoSections = c
                 let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)
-                if (appendixCaption) {
+                if (appendixCaption && targetLevel === 1) {
                     const targetIndex = style === "iso" ? chapterIndex.split(".") : chapterIndex.split(".").slice(0,-1)
                     newContent.splice(indexOfTitle+2,0,":titleprefix: "+ appendixCaption+" "+targetIndex.join(".")+":")
                 }
@@ -265,7 +265,9 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, pages, content, line,
                 if (option !== "default") {
                     newContent.splice(indexOfTitle,0,"["+option+"]")
                     expectedNavtitleIndex += 1
+                    indexOfNavtitle +=1
                     expectedReftextIndex += 1
+                    indexOfReftext += 1
                     option = "default"
                 }
                 if (indexOfNavtitle > expectedNavtitleIndex) {
