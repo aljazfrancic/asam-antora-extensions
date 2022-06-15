@@ -325,7 +325,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
             case "fig":
                 result = resultNextCaption;
                 const figureMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("fig-")))
-                let figureIndex = Array.from(figureMap.keys()).indexOf(anchor)
+                let figureIndex = Array.from(figureMap.keys()).indexOf(anchor) + 1
                 if (result) {
                     title = result[1];
                     prefix = 'Figure ' + figureIndex;
