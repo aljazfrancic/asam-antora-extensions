@@ -93,13 +93,36 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
  */
 function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inheritedAttributes = {}) {
     const re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)\]|anchor:([^\[]+)\[/
-    const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[[^\]]*\]/m;
+    const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[(.+)?\]/m;
+    const reTags = /.*,?tags?=([^,]+)/m;
+    const reTaggedStart = /\/\/\s*tag::(.+)\[\]/m
+    const reTaggedEnd = /\/\/\s*end::(.+)\[\]/m
     let resultMap = new Map
     let results = []
     let ignoreLine = false
     const splitContent = thisFile.contents.toString().split("\n")
     let lineOffset = 0
+    let allowInclude = (tags.length > 0) ? false : true
+    let taggedRegions = {}
+    for (let t of tags) {
+        let v = t.startsWith("!") ? false : true;
+        if (!v) {allowInclude = true}
+        t = t.startsWith("!") ? t.slice(1) : t
+        taggedRegions[t] = {include: v, active: false}
+    }
     for (let line of splitContent) {
+        if (tags.length > 0) {
+            const tagStartMatch = line.match(reTaggedStart)
+            const tagEndMatch = line.match(reTaggedEnd)
+            if (tagStartMatch && taggedRegions[tagStartMatch[1]]) {
+                taggedRegions[tagStartMatch[1]].active = true
+            }
+            else if (tagEndMatch && taggedRegions[tagEndMatch[1]]) {
+                taggedRegions[tagEndMatch[1]].active = false
+            }
+            allowInclude = Object.entries(taggedRegions).filter(([k,v]) => !v.include).length > 0 ? Object.entries(taggedRegions).filter(([k,v]) => (!v.include && v.active)).length === 0 : Object.entries(taggedRegions).filter(([k,v]) => v.active).length > 0
+        }
+        if (!allowInclude) {continue;}
         const currentLineIndex = splitContent.indexOf(line)
         if (line.indexOf("ifndef::") > -1 && line.indexOf("use-antora-rules") > -1) {
             ignoreLine = true
@@ -123,7 +146,12 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
                 targetFile = determineTargetPageFromIncludeMacro(catalog, thisFile, includeSearchResult[2], false)
             }
             if (targetFile) {
-                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog, targetFile, componentAttributes, inheritedAttributes)
+                let tags = includeSearchResult[3] ? includeSearchResult[3].match(reTags) : []
+                if (!tags){tags=[]}
+                if (tags.length > 0) {
+                    tags = tags[1].split(";")
+                }
+                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog, targetFile, componentAttributes, inheritedAttributes, tags)
                 partialAnchorMap.forEach((entry) => {
                     entry.line = entry.line + currentLineIndex + lineOffset
                 })
