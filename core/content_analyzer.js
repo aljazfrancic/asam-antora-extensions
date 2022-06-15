@@ -91,7 +91,7 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
  * @param {Object} thisFile - The current page.
  * @returns {Map} - A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
-function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inheritedAttributes = {}) {
+function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inheritedAttributes = {}, tags = []) {
     const re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)\]|anchor:([^\[]+)\[/
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[(.+)?\]/m;
     const reTags = /.*,?tags?=([^,]+)/m;
@@ -351,7 +351,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 prefix = titleprefix ? titleprefix : titleoffset ? titleoffset : "";
                 break;
             case "sec":
-                result = resultForNextHeading;
+                result = resultForNextHeading ? resultForNextHeading : content.match(/^(=) (.*)$/m);
                 let pageNumber = getAttributeFromFile(page, "titleoffset");
                 if (!pageNumber) { pageNumber = ""; }
                 else { pageNumber = pageNumber.trim(); }
