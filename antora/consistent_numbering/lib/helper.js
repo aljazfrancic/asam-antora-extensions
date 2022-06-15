@@ -39,14 +39,14 @@ function setStartingChapterIndex( style, value ) {
  * @param {String} appendixCaption - Optional: Applies to appendices. If set, the first element of the index will be a letter.
  * @returns {String} - The next chapter index value.
  */
-function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appendixCaption="" ) {
+function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appendixCaption="", isAppendix = false ) {
     //-------------
     // Apply style behavior and, if requested, determine the current Appendix value.
     //-------------
     let chapterElements = chapterIndex.split(".")
     if (style !== "iso") {chapterElements.pop()}
     const currentChapterIndexLength = Math.max(1,chapterElements.length)
-    if (appendixCaption) {
+    if (appendixCaption && isAppendix) {
         if (targetLevel === 1) {
             if (isNaN(parseInt(chapterElements[0]))) {
                 chapterElements[0] = String.fromCharCode(chapterElements[0].charCodeAt(0) + 1)

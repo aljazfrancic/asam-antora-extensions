@@ -18,7 +18,7 @@ const ContentAnalyzer = require("../../core/content_analyzer.js")
  * @param {*} pages - An array of pages.
  * @returns {*} - The updated array of pages.
  */
-function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
+function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorMap, pages ) {
     if (anchorMap.size === 0) {return pages}
     const re = /<<([^>,]+)(,\s*([^>]+))?>>/g
     const reAlt = /xref:{1,2}#([^\[]+)\[(([^\]]*))\]/gm
@@ -34,7 +34,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( anchorMap, pages ) {
             if (anchorMap.get(ref[1])) {
                 const referencePage = [...anchorMap.get(ref[1])][0]
                 if (page !== referencePage) {
-                    let autoAltText = ContentAnalyzer.getReferenceNameFromSource( pages, referencePage, ref[1] )
+                    let autoAltText = ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1] )
                     const altText = ref[3] ? ref[3] : autoAltText
                     const anchorLink = ref[1]
                     const replacementXref = "xref:"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+anchorLink+"["+altText+"]"

@@ -64,7 +64,7 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
     let m;
     let i = 0
     while ((m = reAttributeApplied.exec(newLine)) !== null) {
-        if (m[1]) {break;}
+        if (m[1]) { break; }
         if (m.index === reAttributeApplied.lastIndex && i >= 20) {
             reAttributeApplied.lastIndex++;
             i = 0;
@@ -272,11 +272,10 @@ function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, s
  * @param {String} anchor - The anchor in question.
  * @returns {String} - The extracted alt text.
  */
-function getReferenceNameFromSource(pages, page, anchor) {
+function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, page, anchor, style = "") {
     const reSectionEqualSigns = /^\s*(=+)\s+(.*)$/m
     const reCaptionLabel = /^\.(\S.+)$/m
-    const reAnchorType = /([^-\]]+)-?[^\]]*/m
-
+    const reAnchorType = /#?([^-\]]+)-?[^\]]*/m
     let content = page.contents.toString()
     const resultAnchorType = anchor.match(reAnchorType)
     const indexOfAnchor = content.indexOf(anchor)
@@ -286,6 +285,10 @@ function getReferenceNameFromSource(pages, page, anchor) {
     // Use special anchor formats: sec, top, fig, tab, ...
     let result
     let returnValue = ""
+    let prefix = ""
+    let title = ""
+    const sectionRefsig = componentAttributes['section-refsig'] ? componentAttributes['section-refsig'] : "Section"
+    const appendixRefsig = componentAttributes['appendix-caption'] ? componentAttributes['appendix-caption'] : "Appendix"
     //-------------
     //Only act on anchors that match one of the ASAM anchor types (matching reAnchorType).
     //-------------
@@ -293,32 +296,62 @@ function getReferenceNameFromSource(pages, page, anchor) {
         switch (resultAnchorType[1]) {
             case "fig":
                 result = resultNextCaption;
-                if (result) { returnValue = result[1] }
+                const figureMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("fig-")))
+                let figureIndex = Array.from(figureMap.keys()).indexOf(anchor)
+                if (result) {
+                    title = result[1];
+                    prefix = 'Figure ' + figureIndex;
+                    returnValue = title;
+                }
                 break;
             case "tab":
                 result = resultNextCaption;
-                if (result) { returnValue = result[1] }
+                const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("fig-")))
+                let tableIndex = Array.from(tableMap.keys()).indexOf(anchor)
+                if (result) {
+                    title = result[1];
+                    prefix = 'Table ' + tableIndex;
+                    returnValue = title;
+                }
                 break;
             case "top":
                 returnValue = getAltTextFromTitle(page, content);
+                title = content.match(/^= (.*)$/m)[1];
+                title = title ? title : returnValue;
+                const titleoffset = getAttributeFromFile(page, "titleoffset");
+                const titleprefix = getAttributeFromFile(page, "tileprefix");
+                prefix = titleprefix ? titleprefix : titleoffset ? titleoffset : "";
                 break;
             case "sec":
                 result = resultForNextHeading;
-                const pageNumber = getAltNumberFromTitle(page, content);
+                let pageNumber = getAttributeFromFile(page, "titleoffset");
+                if (!pageNumber) { pageNumber = ""; }
+                else { pageNumber = pageNumber.trim(); }
                 let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages, page, result[1].split("=").length - 1, anchor);
-                if (relativeSectionNumber.length > 1) {
-                    relativeSectionNumber[0] = "";
-                    returnValue = "Section " + pageNumber + relativeSectionNumber.join(".");
-                }
-                else {
-                    returnValue = "Section " + pageNumber;
-                }
+                relativeSectionNumber[0] = ""
+                prefix = isNaN(pageNumber.charAt(0)) ? `${appendixRefsig} ${pageNumber}` : `${sectionRefsig} ${pageNumber}`;
+                prefix = relativeSectionNumber.length > 1 && pageNumber !== "" ? prefix + relativeSectionNumber.join(".") : prefix;
+                title = result[2].trim();
                 break;
             default:
                 console.warn("non-standard anchor type detected: ", anchor);
-                returnValue = getAltTextFromTitle( page, content );
+                returnValue = getAltTextFromTitle(page, content);
                 break;
         }
+        switch (style) {
+            case "full":
+                returnValue = prefix ? `${prefix}, "${title}"` : `${title}`;
+                break;
+            case "short":
+                returnValue = prefix;
+                break;
+            case "basic":
+                returnValue = `${title}`;
+                break;
+            default:
+                break;
+        }
+        // returnValue = title
 
     }
     else {
@@ -584,6 +617,23 @@ function generateMapsForPages(mapInput) {
     let keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords, mapInput.pages)
     const rolePageMap = getRolePageMapForPages(mapInput.pages)
     let anchorPageMap = getAnchorPageMapForPages(mapInput.catalog, mapInput.pages, mapInput.navFiles, mapInput.componentAttributes)
+    let mergedNavContents = []
+    for (let nav of mapInput.navFiles.sort((a,b) => {
+        return a.nav.index - b.nav.index
+    })) {
+        const newNavContent = nav.contents.toString().split("\n")
+        mergedNavContents = mergedNavContents.concat(newNavContent)
+    }
+    mergedNavContents = mergedNavContents.join("\n")
+    anchorPageMap = new Map(([...anchorPageMap]).sort((a, b) => {
+        let indexA = mergedNavContents.indexOf(a[1].usedIn ? a[1].usedIn.at(-1).src.relative : a[1].source.src.relative)
+        let indexB = mergedNavContents.indexOf(b[1].usedIn ? b[1].usedIn.at(-1).src.relative : b[1].source.src.relative)
+        if (indexA === indexB) {
+            indexA = parseInt(a[1].line)
+            indexB = parseInt(b[1].line)
+        }
+        return indexA - indexB
+    }))
     return { keywordPageMap, rolePageMap, anchorPageMap }
 }
 
@@ -626,8 +676,28 @@ function getAttributeFromFile(file, attribute, stopAfter = 0) {
     if (typeof attribute == 'string' || attribute instanceof String) {
         let attributes = {}
         let i = 0
-        for (let line of file.contents.toString().split("\n")){
-            if (stopAfter > 0 && i > stopAfter) {break;}
+        for (let line of file.contents.toString().split("\n")) {
+            if (stopAfter > 0 && i > stopAfter) { break; }
+            updatePageAttributes(attributes, line)
+            if (attribute in attributes) {
+                return attributes[attribute]
+            }
+            i++;
+        }
+    }
+    return null
+}
+
+function getAttributeFromContent(content, attribute, stopAfter = 0) {
+    if (typeof attribute == 'string' || attribute instanceof String) {
+        if (typeof content == 'string' || content instanceof String) {
+            content = content.split("\n")
+        }
+        let attributes = {}
+        let i = 0
+        for (let line of content) {
+            console.log(line)
+            if (stopAfter > 0 && i > stopAfter) { break; }
             updatePageAttributes(attributes, line)
             if (attribute in attributes) {
                 return attributes[attribute]
@@ -666,7 +736,7 @@ function getSrcPathFromFileId(fileId) {
         splitFileId.shift()
     }
     relative = splitFileId[0]
-    return {version: version, component: component, module: antoraModule, type: type, relative: relative}
+    return { version: version, component: component, module: antoraModule, type: type, relative: relative }
 }
 
 module.exports = {
@@ -685,5 +755,6 @@ module.exports = {
     getAnchorsFromPageOrPartial,
     checkForIncludedFileFromLine,
     getAttributeFromFile,
-    getSrcPathFromFileId
+    getSrcPathFromFileId,
+    getAttributeFromContent
 }

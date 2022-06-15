@@ -120,7 +120,7 @@ module.exports.register = function ({ config }) {
                 //-------------
                 if (parsedConfig.loft) {
                     console.log("Creating list of figures and tables...")
-                    Loft.createLoft(contentCatalog, anchorPageMap, navFiles, pages, component, version)
+                    Loft.createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles, pages, component, version)
                 }
                 //-------------
                 // Addon ConsistentNumbering: Generate and apply consistent numbers for sections, titles, and (if activated) figures and tables
@@ -138,7 +138,7 @@ module.exports.register = function ({ config }) {
                 //-------------
                 if (anchorPageMap.size > 0 && parsedConfig.localToGlobalReferences) {
                     console.log("Replace local references to global anchors with xref macro...")
-                    pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( anchorPageMap, pages )
+                    pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorPageMap, pages )
                 }
                 //-------------
                 // Addon CrossrefReplacement: Replace Asciidoctor local references ("<<ref>>") where the anchor is now located on a different page.
@@ -148,7 +148,7 @@ module.exports.register = function ({ config }) {
                 if (parsedConfig.alternateXrefStyle && parsedConfig.alternateXrefStyle !== "") {
                     console.log(`Applying explicit xref style ${parsedConfig.alternateXrefStyle} for xrefs...`)
                     // TODO: Add function call
-                    RefStyle.addXrefStyleToSectionAndPageXrefs(catalog, componentAttributes, parsedConfig.alternateXrefStyle)
+                    RefStyle.addXrefStyleToSectionAndPageXrefs(catalog, componentAttributes, anchorPageMap, parsedConfig.alternateXrefStyle)
                 }
                 //-------------
                 // Addon LostAndFound: Lists content that is not used.

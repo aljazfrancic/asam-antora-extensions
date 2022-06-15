@@ -165,7 +165,7 @@ function handlePreface( nav, catalog, pages, componentAttributes, line, imageInd
  */
 function handleAppendix( nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, appendixCaption, appendixOffset ) {
     const appendixStartLevel = isNaN(parseInt(startLevel)+parseInt(appendixOffset)) ? startLevel : (parseInt(startLevel)+parseInt(appendixOffset)).toString()
-    return tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, content, line, generateNumbers, appendixStartLevel, chapterIndex, imageIndex, tableIndex, style, "appendix", appendixCaption)
+    return tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, content, line, generateNumbers, appendixStartLevel, chapterIndex, imageIndex, tableIndex, style, "appendix", appendixCaption, true)
 }
 
 /**
@@ -212,7 +212,7 @@ function handleBibliography(nav, catalog, pages, componentAttributes, line, imag
  * @param {String} appendixCaption - The caption for appendices.
  * @returns {Array} - [Changed content, new chapterIndex, new imageIndex, new tableIndex, generateNumbers = true, new option]
  */
-function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, option="default", appendixCaption="" ) {
+function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, option="default", appendixCaption="", isAppendix = false ) {
     let newImageIndex = imageIndex
     let newTableIndex = tableIndex
     let numberOfLevelTwoSections = 0
@@ -242,8 +242,6 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, compo
         // Get the referenced page, if the link is correct.
         //-------------
         else if (level >= startLevel) {
-            let expectedNavtitleIndex = 0
-            let expectedReftextIndex = 0
             let foundPage = ContentAnalyzer.determinePageForXrefInLine(line, indexOfXref, pages, nav)
             //-------------
             // Only execute if at least one matching page was found. If so, take the first page that matches.
@@ -258,15 +256,15 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, compo
                 //-------------
                 // If section number shall be applied, apply current values and determine the next ones.
                 //-------------
-                chapterIndex = Helper.determineNextChapterIndex(targetLevel, chapterIndex, style, appendixCaption)
+                chapterIndex = Helper.determineNextChapterIndex(targetLevel, chapterIndex, style, appendixCaption, isAppendix)
                 Helper.addTitleoffsetAttributeToPage( page, chapterIndex)
                 let [a,b,c] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex, tableIndex)
                 newImageIndex = a
                 newTableIndex = b
                 numberOfLevelTwoSections = c
                 let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)
-                if (appendixCaption && targetLevel === 1) {
-                    const targetIndex = style === "iso" ? chapterIndex.split(".") : chapterIndex.split(".").slice(0,-1)
+                const targetIndex = style === "iso" ? chapterIndex.split(".") : chapterIndex.split(".").slice(0,-1)
+                if (isAppendix && targetLevel === 1) {
                     newContent.splice(indexOfTitle+2,0,":titleprefix: "+ appendixCaption+" "+targetIndex.join(".")+":")
                 }
                 //-------------
@@ -275,23 +273,24 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, compo
                 //-------------
                 if (option !== "default") {
                     newContent.splice(indexOfTitle,0,"["+option+"]")
-                    expectedNavtitleIndex += 1
-                    indexOfNavtitle +=1
-                    expectedReftextIndex += 1
-                    indexOfReftext += 1
                     option = "default"
                 }
-                if (indexOfNavtitle > expectedNavtitleIndex) {
-                    const index = newContent[indexOfNavtitle].indexOf(":navtitle:") + ":navtitle:".length + 1
-                    newContent[indexOfNavtitle] = newContent[indexOfNavtitle].slice(0,index) + chapterIndex + " " + newContent[indexOfNavtitle].slice(index)
-                }
-                if (indexOfReftext > expectedReftextIndex) {
-                    const index = newContent[indexOfReftext].indexOf(":reftext:") + ":reftext:".length + 1
-                    newContent[indexOfReftext] = newContent[indexOfReftext].slice(0,index) + chapterIndex + " " + newContent[indexOfReftext].slice(index)
-                }
                 page._contents = Buffer.from(newContent.join("\n"))
+                //-------------
+                // Define the reftext attributes for each xrefstyle for the reference_style_mixing extension.
+                //-------------
+                let title = page.contents.toString().match(/^= (.*)$/m) ? page.contents.toString().match(/^= (.*)$/m)[1].trim() : ""
+                const sectionRefsig = componentAttributes['section-refsig'] ? componentAttributes['section-refsig'] : "Section"
+                const reftext_full = isNaN(targetIndex[0]) ? `${appendixCaption} ${targetIndex.join(".")}, "${title}"` : `${sectionRefsig} ${targetIndex.join(".")}, "${title}"`
+                const reftext_short = isNaN(targetIndex[0]) ? `${appendixCaption} ${targetIndex.join(".")}` : `${sectionRefsig} ${targetIndex.join(".")}`
+                const reftext_basic = `"${title}"`
+                const navtitle = (isAppendix && targetLevel === 1) ? `${appendixCaption} ${targetIndex.join(".")}: ${title}` :  `${targetIndex.join(".")} ${title}`
+                ContentManipulator.updateAttributeWithValueOnPage(page, "navtitle", navtitle)
+                ContentManipulator.updateAttributeWithValueOnPage(page, "reftext_full", reftext_full)
+                ContentManipulator.updateAttributeWithValueOnPage(page, "reftext_short", reftext_short)
+                ContentManipulator.updateAttributeWithValueOnPage(page, "reftext_basic", reftext_basic)
                 const newIndex = style === "iso" ? chapterIndex +"."+ (numberOfLevelTwoSections-1) : chapterIndex + (numberOfLevelTwoSections-1) +"."
-                chapterIndex = Helper.determineNextChapterIndex(targetLevel+1, newIndex, style, appendixCaption)
+                chapterIndex = Helper.determineNextChapterIndex(targetLevel+1, newIndex, style, appendixCaption, isAppendix)
             }
         }
     }

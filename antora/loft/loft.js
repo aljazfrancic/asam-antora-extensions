@@ -4,7 +4,7 @@ const ContentAnalyzer = require('../../core/content_analyzer.js')
 const FileCreator = require('../../core/file_creator.js')
 
 
-function createLoft(contentCatalog, anchorPageMap, navFiles, pages, component, version) {
+function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles, pages, component, version) {
     let mergedNavContents = []
     navFiles.sort((a,b) => {
         return a.nav.index - b.nav.index
@@ -15,26 +15,28 @@ function createLoft(contentCatalog, anchorPageMap, navFiles, pages, component, v
         mergedNavContents = mergedNavContents.concat(newNavContent)
     }
     mergedNavContents = mergedNavContents.join("\n")
-    const figureMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("fig-")).sort((a,b) => {
-        let indexA = mergedNavContents.indexOf(a[1].usedIn ? a[1].usedIn.at(-1).src.relative : a[1].source.src.relative)
-        let indexB = mergedNavContents.indexOf(b[1].usedIn ? b[1].usedIn.at(-1).src.relative : b[1].source.src.relative)
-        if (indexA === indexB) {
-            indexA = parseInt(a[1].line)
-            indexB = parseInt(b[1].line)
-        }
-        return indexA - indexB
-    }))
-    const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("tab-")).sort((a,b) => {
-        let indexA = mergedNavContents.indexOf(a[1].usedIn ? a[1].usedIn.at(-1).src.relative : a[1].source.src.relative)
-        let indexB = mergedNavContents.indexOf(b[1].usedIn ? b[1].usedIn.at(-1).src.relative : b[1].source.src.relative)
-        if (indexA === indexB) {
-            indexA = parseInt(a[1].line)
-            indexB = parseInt(b[1].line)
-        }
-        return Math.sign(indexA - indexB)
-    }))
-    let figuresPage = createListOfFiguresPage(contentCatalog, pages, figureMap, targetModule, component, version)
-    let tablesPage = createListOfTablesPage(contentCatalog, pages, tableMap, targetModule, component, version)
+    const figureMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("fig-")))
+    // .sort((a,b) => {
+    //     let indexA = mergedNavContents.indexOf(a[1].usedIn ? a[1].usedIn.at(-1).src.relative : a[1].source.src.relative)
+    //     let indexB = mergedNavContents.indexOf(b[1].usedIn ? b[1].usedIn.at(-1).src.relative : b[1].source.src.relative)
+    //     if (indexA === indexB) {
+    //         indexA = parseInt(a[1].line)
+    //         indexB = parseInt(b[1].line)
+    //     }
+    //     return indexA - indexB
+    // }))
+    const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("tab-")))
+    // .sort((a,b) => {
+    //     let indexA = mergedNavContents.indexOf(a[1].usedIn ? a[1].usedIn.at(-1).src.relative : a[1].source.src.relative)
+    //     let indexB = mergedNavContents.indexOf(b[1].usedIn ? b[1].usedIn.at(-1).src.relative : b[1].source.src.relative)
+    //     if (indexA === indexB) {
+    //         indexA = parseInt(a[1].line)
+    //         indexB = parseInt(b[1].line)
+    //     }
+    //     return Math.sign(indexA - indexB)
+    // }))
+    let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, pages, figureMap, targetModule, component, version)
+    let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, pages, tableMap, targetModule, component, version)
 
     if (figuresPage) {
         navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${figuresPage.src.relative}[]\n`))
@@ -46,7 +48,7 @@ function createLoft(contentCatalog, anchorPageMap, navFiles, pages, component, v
 
 }
 
-function createListOfFiguresPage( contentCatalog, pages, figureMap, targetModule, component, version ){
+function createListOfFiguresPage( componentAttributes, contentCatalog, pages, figureMap, targetModule, component, version ){
     if (!figureMap || figureMap.length === 0) {return null;}
     let newContent = ['= List of figures']
     newContent.push('')
@@ -61,7 +63,7 @@ function createListOfFiguresPage( contentCatalog, pages, figureMap, targetModule
         const srcModule = page.src.module
         const path = page.src.relative
         const src = entry[1].source
-        const title = ContentAnalyzer.getReferenceNameFromSource(pages, src, anchor)
+        const title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, figureMap, pages, src, anchor)
         newContent.push(`|Figure ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
         entryIndex += 1
     }
@@ -74,7 +76,7 @@ function createListOfFiguresPage( contentCatalog, pages, figureMap, targetModule
     return (FileCreator.createNewVirtualFile(contentCatalog, "list_of_figures.adoc", "loft", targetModule, component, version, newContent.join("\n"), base))
 }
 
-function createListOfTablesPage( contentCatalog, pages, tableMap, targetModule, component, version ){
+function createListOfTablesPage( componentAttributes, contentCatalog, pages, tableMap, targetModule, component, version ){
     if (!tableMap || tableMap.length === 0) {return null;}
     let newContent = ['= List of tables']
     newContent.push('')
@@ -89,7 +91,7 @@ function createListOfTablesPage( contentCatalog, pages, tableMap, targetModule, 
         const srcModule = page.src.module
         const path = page.src.relative
         const src = entry[1].source
-        const title = ContentAnalyzer.getReferenceNameFromSource(pages, src, anchor)
+        const title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, tableMap, pages, src, anchor)
         newContent.push(`|Table ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
         entryIndex += 1
     }
