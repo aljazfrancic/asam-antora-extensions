@@ -1,11 +1,11 @@
 module.exports = function (registry) {
     registry.treeProcessor(function () {
-      var self = this
-      var verbose = false
+      const self = this
+      let    verbose = false
       self.process(function (doc) {
         // if (doc.getTitle() && doc.getTitle().includes("Physical object actors")){verbose = true}
         // Check if sectnums and sectnumoffset is found. Only act if true
-        // if (doc && doc.getTitle && doc.getTitle() === "Workflows for auditors/regulators") {verbose = true}
+        // if (doc && doc.getTitle && doc.getTitle() === "Physical object actors") {verbose = true}
         if (verbose){console.log("Title: ",doc.getTitle())}
         if (verbose){console.log("has imageoffset attribute: ",doc.hasAttribute("imageoffset"))}
         if (verbose){console.log("has tableoffset attribute: ",doc.hasAttribute("tableoffset"))}
@@ -21,7 +21,7 @@ module.exports = function (registry) {
             if (verbose){console.log("titleprefix attribute: ",titlePrefix)}
             if (verbose){console.log("imageOffset attribute: ",imageOffset)}
             if (verbose){console.log("tableoffset attribute: ",tableOffset)}
-            if (verbose){console.log("attributes: ", doc.getAttributes())}
+            // if (verbose){console.log("attributes: ", doc.getAttributes())}
 
             if (titlePrefix) {
                 pageTitle = doc.setTitle(titlePrefix + " " + pageTitle)
@@ -42,6 +42,62 @@ module.exports = function (registry) {
       })
     })
 
+
+    function applyOffset (doc, offset, node_name, caption, verbose = false) {
+        let newOffset = offset
+        // if (verbose && doc.node_name && doc.node_name === "table"){console.log("doc.node_name: ",doc.node_name); console.log("doc.getNodeName()", doc.getNodeName()); console.log("Array.isArray(doc)",Array.isArray(doc)); throw ""}
+        if (doc.getNodeName && doc.getNodeName() === node_name ) {
+            if (verbose) {console.log("found",node_name)}
+            newOffset = 1 + newOffset
+            const oldNumeral = doc.getNumeral()
+            doc.setNumeral(newOffset)
+            if(doc.getCaption() && doc.getCaption().replace) {
+                // doc.setCaption(`${caption} ${newOffset}. `)
+                doc.setCaption(doc.getCaption().replace(oldNumeral,newOffset))
+                return newOffset
+            }
+            return offset
+
+        }
+        else if (Array.isArray(doc)) {
+            doc.forEach(b => {
+                // if (verbose){console.log("b: ",b); throw ""}
+                newOffset = applyOffset( b, newOffset, node_name, caption, verbose)
+            })
+            return newOffset
+        }
+        else if (doc.getBlocks && Array.isArray(doc.getBlocks())) {
+            for (let b of doc.getBlocks()) {
+                // if (verbose && b.node_name && b.node_name === "table"){console.log("b: ",b); throw ""}
+                newOffset = applyOffset( b, newOffset, node_name, caption, verbose)
+            }
+            return newOffset
+        }
+        else if(!doc.getBlocks) {
+            return offset
+
+        }
+        for (let block of doc.getBlocks()) {
+            if (!block) {break}
+            if(!block.getNodeName) {continue}
+            // if (verbose){console.log("block: ",block.getNodeName())}
+            if (block.getNodeName() !== node_name && block.hasBlocks()) {
+                newOffset = applyOffset( block, newOffset, node_name, caption, verbose)
+            }
+            else if(block.getNodeName() === node_name) {
+                if (verbose) {console.log("found",node_name)}
+                newOffset = 1 + newOffset
+                const oldNumeral = block.getNumeral()
+                block.setNumeral(newOffset)
+                if(block.getCaption()) {
+                    // block.setCaption(`${caption} ${newOffset}. `)
+                    block.setCaption(block.getCaption().replace(oldNumeral,newOffset))
+                }
+                else {return offset}
+            }
+        }
+        return (newOffset)
+    }
     /**
      * Updates and applies the image offset to each image.
      * @param {*} doc - The document.
@@ -50,24 +106,7 @@ module.exports = function (registry) {
      * @returns {Number} . The updated imageOffset.
      */
     function updateImageOffset( doc, imageOffset, verbose=false ) {
-        let newImageOffset = imageOffset
-        for (let block of doc.getBlocks()) {
-            if (!block) {break}
-            if(!block.getNodeName) {continue}
-            if (verbose){console.log("block: ",block.getNodeName())}
-            if (block.getNodeName() !== "image" && block.hasBlocks()) {
-                newImageOffset = updateImageOffset( block, newImageOffset, verbose)
-            }
-            else if(block.getNodeName() === "image") {
-                newImageOffset = 1 + newImageOffset
-                const oldNumeral = block.getNumeral()
-                block.setNumeral(newImageOffset)
-                if(block.getCaption()) {
-                    block.setCaption(block.getCaption().replace(oldNumeral,newImageOffset))
-            }
-            }
-        }
-        return (newImageOffset)
+        return (applyOffset(doc, imageOffset,"image","Image",verbose))
     }
 
     /**
@@ -77,30 +116,7 @@ module.exports = function (registry) {
      * @param {Boolean} verbose - Optional: If true, will print verbose output in the console.
      * @returns {Number} - The updated tableOffset.
      */
-    function updateTableOffset( doc, tableOffset, verbose=false ) {
-        let newTableOffset = tableOffset
-        for (let block of doc.getBlocks()) {
-            if (!block) {break}
-            if(!block.getNodeName) {continue}
-            if (verbose){console.log("block: ",block.getNodeName())}
-            // if (verbose){console.log(block.getDocument())}
-            if (verbose){console.log(block.getContext())}
-            if (verbose){console.log(block.getId())}
-            // if (verbose && block.id === "tab-trafficparticipant-abstract-physical_object-basic") {console.log("found table differently")}
-            if (block.getNodeName() !== "table" && block.hasBlocks()) {
-                if (verbose) {console.log("no table")}
-                // if (verbose){console.log("block content: ",block.getNodeName())}
-                newTableOffset = updateTableOffset( block, newTableOffset, verbose)
-            }
-            else if(block.getNodeName() === "table") {
-                if (verbose) {console.log("found table")}
-                newTableOffset = 1 + newTableOffset
-                block.setNumeral(newTableOffset)
-                if(block.getCaption()) {
-                    block.setCaption("Table "+newTableOffset+". ")
-            }
-            }
-        }
-        return (newTableOffset)
+    function updateTableOffset( doc, tableOffset, verbose=false) {
+        return (applyOffset(doc, tableOffset,"table","Table",verbose))
     }
   }
