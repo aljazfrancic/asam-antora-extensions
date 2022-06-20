@@ -336,9 +336,11 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const reSectionEqualSigns = /^\s*(=+)\s+(.*)$/m
     const reCaptionLabel = /^\.(\S.+)$/m
     const reAnchorType = /#?([^-\]]+)-?[^\]]*/m
+    const reAnchor = new RegExp(`\\[\\[${anchor.replaceAll("-","\\-")}\\]\\]|\\[\#${anchor.replaceAll("-","\\-")}\\]|anchor:${anchor.replaceAll("-","\\-")}`, 'm')
     let content = page.contents.toString()
     const resultAnchorType = anchor.match(reAnchorType)
-    const indexOfAnchor = content.indexOf(anchor)
+    // const indexOfAnchor = content.indexOf(anchor)
+    const indexOfAnchor = content.match(reAnchor).index
     const resultForNextHeading = content.slice(indexOfAnchor).match(reSectionEqualSigns)
     // const resultForPreviousHeading = content.slice(0,indexOfAnchor).match(reSectionEqualSigns)
     const resultNextCaption = content.slice(indexOfAnchor).match(reCaptionLabel)
@@ -349,6 +351,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     let title = ""
     const sectionRefsig = componentAttributes['section-refsig'] ? componentAttributes['section-refsig'] : "Section"
     const appendixRefsig = componentAttributes['appendix-caption'] ? componentAttributes['appendix-caption'] : "Appendix"
+    // let verbose = (anchor==="sec-lc-aggregate-types" && style === "full")
     //-------------
     //Only act on anchors that match one of the ASAM anchor types (matching reAnchorType).
     //-------------
@@ -384,6 +387,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 break;
             case "sec":
                 result = resultForNextHeading ? resultForNextHeading : content.match(/^(=) (.*)$/m);
+                // if (verbose)  {console.log(result)}
                 let pageNumber = getAttributeFromFile(page, "titleoffset");
                 if (!pageNumber) { pageNumber = ""; }
                 else { pageNumber = pageNumber.trim(); }

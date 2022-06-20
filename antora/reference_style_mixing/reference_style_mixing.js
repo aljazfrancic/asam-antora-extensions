@@ -31,7 +31,7 @@ function addXrefStyleToSectionAndPageXrefs (catalog, componentAttributes, anchor
 }
 
 function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, style, appendixCaption, inheritedAttributes = {}) {
-    const re = /xref:(.*\.adoc)(#.*)?(\[)(.*,\s*)*(xrefstyle=([^,\]]*))?(, *.*)*\]/gm
+    const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)([^\]]*,\s*)*(xrefstyle=([^,\]]*))?(, *.*)*\]/gm
     if (!file.contents) {
         return
     }
@@ -51,6 +51,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
     // else {console.log("skipping file",file.src.relative)}
     let content = file.contents.toString().split("\n")
     for (let line of content) {
+        let index = content.indexOf(line)
         ContentAnalyzer.updatePageAttributes(inheritedAttributes, line)
         let newLine = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
         re.lastIndex = 0
@@ -59,7 +60,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
             if (match.index === re.lastIndex) {
                 re.lastIndex++;
             }
-            if (match[5] || match[4] || match[7]) {continue;}
+            if (match[5] || match[4] || match[7]) {}
             else if (match[2]) {
                 const targetPath = ContentAnalyzer.getSrcPathFromFileId(match[1])
                 if (!targetPath.module) {targetPath.module = file.src.module}
@@ -67,17 +68,22 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
                 if (!xrefTarget) {console.warn("could not determine target of xref...", match[0]); continue}
                 const xrefLabel = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, anchorPageMap, catalog,xrefTarget,match[2].slice(1), style)
                 const start = newLine.indexOf("[",match.index) +1
-                newLine = newLine.slice(0,start) + `${xrefLabel}` + newLine.slice(start)
-                content[content.indexOf(line)] = newLine
+                if (xrefTarget === file) {
+                    newLine = newLine.slice(0,start) + `xrefstyle=${style}` + newLine.slice(start)
+                }
+                else {
+                    newLine = newLine.slice(0,start) + `${xrefLabel}` + newLine.slice(start)
+                }
+                content[index] = newLine
             }
             else {
                 const start = newLine.indexOf("[",match.index) +1
                 newLine = newLine.slice(0,start) + `xrefstyle=${style}` + newLine.slice(start)
-                content[content.indexOf(line)] = newLine
+                content[index] = newLine
             }
         }
 
-        let targetFile = ContentAnalyzer.checkForIncludedFileFromLine(catalog, file, line)
+        let targetFile = ContentAnalyzer.checkForIncludedFileFromLine(catalog, file, newLine)
         if (targetFile) {
             applyXrefStyle(catalog, componentAttributes, targetFile, style, appendixCaption, inheritedAttributes)
         }
