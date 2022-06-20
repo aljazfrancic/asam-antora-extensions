@@ -86,9 +86,13 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
 }
 
 /**
+ *
  * Extracts all manually defined anchors from an AsciiDoc file. Also traverses through included files.
  * @param {*} catalog - An array of all pages and partials.
  * @param {Object} thisFile - The current page.
+ * @param {Object} componentAttributes - An object containing all attributes of the component.
+ * @param {Object} inheritedAttributes - Optional: An object with the previously determined attributes for this file.
+ * @param {Array} tags - Optional: An array of tags to filter for.
  * @returns {Map} - A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
 function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inheritedAttributes = {}, tags = []) {
@@ -104,6 +108,11 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
     let lineOffset = 0
     let allowInclude = (tags.length > 0) ? false : true
     let taggedRegions = {}
+    //-------------
+    // Check all tags and set search behavior depending on
+    // a) any tag is set?
+    // b) at least one negated tag is set?
+    //-------------
     for (let t of tags) {
         let v = t.startsWith("!") ? false : true;
         if (!v) {allowInclude = true}
@@ -111,6 +120,10 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
         taggedRegions[t] = {include: v, active: false}
     }
     for (let line of splitContent) {
+        //-------------
+        // Set search behavior depending on active tags and skip lines explicitly excluded through tagged regions.
+        // TODO: Handle wildcard tags!
+        //-------------
         if (tags.length > 0) {
             const tagStartMatch = line.match(reTaggedStart)
             const tagEndMatch = line.match(reTaggedEnd)
@@ -124,6 +137,9 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
         }
         if (!allowInclude) {continue;}
         const currentLineIndex = splitContent.indexOf(line)
+        //-------------
+        // Add special behavior for custom "use-antora-rules" attribute
+        //-------------
         if (line.indexOf("ifndef::") > -1 && line.indexOf("use-antora-rules") > -1) {
             ignoreLine = true
         }
@@ -131,6 +147,9 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
             ignoreLine = false
         }
         if (ignoreLine) { continue; }
+        //-------------
+        // Get all attributes from this line and parse its content. If a file is included, check it. Otherwise, check if any anchor is found and, if so, add it to the list.
+        //-------------
         updatePageAttributes(inheritedAttributes, line)
         let includeSearchResult = line.match(reInclude)
         if (includeSearchResult && includeSearchResult.length > 0) {
@@ -170,6 +189,9 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
             }
         }
     }
+    //-------------
+    // If at least one anchor was found, parse each match and update the corresponding anchor map.
+    //-------------
     if (results) {
         for (let entry of results) {
             const e1 = entry[1]
@@ -189,6 +211,13 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
     return resultMap
 }
 
+/**
+ * Update function specifically designed for anchor maps.
+ * @param {Map} inputMap - The in put map whose entry needs to be updated.
+ * @param {String} key - The key which needs to be updated.
+ * @param {*} addedValue - The new value.
+ * @param {Integer} line - The line index at which the entry was found.
+ */
 function updateAnchorMapEntry(inputMap, key, addedValue, line) {
     let entry = inputMap.get(key)
     if (entry.usedIn) {
@@ -224,7 +253,7 @@ function getAllKeywordsAsArray(page) {
 /**
  * Determines the number of relevant sections up to a maximum section value.
  * This function also parses all included files that may be relevant depending on their accumulated leveloffset value.
- * @param {*} pages - An array of pages.
+ * @param {Array} pages - An array of pages.
  * @param {Object} page - The current page.
  * @param {Number} targetSectionLevel - The sectionlevel that is currently relevant.
  * @param {String} startText - Optional: If set, finds a specific anchor of type [#anchor] or [[anchor]].
@@ -295,9 +324,12 @@ function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, s
 
 /**
  * Retrieves the name associated with an anchor so it can be used as label when linking to other pages.
- * @param {*} pages - An array of all pages.
+ * @param {Object} componentAttributes - An object containing all attributes of the component.
+ * @param {Map} anchorPageMap - A map containing all found anchors and their pages.
+ * @param {Array} pages - An array of all pages.
  * @param {Object} page - The current page.
  * @param {String} anchor - The anchor in question.
+ * @param {String} style - Optional: A specific reference style to be returned. Options: "full", "short", or "basic".
  * @returns {String} - The extracted alt text.
  */
 function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, page, anchor, style = "") {
@@ -366,6 +398,9 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 returnValue = getAltTextFromTitle(page, content);
                 break;
         }
+        //-------------
+        // Update the return value based on the selected style (if any). Otherwise, leave as is.
+        //-------------
         switch (style) {
             case "full":
                 returnValue = prefix ? `${prefix}, "${title}"` : `${title}`;
@@ -379,9 +414,10 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
             default:
                 break;
         }
-        // returnValue = title
-
     }
+    //-------------
+    // Backup: If all else fails (i.e. an invalid anchor was found), get the alt text from the title.
+    //-------------
     else {
         returnValue = getAltTextFromTitle(page, content);
     }
@@ -413,17 +449,6 @@ function getAltTextFromTitle(page, content) {
         returnValue = resultAlt && resultAlt.length > 1 ? resultAlt[1] : page.src.stem
     }
     return returnValue
-}
-
-/**
- * Extracts the section number from the title of a numbered page.
- * @param {Object} page - The page for which the number needs to be extracted.
- * @param {String} content - The contents of that page.
- * @returns {String} - The extracted number(s)
- */
-function getAltNumberFromTitle(page, content) {
-    let value = getAltTextFromTitle(page, content)
-    return value.split(" ")[1]
 }
 
 /**
@@ -536,10 +561,10 @@ function generateMapForRegEx(re, pages, exclusive = false) {
 /**
  * Generates a map for the 'keywords' attribute.
  * @param {Boolean} useKeywords - The function is only executed if this is set to true.
- * @param {*} pages - An array of relevant pages.
+ * @param {Array} pages - An array of relevant pages.
  * @returns {Map} - A map of 'keywords' and the pages where they were found in.
  */
-function getKeywordPageMapForPages(useKeywords, pages = {}) {
+function getKeywordPageMapForPages(useKeywords, pages = []) {
     if (!useKeywords) {
         return (new Map())
     }
@@ -550,10 +575,10 @@ function getKeywordPageMapForPages(useKeywords, pages = {}) {
 
 /**
  * Generates a map for the 'role' shorthand.
- * @param {*} pages - An array of relevant pages
+ * @param {Array} pages - An array of relevant pages
  * @returns {Map} - A map of 'roles' and the pages where they were found in.
  */
-function getRolePageMapForPages(pages = {}) {
+function getRolePageMapForPages(pages = []) {
     var re = new RegExp("{role-([^}]*)}")
     var rolesMap = generateMapForRegEx(re, pages)
     return rolesMap
@@ -563,7 +588,7 @@ function getRolePageMapForPages(pages = {}) {
  * Generates a map for all anchors with ASAM notation.
  * @param {Array} catalog - An array of relevant pages and partials.
  * @param {Array} pages - An array of relevant pages.
- * @param {*} navFiles - An array of relevant navigation files.
+ * @param {Array} navFiles - An array of relevant navigation files.
  * @param {Object} componentAttributes - The attributes defined in the component or site.
  * @returns {Map} - A map of anchors and the pages where they were found in.
  */
@@ -678,6 +703,13 @@ function determineTargetPartialFromIncludeMacro(contentFiles, thisPage, pathPref
     return contentFiles.find(file => file.src.family === "partial" && file.src.module === prefixParts.length > 1 ? prefixParts.at(-2) : thisPage.src.module && file.src.relative === includePath)
 }
 
+/**
+ * Looks for the include macro and tries to identify the corresponding page or partial (.adoc).
+ * @param {Object} catalog - A content catalog with all relevant content (files and attributes).
+ * @param {Object} thisFile - The current file.
+ * @param {String} line - The line that needs to be analyzed.
+ * @returns {Object} - The identified target file.
+ */
 function checkForIncludedFileFromLine(catalog, thisFile, line) {
     let targetFile;
     const re = /^\s*include::((\S*partial\$)|(\S*page\$))?([^\[]+\.adoc)\[[^\]]*\]/
@@ -700,6 +732,13 @@ function checkForIncludedFileFromLine(catalog, thisFile, line) {
     return targetFile
 }
 
+/**
+ * Tries to retrieve the value of an attribute from a file (first occurrence). Returns null if no match is found.
+ * @param {Object} file - The file to be analyzed.
+ * @param {String} attribute - The attribute in question.
+ * @param {Integer} stopAfter - Optional: Defines a maximum number of lines to search before stopping.
+ * @returns {*} - The identified attribute value, if found, or null, if not.
+ */
 function getAttributeFromFile(file, attribute, stopAfter = 0) {
     if (typeof attribute == 'string' || attribute instanceof String) {
         let attributes = {}
@@ -716,6 +755,13 @@ function getAttributeFromFile(file, attribute, stopAfter = 0) {
     return null
 }
 
+/**
+ * Tries to retrieve the value of an attribute from a content Array (first occurrence). Returns null if no match is found.
+ * @param {Array} content - An Array of String containing a file's content.
+ * @param {String} attribute  - An attribute name.
+ * @param {Integer} stopAfter - Optional: A maximum number of lines to search.
+ * @returns {*} - The value of the requested attribute, if found, or null, if not.
+ */
 function getAttributeFromContent(content, attribute, stopAfter = 0) {
     if (typeof attribute == 'string' || attribute instanceof String) {
         if (typeof content == 'string' || content instanceof String) {
@@ -736,6 +782,11 @@ function getAttributeFromContent(content, attribute, stopAfter = 0) {
     return null
 }
 
+/**
+ * Determines the path to a source file from an Antora ID.
+ * @param {String} fileId - The ID of an Antora file.
+ * @returns {String} - The translated path to the file.
+ */
 function getSrcPathFromFileId(fileId) {
     let splitFileId = fileId.split("@")
     let version,

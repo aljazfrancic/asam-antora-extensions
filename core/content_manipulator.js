@@ -25,6 +25,12 @@ function addAttributeWithValueToPage( page, pageContent, indexOfTitle, attribute
     page.contents = Buffer.from(pageContent.join("\n"))
 }
 
+/**
+ * Updates an existing attribute value (first from the top) or, if not found, adds it.
+ * @param {Object} page - The page on which an attribute has to be set or updated.
+ * @param {String} attribute - The attribute that needs to be set or updated.
+ * @param {*} value - The new value of the attribute
+ */
 function updateAttributeWithValueOnPage( page, attribute, value) {
     let content = page.contents.toString().split("\n")
     let foundMatch = false
@@ -56,8 +62,6 @@ function addSpecialSectionTypeToPage( page, specialSectionType ){
     newContent.splice(indexOfTitle+1,0,"["+specialSectionType+"]")
     page.contents = Buffer.from(newContent.join("\n"))
 }
-
-
 
 
 module.exports = {

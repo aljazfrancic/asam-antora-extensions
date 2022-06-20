@@ -5,7 +5,7 @@ const defaultKeywordsFilename = "0_used-keywords.adoc"
 /**
  * Parses the configuration from the project's site.yml and determines the corresponding variables from it.
  * @param {Object} config - The configuration from the site.yml.
- * @returns {Object} - The determined configuration values numberedTitles, sectionNumberStyle, addToNavigation, unlistedPagesHeading, useKeywords, targetPath, targetModule, targetName, keywordOverviewPageRequested, localToGlobalReferences, workdir.
+ * @returns {Object} - The determined configuration values numberedTitles, sectionNumberStyle, addToNavigation, unlistedPagesHeading, useKeywords, targetPath, targetModule, targetName, keywordOverviewPageRequested, localToGlobalReferences, workdir, loft, listUnusedPartials, alternateXrefStyle.
  */
 function parse(config) {
     const { numberedTitles, sectionNumberStyle, addToNavigation, unlistedPagesHeading = 'Unlisted pages', localToGlobalReferences, workdir, loft, listUnusedPartials, alternateXrefStyle } = config
