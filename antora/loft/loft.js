@@ -34,7 +34,7 @@ function createListOfFiguresPage( componentAttributes, contentCatalog, catalog, 
     if (!figureMap || figureMap.length === 0) {return null;}
     let newContent = ['= List of figures']
     newContent.push('')
-    newContent.push('[%header, cols="10,90", grid=none, frame=none]')
+    newContent.push('[%header, cols="12,88", grid=none, frame=none]')
     newContent.push('|===')
     newContent.push('|Figure      |Description')
     let entryIndex = 1
@@ -46,10 +46,11 @@ function createListOfFiguresPage( componentAttributes, contentCatalog, catalog, 
         const path = page.src.relative
         const src = entry[1].source
         let title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, figureMap, catalog, src, anchor)
-        title = replaceXrefsInTitleLink(title)
+        // title = replaceXrefsInTitleLink(title)
 
         if (title !== "") {
-            newContent.push(`|Figure ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
+            // newContent.push(`|Figure ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
+            newContent.push(`|xref:${srcModule}:${path}#${anchor}[Figure ${entryIndex}]  |${title}`)
             entryIndex += 1
         }
     }
@@ -66,7 +67,7 @@ function createListOfTablesPage( componentAttributes, contentCatalog, catalog, t
     if (!tableMap || tableMap.length === 0) {return null;}
     let newContent = ['= List of tables']
     newContent.push('')
-    newContent.push('[%header, cols="10,90", grid=none, frame=none]')
+    newContent.push('[%header, cols="12,88", grid=none, frame=none]')
     newContent.push('|===')
     newContent.push('|Table      |Description')
     let entryIndex = 1
@@ -78,10 +79,11 @@ function createListOfTablesPage( componentAttributes, contentCatalog, catalog, t
         const path = page.src.relative
         const src = entry[1].source
         let title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, tableMap, catalog, src, anchor)
-        title = replaceXrefsInTitleLink(title)
+        // title = replaceXrefsInTitleLink(title)
 
         if (title !== "") {
-            newContent.push(`|Table ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
+            // newContent.push(`|Table ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
+            newContent.push(`|xref:${srcModule}:${path}#${anchor}[Table ${entryIndex}]  |${title}`)
             entryIndex += 1
         }
     }
