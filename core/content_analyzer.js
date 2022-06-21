@@ -93,10 +93,11 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
  * @param {Object} componentAttributes - An object containing all attributes of the component.
  * @param {Object} inheritedAttributes - Optional: An object with the previously determined attributes for this file.
  * @param {Array} tags - Optional: An array of tags to filter for.
+ * @param {Object} lineOffset - Optional: An object containing a key "line" with Integer values denoting the line number offset accumulated from included files.
  * @returns {Map} - A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
 function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inheritedAttributes = {}, tags = [], lineOffset = {line:0}) {
-    const re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)\]|anchor:([^\[]+)\[/
+    const re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)(,([^\]]*))?\]|anchor:([^\[]+)(,([^\]]*))?\[/
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[(.+)?\]/m;
     const reTags = /.*,?tags?=([^,]+)/m;
     const reTaggedStart = /\/\/\s*tag::(.+)\[\]/m
@@ -325,6 +326,14 @@ function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, s
     return relativeIndex
 }
 
+/**
+ * Updates a provided inheritedAttributes object with all attributes found within a file and included partials up to a specific line.
+ * @param {Object} catalog - The filtered content catalog (pages and partials)
+ * @param {Object} componentAttributes - An object containing all attributes of the component.
+ * @param {Object} inheritedAttributes -An object containing all attributes from this page and included partials.
+ * @param {Integer} index - The index of the line up to which the file is to be analyzed.
+ * @param {Object} file  - The file that is to be analyzed.
+ */
 function getActivePageAttributesAtLine(catalog, componentAttributes, inheritedAttributes, index, file) {
     const content = index ? file.contents.toString().split("\n").slice(0,index+1) : file.contents.toString().split("\n")
     for (let line of content) {
@@ -352,7 +361,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const reCaptionLabel = /^\.(\S.+)$/m
     const reAnchorType = /#?([^-\]]+)-?[^\]]*/m
     const regexAnchor = anchor.replaceAll("-","\\-").replaceAll(".","\\.").replaceAll("(","\\(").replaceAll(")","\\)")
-    const reAnchor = new RegExp(`\\[\\[${regexAnchor}\\]\\]|\\[\#${regexAnchor}\\]|anchor:${regexAnchor}`, 'm')
+    const reAnchor = new RegExp(`\\[\\[${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     let content = page.contents.toString()
     const resultAnchorType = anchor.match(reAnchorType)
     // const indexOfAnchor = content.indexOf(anchor)
@@ -549,8 +558,8 @@ function determinePageForXrefInLine(line, indexOfXref, pages, nav) {
 
 /**
  * Generates a map for a regular expression where each matched keyword is an entry and each page it was matched in a value for that entry.
- * @param {*} re - A regular expression that is to be matched for each page.
- * @param {*} pages - An array of relevant pages.
+ * @param {RegExp} re - A regular expression that is to be matched for each page.
+ * @param {Array} pages - An array of relevant pages.
  * @param {Boolean} exclusive - Optional: If true, the function will only look for the first match in the file.
  * @returns {Map} - A map of matched keywords and the pages where that match occurred.
  */
