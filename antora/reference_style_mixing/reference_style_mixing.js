@@ -68,7 +68,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
                 if (!xrefTarget) {console.warn("could not determine target of xref...", match[0]); continue}
                 const xrefLabel = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, anchorPageMap, catalog,xrefTarget,match[2].slice(1), style)
                 const start = newLine.indexOf("[",match.index) +1
-                if (xrefTarget === file) {
+                if (xrefTarget === file || xrefLabel === "") {
                     newLine = newLine.slice(0,start) + `xrefstyle=${style}` + newLine.slice(start)
                 }
                 else {

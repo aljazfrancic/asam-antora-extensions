@@ -84,7 +84,7 @@ a| * autonav: Automatic navigation file creation based on folder structure
 * pages: Creates a list of all pages in a given folder.
 May be configured to include also all pages in all subfolders, or start in a specific subfolder.
 
-|Identifying and (optional) listing <<Orphan pages>>
+|Identifying and (optionally) listing <<Orphan pages>>
 |link:antora/orphan_pages/orphan_pages.js[orphan_pages.js]
 |None
 |yes
@@ -156,6 +156,11 @@ This is the case by default for the standard ASAM Antora UI.
 |no
 |Creates a list of figures and tables that comply with the ASAM anchor requirements.
 
+|Mixing different xref styles
+|link:antora/reference_style_mixing/reference_style_mixing.js[reference_style_mixing.js]
+|None
+|no
+|Allows to change the xref style for all page xrefs.
 
 |===
 
@@ -227,3 +232,7 @@ include::antora/nav_from_index/description.adoc[leveloffset=+2]
 ---
 
 include::antora/loft/description.adoc[leveloffset=+2]
+
+---
+
+include::antora/reference_style_mixing/description.adoc[leveloffset=+2]

@@ -26,6 +26,15 @@ contentCatalog.getComponents().forEach(({ versions }) => {
   })
 }
 
+/**
+ * Lists all pages that are orphans (i.e. not listed in any navigation file).
+ * Optionally adds them under a new bullet point to the navigation list.
+ * @param {Object} contentCatalog - The content catalog provided by Antora.
+ * @param {Array} versions - Array of versions extracted from the contentCatalog.
+ * @param {Boolean} addToNavigation - States whether the found orphan files shall also be added to the navigation under a new heading.
+ * @param {String} unlistedPagesHeading - The heading for all orphan pages if they are to be listed.
+ * @param {*} logger - A logger for logging output.
+ */
 function listAllOrphanPages (contentCatalog, versions, addToNavigation, unlistedPagesHeading, logger) {
     versions.forEach(({ name: component, version, navigation: nav, url: defaultUrl }) => {
         const navEntriesByUrl = ContentAnalyzer.getNavEntriesByUrl(nav)
@@ -56,6 +65,12 @@ function listAllOrphanPages (contentCatalog, versions, addToNavigation, unlisted
     })
 }
 
+/**
+ * Lists all pages that are not converted and then hosted.
+ * @param {Object} contentCatalog - The content catalog provided by Antora.
+ * @param {Array} versions - Array of version extracted from the contentCatalog.
+ * @param {*} logger - A logger for logging output.
+ */
 function listAllNonHostedPages(contentCatalog, versions, logger) {
     versions.forEach(({ name: component, version }) => {
         const unlistedPages = contentCatalog
@@ -73,8 +88,6 @@ function listAllNonHostedPages(contentCatalog, versions, logger) {
         //-------------
     })
 }
-
-
 
 module.exports = {
     find_orphan_pages

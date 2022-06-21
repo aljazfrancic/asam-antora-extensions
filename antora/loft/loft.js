@@ -46,8 +46,10 @@ function createListOfFiguresPage( componentAttributes, contentCatalog, pages, fi
         const path = page.src.relative
         const src = entry[1].source
         const title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, figureMap, pages, src, anchor)
-        newContent.push(`|Figure ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
-        entryIndex += 1
+        if (title !== "") {
+            newContent.push(`|Figure ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
+            entryIndex += 1
+        }
     }
     newContent.push("|===")
     let targetPage = pages.find(x => x.src.relative === "loft/list_of_figures.adoc")
@@ -74,8 +76,10 @@ function createListOfTablesPage( componentAttributes, contentCatalog, pages, tab
         const path = page.src.relative
         const src = entry[1].source
         const title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, tableMap, pages, src, anchor)
-        newContent.push(`|Table ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
-        entryIndex += 1
+        if (title !== "") {
+            newContent.push(`|Table ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
+            entryIndex += 1
+        }
     }
     newContent.push("|===")
     let targetPage = pages.find(x => x.src.relative === "loft/list_of_tables.adoc")

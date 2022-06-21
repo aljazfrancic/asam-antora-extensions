@@ -227,8 +227,8 @@ function getIncludedPagesContentForExtensionFeatures( catalog, pagePartial, comp
     // Find all valid images (with "fig-" caption) and tables (with "tab-" caption).
     //-------------
     const pageAnchorMap = ContentAnalyzer.getAnchorsFromPageOrPartial(catalog, pagePartial, componentAttributes)
-    numberOfImages = [...pageAnchorMap].filter(([k,v]) => k.startsWith("fig-")).length
-    numberOfTables = [...pageAnchorMap].filter(([k,v]) => k.startsWith("tab-")).length
+    numberOfImages = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("fig-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
+    numberOfTables = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("tab-")&& ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
 
     return [numberOfLevelTwoSections, numberOfImages, numberOfTables]
 }

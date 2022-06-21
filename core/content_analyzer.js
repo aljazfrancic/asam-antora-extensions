@@ -95,17 +95,18 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
  * @param {Array} tags - Optional: An array of tags to filter for.
  * @returns {Map} - A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
-function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inheritedAttributes = {}, tags = []) {
+function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inheritedAttributes = {}, tags = [], lineOffset = {line:0}) {
     const re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)\]|anchor:([^\[]+)\[/
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[(.+)?\]/m;
     const reTags = /.*,?tags?=([^,]+)/m;
     const reTaggedStart = /\/\/\s*tag::(.+)\[\]/m
     const reTaggedEnd = /\/\/\s*end::(.+)\[\]/m
+    // verbose = verbose ? verbose : thisFile.src.stem === "entity"
     let resultMap = new Map
     let results = []
     let ignoreLine = false
     const splitContent = thisFile.contents.toString().split("\n")
-    let lineOffset = 0
+    // let lineOffset = 0
     let allowInclude = (tags.length > 0) ? false : true
     let taggedRegions = {}
     //-------------
@@ -119,6 +120,7 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
         t = t.startsWith("!") ? t.slice(1) : t
         taggedRegions[t] = {include: v, active: false}
     }
+    let currentLineIndex = -1
     for (let line of splitContent) {
         //-------------
         // Set search behavior depending on active tags and skip lines explicitly excluded through tagged regions.
@@ -136,7 +138,8 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
             allowInclude = Object.entries(taggedRegions).filter(([k,v]) => !v.include).length > 0 ? Object.entries(taggedRegions).filter(([k,v]) => (!v.include && v.active)).length === 0 : Object.entries(taggedRegions).filter(([k,v]) => v.active).length > 0
         }
         if (!allowInclude) {continue;}
-        const currentLineIndex = splitContent.indexOf(line)
+        currentLineIndex = splitContent.indexOf(line,currentLineIndex+1)
+
         //-------------
         // Add special behavior for custom "use-antora-rules" attribute
         //-------------
@@ -170,12 +173,10 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
                 if (tags.length > 0) {
                     tags = tags[1].split(";")
                 }
-                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog, targetFile, componentAttributes, inheritedAttributes, tags)
-                partialAnchorMap.forEach((entry) => {
-                    entry.line = entry.line + currentLineIndex + lineOffset
-                })
+                lineOffset.line += currentLineIndex
+                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog, targetFile, componentAttributes, inheritedAttributes, tags, lineOffset, verbose)
+                lineOffset.line -= currentLineIndex
                 resultMap = mergeAnchorMapEntries(resultMap, partialAnchorMap, thisFile)
-                lineOffset += targetFile.contents.toString().split("\n").length
             }
             else {
                 console.warn("could not find", includeSearchResult)
@@ -184,7 +185,7 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
         else {
             const result = re.exec(line);
             if (result) {
-                result.line = currentLineIndex + lineOffset
+                result.line = currentLineIndex + lineOffset.line
                 results.push(result)
             }
         }
@@ -208,6 +209,8 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
             }
         }
     }
+    lineOffset.line += currentLineIndex
+
     return resultMap
 }
 
@@ -336,7 +339,8 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const reSectionEqualSigns = /^\s*(=+)\s+(.*)$/m
     const reCaptionLabel = /^\.(\S.+)$/m
     const reAnchorType = /#?([^-\]]+)-?[^\]]*/m
-    const reAnchor = new RegExp(`\\[\\[${anchor.replaceAll("-","\\-")}\\]\\]|\\[\#${anchor.replaceAll("-","\\-")}\\]|anchor:${anchor.replaceAll("-","\\-")}`, 'm')
+    const regexAnchor = anchor.replaceAll("-","\\-").replaceAll(".","\\.").replaceAll("(","\\(").replaceAll(")","\\)")
+    const reAnchor = new RegExp(`\\[\\[${regexAnchor}\\]\\]|\\[\#${regexAnchor}\\]|anchor:${regexAnchor}`, 'm')
     let content = page.contents.toString()
     const resultAnchorType = anchor.match(reAnchorType)
     // const indexOfAnchor = content.indexOf(anchor)
@@ -344,6 +348,8 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const resultForNextHeading = content.slice(indexOfAnchor).match(reSectionEqualSigns)
     // const resultForPreviousHeading = content.slice(0,indexOfAnchor).match(reSectionEqualSigns)
     const resultNextCaption = content.slice(indexOfAnchor).match(reCaptionLabel)
+    const countLineBreaks = resultNextCaption ? content.slice(indexOfAnchor,indexOfAnchor+resultNextCaption.index).split("\n").length : 0
+    const lineBreakLimitBreached = countLineBreaks > 4 ? true : false
     // Use special anchor formats: sec, top, fig, tab, ...
     let result
     let returnValue = ""
@@ -353,12 +359,12 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const appendixRefsig = componentAttributes['appendix-caption'] ? componentAttributes['appendix-caption'] : "Appendix"
     // let verbose = (anchor==="sec-lc-aggregate-types" && style === "full")
     //-------------
-    //Only act on anchors that match one of the ASAM anchor types (matching reAnchorType).
+    // Only act on anchors that match one of the ASAM anchor types (matching reAnchorType).
     //-------------
     if (resultAnchorType) {
         switch (resultAnchorType[1]) {
             case "fig":
-                result = resultNextCaption;
+                result = lineBreakLimitBreached ? null : resultNextCaption;
                 const figureMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("fig-")))
                 let figureIndex = Array.from(figureMap.keys()).indexOf(anchor) + 1
                 if (result) {
@@ -368,7 +374,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 }
                 break;
             case "tab":
-                result = resultNextCaption;
+                result = lineBreakLimitBreached ? null : resultNextCaption;
                 const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("fig-")))
                 let tableIndex = Array.from(tableMap.keys()).indexOf(anchor)
                 if (result) {
@@ -685,9 +691,11 @@ function generateMapsForPages(mapInput) {
     anchorPageMap = new Map(([...anchorPageMap]).sort((a, b) => {
         let indexA = mergedNavContents.indexOf(a[1].usedIn ? a[1].usedIn.at(-1).src.relative : a[1].source.src.relative)
         let indexB = mergedNavContents.indexOf(b[1].usedIn ? b[1].usedIn.at(-1).src.relative : b[1].source.src.relative)
+        if (a[0] === "tab-trafficparticipant-entity-movable_object-basic" || b[0] === "tab-trafficparticipant-entity-movable_object-basic") {console.log(a[0],b[0]); console.log(indexA, indexB)}
         if (indexA === indexB) {
             indexA = parseInt(a[1].line)
             indexB = parseInt(b[1].line)
+            if (a[0] === "tab-trafficparticipant-entity-movable_object-basic" || b[0] === "tab-trafficparticipant-entity-movable_object-basic") {console.log(indexA, indexB)}
         }
         return indexA - indexB
     }))
