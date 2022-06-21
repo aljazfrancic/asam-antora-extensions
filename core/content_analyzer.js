@@ -174,7 +174,7 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
                     tags = tags[1].split(";")
                 }
                 lineOffset.line += currentLineIndex
-                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog, targetFile, componentAttributes, inheritedAttributes, tags, lineOffset, verbose)
+                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog, targetFile, componentAttributes, inheritedAttributes, tags, lineOffset)
                 lineOffset.line -= currentLineIndex
                 resultMap = mergeAnchorMapEntries(resultMap, partialAnchorMap, thisFile)
             }
@@ -691,11 +691,11 @@ function generateMapsForPages(mapInput) {
     anchorPageMap = new Map(([...anchorPageMap]).sort((a, b) => {
         let indexA = mergedNavContents.indexOf(a[1].usedIn ? a[1].usedIn.at(-1).src.relative : a[1].source.src.relative)
         let indexB = mergedNavContents.indexOf(b[1].usedIn ? b[1].usedIn.at(-1).src.relative : b[1].source.src.relative)
-        if (a[0] === "tab-trafficparticipant-entity-movable_object-basic" || b[0] === "tab-trafficparticipant-entity-movable_object-basic") {console.log(a[0],b[0]); console.log(indexA, indexB)}
+        // if (a[0] === "tab-trafficparticipant-entity-movable_object-basic" || b[0] === "tab-trafficparticipant-entity-movable_object-basic") {console.log(a[0],b[0]); console.log(indexA, indexB)}
         if (indexA === indexB) {
             indexA = parseInt(a[1].line)
             indexB = parseInt(b[1].line)
-            if (a[0] === "tab-trafficparticipant-entity-movable_object-basic" || b[0] === "tab-trafficparticipant-entity-movable_object-basic") {console.log(indexA, indexB)}
+            // if (a[0] === "tab-trafficparticipant-entity-movable_object-basic" || b[0] === "tab-trafficparticipant-entity-movable_object-basic") {console.log(indexA, indexB)}
         }
         return indexA - indexB
     }))
