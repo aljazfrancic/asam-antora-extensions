@@ -120,7 +120,7 @@ module.exports.register = function ({ config }) {
                 //-------------
                 if (parsedConfig.loft) {
                     console.log("Creating list of figures and tables...")
-                    Loft.createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles, pages, component, version)
+                    Loft.createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles, catalog, component, version)
                 }
                 //-------------
                 // Addon ConsistentNumbering: Generate and apply consistent numbers for sections, titles, and (if activated) figures and tables

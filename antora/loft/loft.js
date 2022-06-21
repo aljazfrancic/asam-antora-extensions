@@ -4,7 +4,7 @@ const ContentAnalyzer = require('../../core/content_analyzer.js')
 const FileCreator = require('../../core/file_creator.js')
 
 
-function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles, pages, component, version) {
+function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles, catalog, component, version) {
     let mergedNavContents = []
     navFiles.sort((a,b) => {
         return a.nav.index - b.nav.index
@@ -17,8 +17,8 @@ function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles
     mergedNavContents = mergedNavContents.join("\n")
     const figureMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("fig-")))
     const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("tab-")))
-    let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, pages, figureMap, targetModule, component, version)
-    let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, pages, tableMap, targetModule, component, version)
+    let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, catalog, figureMap, targetModule, component, version)
+    let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, targetModule, component, version)
 
     if (figuresPage) {
         navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${figuresPage.src.relative}[]\n`))
@@ -30,7 +30,7 @@ function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles
 
 }
 
-function createListOfFiguresPage( componentAttributes, contentCatalog, pages, figureMap, targetModule, component, version ){
+function createListOfFiguresPage( componentAttributes, contentCatalog, catalog, figureMap, targetModule, component, version ){
     if (!figureMap || figureMap.length === 0) {return null;}
     let newContent = ['= List of figures']
     newContent.push('')
@@ -45,14 +45,16 @@ function createListOfFiguresPage( componentAttributes, contentCatalog, pages, fi
         const srcModule = page.src.module
         const path = page.src.relative
         const src = entry[1].source
-        const title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, figureMap, pages, src, anchor)
+        let title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, figureMap, catalog, src, anchor)
+        title = replaceXrefsInTitleLink(title)
+
         if (title !== "") {
             newContent.push(`|Figure ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
             entryIndex += 1
         }
     }
     newContent.push("|===")
-    let targetPage = pages.find(x => x.src.relative === "loft/list_of_figures.adoc")
+    let targetPage = catalog.find(x => x.src.relative === "loft/list_of_figures.adoc")
     if (targetPage) {
         targetPage.contents = Buffer.from(newContent.join("\n"))
         return null;
@@ -60,7 +62,7 @@ function createListOfFiguresPage( componentAttributes, contentCatalog, pages, fi
     return (FileCreator.createNewVirtualFile(contentCatalog, "list_of_figures.adoc", "loft", targetModule, component, version, newContent.join("\n"), base))
 }
 
-function createListOfTablesPage( componentAttributes, contentCatalog, pages, tableMap, targetModule, component, version ){
+function createListOfTablesPage( componentAttributes, contentCatalog, catalog, tableMap, targetModule, component, version ){
     if (!tableMap || tableMap.length === 0) {return null;}
     let newContent = ['= List of tables']
     newContent.push('')
@@ -75,19 +77,33 @@ function createListOfTablesPage( componentAttributes, contentCatalog, pages, tab
         const srcModule = page.src.module
         const path = page.src.relative
         const src = entry[1].source
-        const title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, tableMap, pages, src, anchor)
+        let title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, tableMap, catalog, src, anchor)
+        title = replaceXrefsInTitleLink(title)
+
         if (title !== "") {
             newContent.push(`|Table ${entryIndex}:  |xref:${srcModule}:${path}#${anchor}[${title}]`)
             entryIndex += 1
         }
     }
     newContent.push("|===")
-    let targetPage = pages.find(x => x.src.relative === "loft/list_of_tables.adoc")
+    let targetPage = catalog.find(x => x.src.relative === "loft/list_of_tables.adoc")
     if (targetPage) {
         targetPage.contents = Buffer.from(newContent.join("\n"))
         return null;
     }
     return (FileCreator.createNewVirtualFile(contentCatalog, "list_of_tables.adoc", "loft", targetModule, component, version, newContent.join("\n"), base))
+}
+
+function replaceXrefsInTitleLink(titleText) {
+    const re = /(xref:[^\[]+\[(.*)\])/m
+    const match = titleText.match(re)
+    if (match) {
+        let newTitleText = titleText.replace(match[1], match[2])
+        return newTitleText
+    }
+    else {
+        return titleText
+    }
 }
 
 module.exports = {

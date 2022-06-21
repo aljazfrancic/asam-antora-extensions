@@ -325,6 +325,18 @@ function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, s
     return relativeIndex
 }
 
+function getActivePageAttributesAtLine(catalog, componentAttributes, inheritedAttributes, index, file) {
+    const content = index ? file.contents.toString().split("\n").slice(0,index+1) : file.contents.toString().split("\n")
+    for (let line of content) {
+        let newLine = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
+        let includeTarget = checkForIncludedFileFromLine(catalog, file, newLine)
+        if (includeTarget) {
+            getActivePageAttributesAtLine(catalog, componentAttributes, inheritedAttributes, null, includeTarget)
+        }
+        else {updatePageAttributes(inheritedAttributes, newLine)}
+    }
+}
+
 /**
  * Retrieves the name associated with an anchor so it can be used as label when linking to other pages.
  * @param {Object} componentAttributes - An object containing all attributes of the component.
@@ -345,6 +357,10 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const resultAnchorType = anchor.match(reAnchorType)
     // const indexOfAnchor = content.indexOf(anchor)
     const indexOfAnchor = content.match(reAnchor).index
+    let inheritedAttributes = {}
+    if (indexOfAnchor && indexOfAnchor > -1) {
+        getActivePageAttributesAtLine(pages, componentAttributes, inheritedAttributes, indexOfAnchor, page)
+    }
     const resultForNextHeading = content.slice(indexOfAnchor).match(reSectionEqualSigns)
     // const resultForPreviousHeading = content.slice(0,indexOfAnchor).match(reSectionEqualSigns)
     const resultNextCaption = content.slice(indexOfAnchor).match(reCaptionLabel)
@@ -431,6 +447,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     else {
         returnValue = getAltTextFromTitle(page, content);
     }
+    returnValue = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, returnValue)
     return (returnValue)
 }
 
