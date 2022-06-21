@@ -19,9 +19,9 @@ const ContentManipulator = require('../../core/content_manipulator.js')
 /**
  * Determines and applies consistent and consecutive numbers for page titles, sections, ASAM-style images, and ASAM-style tables.
  * This also applies section roles such as "appendix", "bibliography", and "preface". Not all roles are currently supported yet, however!
- * @param {Array} catalog - An array of pages and partials for a given component-version-combination.
- * @param {Array} pages - An array of pages for a given component-version-combination.
- * @param {Array} navFiles - An array of navigation files for a given component-version-combination.
+ * @param {Array <Object>} catalog - An array of pages and partials for a given component-version-combination.
+ * @param {Array <Object>} pages - An array of pages for a given component-version-combination.
+ * @param {Array <Object>} navFiles - An array of navigation files for a given component-version-combination.
  * @param {String} sectionNumberStyle - The selected style for section numbers. If "iso", the trailing "." is dropped.
  * @param {Object} contentCatalog - The content catalog provided by Antora.
  * @param {String} component - The current component.
@@ -45,13 +45,13 @@ function applySectionAndTitleNumbers (catalog, pages, navFiles, sectionNumberSty
 
 /**
  * Create consistent numbering based on ordered navigation files.
- * @param {Array} catalog - An array of pages and partials.
- * @param {Array} pages - An array of pages.
+ * @param {Array <Object>} catalog - An array of pages and partials.
+ * @param {Array <Object>} pages - An array of pages.
  * @param {Object} componentAttributes - The list of inherited component attributes.
- * @param {Array} navFiles - A sorted array of navigation files.
+ * @param {Array <Object>} navFiles - A sorted array of navigation files.
  * @param {String} style - The selected style. If "iso", drop the trailing ".".
  * @param {String} appendixCaption - The caption for appendices.
- * @param {Number} appendixOffset - An offset value for appendices, if an appendix needs to start with a different letter than "A".
+ * @param {Integer} appendixOffset - An offset value for appendices, if an appendix needs to start with a different letter than "A".
  */
 function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAttributes, navFiles, style, appendixCaption, appendixOffset) {
     const reStartLevel = /:start-level: ([0-9]*)/;
@@ -125,13 +125,13 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
 /**
  * Apply section numbers to a page declared as "preface". Resets to "default" afterwards.
  * @param {Object} nav - The navigation file.
- * @param {Array} catalog - An array of pages and partials.
- * @param {Array} pages - An array of pages.
+ * @param {Array <Object>} catalog - An array of pages and partials.
+ * @param {Array <Object>} pages - An array of pages.
  * @param {Object} componentAttributes - The list of inherited component attributes.
  * @param {String} line - The next valid line after the role "preface" was declared.
- * @param {Number} imageIndex - The current image index used for the corresponding offset attribute.
- * @param {Number} tableIndex - The current table index used for the corresponding offset attribute.
- * @returns {Array} - [new role, current image index, current table index]
+ * @param {Integer} imageIndex - The current image index used for the corresponding offset attribute.
+ * @param {Integer} tableIndex - The current table index used for the corresponding offset attribute.
+ * @returns {Array <any>} [new role, current image index, current table index]
  */
 function handlePreface( nav, catalog, pages, componentAttributes, line, imageIndex, tableIndex ) {
     const indexOfXref = line.indexOf("xref:")
@@ -148,20 +148,20 @@ function handlePreface( nav, catalog, pages, componentAttributes, line, imageInd
 /**
  * Apply section numbers to a page declared as "preface". Resets to "default" afterwards.
  * @param {Object} nav - The navigation file.
- * @param {Array} catalog - An array of pages and partials.
- * @param {Array} pages - An array of pages.
+ * @param {Array <Object>} catalog - An array of pages and partials.
+ * @param {Array <Object>} pages - An array of pages.
  * @param {Object} componentAttributes - The list of inherited component attributes.
- * @param {*} content - The content of the navigation file.
+ * @param {Array <String>} content - The content of the navigation file.
  * @param {String} line - The next valid line after the role "preface" was declared.
  * @param {Boolean} generateNumbers - Defines if sectnums are allowed.
- * @param {Number} startLevel - The section level at which to start, depending on the level of the line in the bullet point list.
+ * @param {Integer} startLevel - The section level at which to start, depending on the level of the line in the bullet point list.
  * @param {String} chapterIndex - The current chapter index.
- * @param {Number} imageIndex - The current image index used for the corresponding offset attribute.
- * @param {Number} tableIndex - The current table index used for the corresponding offset attribute.
+ * @param {Integer} imageIndex - The current image index used for the corresponding offset attribute.
+ * @param {Integer} tableIndex - The current table index used for the corresponding offset attribute.
  * @param {String} style - The selected style. If "iso", drop the trailing ".".
  * @param {String} appendixCaption - The caption for appendices.
- * @param {Number} appendixOffset - An offset value for appendices, if an appendix needs to start with a different letter than "A".
- * @returns {Array} - [new role, current image index, current table index]
+ * @param {Integer} appendixOffset - An offset value for appendices, if an appendix needs to start with a different letter than "A".
+ * @returns {Array <any>} [new role, current image index, current table index]
  */
 function handleAppendix( nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, appendixCaption, appendixOffset ) {
     const appendixStartLevel = isNaN(parseInt(startLevel)+parseInt(appendixOffset)) ? startLevel : (parseInt(startLevel)+parseInt(appendixOffset)).toString()
@@ -171,13 +171,13 @@ function handleAppendix( nav, catalog, pages, componentAttributes, content, line
 /**
  * Apply section numbers to a page declared as "bibliography". Resets to "default" afterwards.
  * @param {Object} nav - The navigation file.
- * @param {Array} catalog - An array of pages and partials.
- * @param {Array} pages - An array of pages.
+ * @param {Array <Object>} catalog - An array of pages and partials.
+ * @param {Array <Object>} pages - An array of pages.
  * @param {Object} componentAttributes - The list of inherited component attributes.
  * @param {String} line - The next valid line after the role "preface" was declared.
- * @param {Number} imageIndex - The current image index used for the corresponding offset attribute.
- * @param {Number} tableIndex - The current table index used for the corresponding offset attribute.
- * @returns {Array} - [new role, current image index, current table index]
+ * @param {Integer} imageIndex - The current image index used for the corresponding offset attribute.
+ * @param {Integer} tableIndex - The current table index used for the corresponding offset attribute.
+ * @returns {Array <any>} [new role, current image index, current table index]
  */
 function handleBibliography(nav, catalog, pages, componentAttributes, line, imageIndex, tableIndex) {
     const indexOfXref = line.indexOf("xref:")
@@ -197,20 +197,21 @@ function handleBibliography(nav, catalog, pages, componentAttributes, line, imag
  * Analyze the given line and parse page, if applicable.
  * Determine level 2 sections, number of valid figures and tables, and apply offsets, if current page and navigation role/settings allows numbering.
  * @param {Object} nav - The navigation file.
- * @param {Array} catalog - An array of pages and partials.
- * @param {Array} pages - An array of pages.
+ * @param {Array <Object>} catalog - An array of pages and partials.
+ * @param {Array <Object>} pages - An array of pages.
  * @param {Object} componentAttributes - The list of inherited component attributes.
- * @param {*} content - The content of the navigation file.
+ * @param {Array <String>} content - The content of the navigation file.
  * @param {String} line - The next valid line after the role "preface" was declared.
  * @param {Boolean} generateNumbers - Defines if sectnums are allowed.
- * @param {Number} startLevel - The section level at which to start, depending on the level of the line in the bullet point list.
+ * @param {Integer} startLevel - The section level at which to start, depending on the level of the line in the bullet point list.
  * @param {String} chapterIndex - The current chapter index.
- * @param {Number} imageIndex - The current image index used for the corresponding offset attribute.
- * @param {Number} tableIndex - The current table index used for the corresponding offset attribute.
+ * @param {Integer} imageIndex - The current image index used for the corresponding offset attribute.
+ * @param {Integer} tableIndex - The current table index used for the corresponding offset attribute.
  * @param {String} style - The selected style. If "iso", drop the trailing ".".
  * @param {String} option - Optional: If set to anything but "default", the option will be added as page role after the title (e.g. [appendix]).
- * @param {String} appendixCaption - The caption for appendices.
- * @returns {Array} - [Changed content, new chapterIndex, new imageIndex, new tableIndex, generateNumbers = true, new option]
+ * @param {String} appendixCaption - Optional: The caption for appendices. Only relevant for appendix pages.
+ * @param {Boolean} isAppendix - Optional: If true, activates the features reserved for appendices.
+ * @returns {Array <any>} [Changed content, new chapterIndex, new imageIndex, new tableIndex, generateNumbers = true, new option]
  */
 function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, option="default", appendixCaption="", isAppendix = false ) {
     let newImageIndex = imageIndex

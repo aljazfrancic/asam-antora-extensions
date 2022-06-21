@@ -13,6 +13,13 @@
 const ContentAnalyzer = require("../../core/content_analyzer.js")
 const ContentManipulator = require("../../core/content_manipulator.js")
 
+/**
+ *
+ * @param {Array <Object>} catalog - The filtered content catalog for the current component-version combination.
+ * @param {Object} componentAttributes - The attributes of the component.
+ * @param {Map <String, Object>} anchorPageMap - A map containing anchors and their associated pages.
+ * @param {String} style - The chosen xref style. Valid values: "full", "short", and "basic".
+ */
 function addXrefStyleToSectionAndPageXrefs (catalog, componentAttributes, anchorPageMap, style) {
     const appendixCaption = Object.keys(componentAttributes).indexOf("appendix-caption") > -1 ? componentAttributes["appendix-caption"] : "Appendix"
     const pages = catalog.filter(x => x.src.family === "page")
@@ -30,6 +37,16 @@ function addXrefStyleToSectionAndPageXrefs (catalog, componentAttributes, anchor
     }
 }
 
+/**
+ * Applies a chosen xref style to all xrefs found in a given page.
+ * @param {Array <Object>} catalog - The filtered content catalog for the current component-version combination.
+ * @param {Object} componentAttributes - The attributes of the component.
+ * @param {Map <String, Object>} anchorPageMap - A map containing anchors and their associated pages.
+ * @param {Object} file - The current file/page.
+ * @param {String} style - The chosen xref style. Valid values: "full", "short", and "basic".
+ * @param {String} appendixCaption - The set value of the appendix caption attribute.
+ * @param {Object} inheritedAttributes - Optional: An object containing all aggregated page attributes.
+ */
 function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, style, appendixCaption, inheritedAttributes = {}) {
     const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)([^\]]*,\s*)*(xrefstyle=([^,\]]*))?(, *.*)*\]/gm
     if (!file.contents) {
@@ -60,7 +77,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
             if (match.index === re.lastIndex) {
                 re.lastIndex++;
             }
-            if (match[5] || match[4] || match[7]) {}
+            if (match[5] || match[4] || match[7] || (match[2] && (match[2].startsWith("fig-")||match[2].startsWith("tab-")))) {}
             else if (match[2]) {
                 const targetPath = ContentAnalyzer.getSrcPathFromFileId(match[1])
                 if (!targetPath.module) {targetPath.module = file.src.module}

@@ -22,13 +22,13 @@ const Helper = require('./lib/helper.js')
 /**
  * Replaces the ASAM macro 'role_related'.
  * @param {Object} page - The page where the macro was found in.
- * @param {*} pageContent - The content of this page.
+ * @param {Array <String>} pageContent - The content of this page.
  * @param {String} line - The line where the macro was found in.
- * @param {*} macroResult - The result of the regular expression for matching the role_related macro.
+ * @param {Array <any>} macroResult - The result of the regular expression for matching the role_related macro.
  * @param {String} heading - The heading to be used when replacing this macro.
- * @param {*} rolePageMap - A map containing links between roles and the pages they are listed in.
+ * @param {Map <String, Object>} rolePageMap - A map containing links between roles and the pages they are listed in.
  * @param {*} logger - The logger for the log output generation.
- * @returns
+ * @returns {Array <String>} The updated page content.
  */
 function replaceRoleRelatedMacro( page, pageContent, line, macroResult, heading, rolePageMap, logger ) {
     //-------------
@@ -82,12 +82,12 @@ function replaceRoleRelatedMacro( page, pageContent, line, macroResult, heading,
 /**
  * Replaces the ASAM macro 'related' with a bullet point list of pages containing keywords listed by the macro.
  * @param {Object} page - The page where the macro was found in.
- * @param {*} pageContent - The content of this page.
+ * @param {Array <String>} pageContent - The content of this page.
  * @param {String} line - The line where the macro was found in.
- * @param {*} macroResult - The result of the regular expression for matching the related macro.
+ * @param {Array <any>} macroResult - The result of the regular expression for matching the related macro.
  * @param {String} heading - The heading to be used when replacing this macro.
- * @param {*} keywordPageMap - A map containing links between keywords and the pages they are listed in.
- * @returns {*} - The updated pageContent.
+ * @param {Map <String, Object>} keywordPageMap - A map containing links between keywords and the pages they are listed in.
+ * @returns {Array <String>} The updated pageContent.
  */
 function replaceRelatedMacro( page, pageContent, line, macroResult, heading, keywordPageMap ) {
     //-------------
@@ -130,12 +130,12 @@ function replaceRelatedMacro( page, pageContent, line, macroResult, heading, key
 /**
  * Replaces the ASAM macro 'reference'. Note: This currently is just an alias for replaceRelatedMacro().
  * @param {Object} page - The page where the macro was found in.
- * @param {*} pageContent - The content of this page.
+ * @param {Array <String>} pageContent - The content of this page.
  * @param {String} line - The line where the macro was found in.
- * @param {*} macroResult - The result of the regular expression for matching the related macro.
+ * @param {Array <any>} macroResult - The result of the regular expression for matching the related macro.
  * @param {String} heading - The heading to be used when replacing this macro.
- * @param {*} keywordPageMap - A map containing links between keywords and the pages they are listed in.
- * @returns {*} - The updated pageContent.
+ * @param {Map <String, Object>} keywordPageMap - A map containing links between keywords and the pages they are listed in.
+ * @returns {Array <String>} The updated pageContent.
  */
 function replaceReferenceMacro( page, pageContent, line, macroResult, heading, keywordPageMap ) {
     return (replaceRelatedMacro(page, pageContent, line, macroResult, heading, keywordPageMap))
@@ -144,12 +144,12 @@ function replaceReferenceMacro( page, pageContent, line, macroResult, heading, k
 /**
  * Replaces the ASAM macro 'pages' with a bullet point list of pages in the requested location.
  * @param {Object} page - The page where the macro was found in.
- * @param {*} pageContent - The content of this page.
+ * @param {Array <String>} pageContent - The content of this page.
  * @param {String} line - The line where the macro was found in.
- * @param {*} macroResult - The result of the regular expression for matching the related macro.
+ * @param {Array <any>} macroResult - The result of the regular expression for matching the related macro.
  * @param {String} heading - The heading to be used when replacing this macro.
- * @param {*} pages - The complete list of pages
- * @returns {*} - The updated pageContent.
+ * @param {Array <Object>} pages - The complete list of pages
+ * @returns {Array <String>} The updated pageContent.
  */
 function replacePagesMacro( page, pageContent, line, macroResult, heading, pages ) {
     //-------------
@@ -202,12 +202,12 @@ function replacePagesMacro( page, pageContent, line, macroResult, heading, pages
 /**
  * Replaces the ASAM macro 'autonav' in a navigation file by creating the navigation content based on the modules folder structure.
  * @param {Object} contentCatalog - The content catalog provided by Antora for this component-version-combination.
- * @param {*} pages - The array of pages extracted from the contentCatalog.
+ * @param {Array <Object>} pages - The array of pages extracted from the contentCatalog.
  * @param {Object} nav - The navigation file where the macro was found in.
- * @param {*} component - The component of the navigation file.
- * @param {*} version - The component version of the navigation file.
- * @param {*} findModuleMainPage - Optional: If false, creates a structure without a dedicated module start page.
- * @returns
+ * @param {String} component - The component of the navigation file.
+ * @param {String} version - The component version of the navigation file.
+ * @param {Boolean} findModuleMainPage - Optional: If false, creates a structure without a dedicated module start page.
+ * @returns {Array <Object>} The updated pages
  */
 function replaceAutonavMacro( contentCatalog, pages, nav, component, version, findModuleMainPage=true ) {
     const moduleName = nav.src.module
@@ -273,23 +273,19 @@ function replaceAutonavMacro( contentCatalog, pages, nav, component, version, fi
 /**
  * Traverses through the adoc files of a component-version-combination and replaces all found ASAM macros.
  * This covers the following macros:
- * autonav
- * reference
- * related
- * role_related
- * pages
+ * autonav, reference, related, role_related, pages
  *
- * @param {*} contentCatalog - The complete content catalog provided by Antora.
- * @param {*} pages - The array of pages for this component-version-combination.
- * @param {*} navFiles - The navigation files for this component-version-combination.
- * @param {*} keywordPageMap - A map containing links between keywords and the pages they are listed in.
- * @param {*} rolePageMap - A map containing links between roles and the pages they are listed in.
- * @param {*} macrosRegEx - A map of regular expressions for the supported macros.
- * @param {*} macrosHeadings - A map of headings for the supported macros.
+ * @param {Object} contentCatalog - The complete content catalog provided by Antora.
+ * @param {Array <Object>} pages - The array of pages for this component-version-combination.
+ * @param {Array <Object>} navFiles - The navigation files for this component-version-combination.
+ * @param {Map <String,Object>} keywordPageMap - A map containing links between keywords and the pages they are listed in.
+ * @param {Map <String,Object>} rolePageMap - A map containing links between roles and the pages they are listed in.
+ * @param {Array <any>} macrosRegEx - A map of regular expressions for the supported macros.
+ * @param {Map <String,String>} macrosHeadings - A map of headings for the supported macros.
  * @param {*} logger - A logger for creating log entries.
- * @param {*} component - The current component.
- * @param {*} version - The current version.
- * @returns {*} - The updated pages.
+ * @param {String} component - The current component.
+ * @param {String} version - The current version.
+ * @returns {Array <Object>} The updated pages.
  */
 function findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywordPageMap, rolePageMap, macrosRegEx, macrosHeadings, logger, component, version) {
     //-------------

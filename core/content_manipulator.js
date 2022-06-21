@@ -13,8 +13,8 @@ const ContentAnalyzer = require('./content_analyzer.js')
 /**
  * Adds an attribute with a value to a page.
  * @param {Object} page - The page where the attribute is to be added to.
- * @param {Array} pageContent - The page's content.
- * @param {Number} indexOfTitle - The determined index of the line of the title.
+ * @param {Array <String>} pageContent - The page's content.
+ * @param {Integer} indexOfTitle - The determined index of the line of the title.
  * @param {String} attribute - The attribute that is to be added.
  * @param {*} value - The value of the new attribute.
  * @param {Boolean} unset - Optional: If true, the attribute is added without value and unset by adding an '!' at the end.

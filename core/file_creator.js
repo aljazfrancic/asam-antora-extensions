@@ -22,9 +22,9 @@ const path = require("path");
  * @param {String} component - The component of the virtual file.
  * @param {String} version - The component version of the virtual file.
  * @param {*} content - The content of the virtual file. String or Buffer.
- * @param {*} base - The base information of the virtual file.
+ * @param {Object} base - The base information of the virtual file.
  * @param {String} type - Optional: The type of virtual file. Default: page.
- * @returns {Object} - The created virtual file object.
+ * @returns {Object} The created virtual file object.
  */
 function createNewVirtualFile( contentCatalog, filename, path, module, component, version, content, base, type="page" ) {
     if (typeof content === 'string' || content instanceof String){
@@ -59,8 +59,8 @@ function createNewVirtualFile( contentCatalog, filename, path, module, component
  * @param {String} component - The component of the virtual folder files.
  * @param {String} version - The component version of the virtual folder files.
  * @param {String} module - The module of the virtual folder files.
- * @param {*} pages - An array of pages.
- * @returns {Array} - Array of all created folder files.
+ * @param {Array <Object>} pages - An array of pages.
+ * @returns {Array <Object>} Array of all created folder files.
  */
 function createVirtualFilesForFolders( contentCatalog, component, version, module, pages ) {
     var folderFiles = new Object()
@@ -139,10 +139,10 @@ function createVirtualFilesForFolders( contentCatalog, component, version, modul
  * IMPORTANT: This is currently hard wired to create files where the origin is "doxygen".
  * @param {String} inputPath - The path to scan.
  * @param {String} targetPath - The relative target path of the virtual files.
- * @param {*} defaultOrigin - A default origin required by Antora.
+ * @param {Object} defaultOrigin - A default origin required by Antora.
  * @param {String} abspathPrefix - A prefix for the absolute path.
  * @param {Boolean} recursive - Optional: If true, also scans all sub-directories in the input path.
- * @returns {Array} - An array of the created virtual files.
+ * @returns {Array <Object>} An array of the created virtual files.
  */
 function addAllFilesInFolderAsVirtualFiles( inputPath, targetPath, defaultOrigin, abspathPrefix, recursive=false ) {
     let newFiles = []

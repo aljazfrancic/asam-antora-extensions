@@ -73,13 +73,13 @@ function listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, 
 
 /**
  * Lists all included pages and partials for a page, applying attributes in include lines first.
- * @param {Array} contentFiles - All relevant files.
- * @param {Array} pages - All relevant published pages.
+ * @param {Array <Object>} contentFiles - All relevant files.
+ * @param {Array <Object>} pages - All relevant published pages.
  * @param {Object} page - The current page.
  * @param {Object} componentAttributes - The attributes set in the component or the site.yml.
  * @param {*} logger - The logger for creating logs.
- * @param {Object} inheritedAttributes - The already aggregated attributes from this page. If child page, pass the attributes of the parent page that have been set up to this line.
- * @returns {Array} - The files that are correctly included in this page.
+ * @param {Object} inheritedAttributes - Optional: The already aggregated attributes from this page. If child page, pass the attributes of the parent page that have been set up to this line.
+ * @returns {Array <Object>} The files that are correctly included in this page.
  */
 function listIncludedPartialsAndPages(contentFiles,pages, page, componentAttributes, logger, inheritedAttributes = {}) {
     //-------------
@@ -130,7 +130,7 @@ function listIncludedPartialsAndPages(contentFiles,pages, page, componentAttribu
 /**
  * Checks a virtual file on the use of "ifdef::draft[]".
  * @param {Object} page - The current page.
- * @returns {Boolean} - States whether the "draft" flag was found or not.
+ * @returns {Boolean} States whether the "draft" flag was found or not.
  */
 function listPagesWithDraftFlag(page) {
     const pageContent = page.contents.toString().split("\n")
@@ -143,12 +143,12 @@ function listPagesWithDraftFlag(page) {
 
 /**
  * Lists all partials that are included in (osc2) plantuml files.
- * @param {*} contentFiles - All relevant files.
- * @param {*} partials - All relevant partials.
- * @param {*} partial - The current partial.
- * @param {*} componentAttributes - The attributes set in the component or the site.yml.
+ * @param {Array <Object>} contentFiles - All relevant files.
+ * @param {Array <Object>} partials - All relevant partials.
+ * @param {Object} partial - The current partial.
+ * @param {Object} componentAttributes - The attributes set in the component or the site.yml.
  * @param {*} logger - The logger for creating logs.
- * @returns {Array} - The files that are correctly included in this partial.
+ * @returns {Array <Object>} The files that are correctly included in this partial.
  */
 function listAllPartialsUsedInPlantumlFiles(contentFiles,partials, partial, componentAttributes, logger) {
     //-------------

@@ -24,7 +24,7 @@ const ContentManipulator = require('../../../core/content_manipulator.js')
  * Determines the correct starting index of a chapter/section depending on the style (ends with "." or not).
  * @param {String} style - The chosen section number style. If "iso", will not contain the default "." at the end.
  * @param {String} value - The value where the style is to be applied to.
- * @returns {String} - The updated value.
+ * @returns {String} The updated value.
  */
 function setStartingChapterIndex( style, value ) {
     return style === "iso" ? value : value+"."
@@ -33,11 +33,12 @@ function setStartingChapterIndex( style, value ) {
 /**
  * Determine the next chapter index based on the current value and the new target level.
  * For Appendices, also determine the correct starting letter.
- * @param {Number} targetLevel - The level of section or page heading.
- * @param {String} chapterIndex - The current chapter index for which the next value is to be determined.
+ * @param {Integer} targetLevel - The level of section or page heading.
+ * @param {String} chapterIndex - Optional: The current chapter index for which the next value is to be determined.
  * @param {String} style - The chosen section number style. If "iso", will not contain the default "." at the end."
- * @param {String} appendixCaption - Optional: Applies to appendices. If set, the first element of the index will be a letter.
- * @returns {String} - The next chapter index value.
+ * @param {String} appendixCaption - Optional: Applies to appendices. If set, the caption may be applied to the page depending on its level.
+ * @param {Boolean} isAppendix - Optional: Applies to appendices. If true, the first element of the index will be a letter.
+ * @returns {String} The next chapter index value.
  */
 function determineNextChapterIndex( targetLevel, chapterIndex="0.", style, appendixCaption="", isAppendix = false ) {
     //-------------
@@ -102,10 +103,10 @@ function addTitleoffsetAttributeToPage( page, value) {
 
 /**
  * Checks if the sectnums attribute is set or unset in a given line and, if so, applies its implications in the context of consistent numbering.
- * @param {Array} content - The content of a file/page.
+ * @param {Array <String>} content - The content of a file/page.
  * @param {String} line - The line that needs to be checked for the sectnums attribute.
  * @param {Boolean} previousValue - Optional: Sets the default return value in case the sectnums attribute is not matched.
- * @returns {Array} - [The return value (Boolean), the changed content, hasChanged]
+ * @returns {Array <any>} [The return value (Boolean), the changed content, hasChanged]
  */
 function checkForSectnumsAttribute( content, line, previousValue=true ) {
     const reSectnums = /^\s*:sectnums(!)?:/;
@@ -125,10 +126,10 @@ function checkForSectnumsAttribute( content, line, previousValue=true ) {
 
 /**
  * Checks if a section role attribute is defined in a given line and, if so, applies its implications in the context of consistent numbering.
- * @param {Array} content - The content of a file/page.
+ * @param {Array <String>} content - The content of a file/page.
  * @param {String} line - The line that needs to be checked for occurring section roles.
  * @param {String} currentRole - The currently valid role (i.e. section number behavior).
- * @returns {Array} - [The determined active role, the changed content, hasChanged]
+ * @returns {Array <any>} [The determined active role, the changed content, hasChanged]
  */
 function checkForRoleInLine( content, line, currentRole ) {
     const reRoles = /^\s*\[([^\]]+)\]/;
@@ -145,11 +146,12 @@ function checkForRoleInLine( content, line, currentRole ) {
  * Determines the number of images and tables that follow ASAM's anchor conventions as well as level 2 sections.
  * Also traverses through included files.
  * TODO: Join with features of getRelativeSectionNumberWithIncludes from content_analyzer.js (core).
- * @param {Array} catalog - - An array of pages and partials.
+ * @param {Array <Object>} catalog - - An array of pages and partials.
  * @param {Object} pagePartial - The current page or partial.
  * @param {Object} componentAttributes - The list of inherited component attributes.
- * @param {Number} leveloffset - A given leveleoffset for sections and other numbers.
- * @returns {Array} - [Number of relevant sections, number of images, number of tables]
+ * @param {Integer} leveloffset - Optional: A given leveleoffset for sections and other numbers.
+ * @param {Object} inheritedAttributes - Optional: An object containing all inherited attributes from the parent page.
+ * @returns {Array <any>} [Number of relevant sections, number of images, number of tables]
  */
 function getIncludedPagesContentForExtensionFeatures( catalog, pagePartial, componentAttributes, leveloffset=0, inheritedAttributes = {} ) {
     const contentSum = pagePartial.contents.toString()

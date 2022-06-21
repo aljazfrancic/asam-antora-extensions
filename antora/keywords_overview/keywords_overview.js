@@ -16,14 +16,14 @@ const FileCreator = require("../../core/file_creator.js")
  * Creates an overview page from a provided map where each keywords is added as a level 3 section and the associated pages as xrefs.
  * @param {Boolean} keywordOverviewPageRequested - Only execute if set to true. Otherwise, return the unchanged array of pages.
  * @param {Object} contentCatalog - The content catalog provided by Antora.
- * @param {*} pages - An array of pages.
- * @param {Map} keywordPageMap - A map of keywords and the pages they occur in.
+ * @param {Array <Object>} pages - An array of pages.
+ * @param {Map <String, Object>} keywordPageMap - A map of keywords and the pages they occur in.
  * @param {String} targetPath - The path at which the created file will be located.
  * @param {String} targetName - The name the created file will have.
  * @param {String} targetModule - The module in which the created file will be located.
  * @param {String} component - The current component.
  * @param {String} version - The current version
- * @returns {*} - The (updated) array of pages.
+ * @returns {Array <Object>} The (updated) array of pages.
  */
 function createKeywordsOverviewPage( keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, targetPath, targetName, targetModule, component, version ) {
     if (!keywordOverviewPageRequested) {

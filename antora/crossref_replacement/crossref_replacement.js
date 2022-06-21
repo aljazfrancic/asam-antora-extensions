@@ -14,9 +14,10 @@ const ContentAnalyzer = require("../../core/content_analyzer.js")
 
 /**
  * If a non-empty anchorMap is supplied, this function parses all pages and tries to replace unresolved local links with global xrefs.
- * @param {Map} anchorMap - A map of anchors and their page.
- * @param {*} pages - An array of pages.
- * @returns {*} - The updated array of pages.
+ * @param {Object} componentAttributes - An object containing all component attributes.
+ * @param {Map <String, Object>} anchorMap - A map of anchors and their page.
+ * @param {Array <Object>} pages - An array of pages.
+ * @returns {Array <Object>} The updated array of pages.
  */
 function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorMap, pages ) {
     if (anchorMap.size === 0) {return pages}

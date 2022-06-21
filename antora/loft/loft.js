@@ -1,9 +1,29 @@
 'use strict'
-
+//-------------
+//-------------
+// Module for creating or updating a page for each a list of figures and a list of tables.
+// This module provides a central function, 'createLoft', that creates these two files.
+// For each file, if it already exists, its content is instead overwritten. Otherwise, a new virtual file is created at the defined location.
+//
+//-------------
+//-------------
+// Author: Philip Windecker
+//-------------
+//-------------
 const ContentAnalyzer = require('../../core/content_analyzer.js')
 const FileCreator = require('../../core/file_creator.js')
 
-
+/**
+ * Creates or updates the pages "list_of_figures.adoc" and "list_of_tables.adoc" and adds the respective list of valid figures/tables to it.
+ * A "valid" entry is one where the anchor is set according to the ASAM specification and where a title for the entry is set.
+ * @param {Object} componentAttributes - The attributes set for the component.
+ * @param {Object} contentCatalog - The content catalog as provided by Antora.
+ * @param {Map <String, Object>} anchorPageMap - A map containing all anchors.
+ * @param {Array <Object>} navFiles - A list of all navigation files for this component-version combination.
+ * @param {Array <Object>} catalog - An array of all pages and partials of this component-version combination.
+ * @param {String} component - The current component.
+ * @param {String} version - The current version.
+ */
 function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles, catalog, component, version) {
     let mergedNavContents = []
     navFiles.sort((a,b) => {
@@ -30,6 +50,17 @@ function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles
 
 }
 
+/**
+ * Creates a new or updates an existing list_of_figures page with a table containing all found figure anchors and their first occurrence.
+ * @param {Object} componentAttributes - The attributes set for the component.
+ * @param {Object} contentCatalog - The content catalog as provided by Antora.
+ * @param {Array <Object>} catalog - An array of all pages and partials of this component-version combination.
+ * @param {Map <String, Object>} figureMap - A map containing all figure anchors.
+ * @param {String} targetModule - The determined target module for the new/updated file.
+ * @param {String} component - The current component.
+ * @param {String} version - The current version.
+ * @returns {*} The new virtual file, if created. If no file is created, returns null instead.
+ */
 function createListOfFiguresPage( componentAttributes, contentCatalog, catalog, figureMap, targetModule, component, version ){
     if (!figureMap || figureMap.length === 0) {return null;}
     let newContent = ['= List of figures']
@@ -63,6 +94,17 @@ function createListOfFiguresPage( componentAttributes, contentCatalog, catalog, 
     return (FileCreator.createNewVirtualFile(contentCatalog, "list_of_figures.adoc", "loft", targetModule, component, version, newContent.join("\n"), base))
 }
 
+/**
+ * Creates a new or updates an existing list_of_tables page with a table containing all found table anchors and their first occurrence.
+ * @param {Object} componentAttributes - The attributes set for the component.
+ * @param {Object} contentCatalog - The content catalog as provided by Antora.
+ * @param {Array <Object>} catalog - An array of all pages and partials of this component-version combination.
+ * @param {Map <String, Object>} tableMap - A map containing all table anchors.
+ * @param {String} targetModule - The determined target module for the new/updated file.
+ * @param {String} component - The current component.
+ * @param {String} version - The current version.
+ * @returns {*} The new virtual file, if created. If no file is created, returns null instead.
+ */
 function createListOfTablesPage( componentAttributes, contentCatalog, catalog, tableMap, targetModule, component, version ){
     if (!tableMap || tableMap.length === 0) {return null;}
     let newContent = ['= List of tables']
@@ -96,6 +138,11 @@ function createListOfTablesPage( componentAttributes, contentCatalog, catalog, t
     return (FileCreator.createNewVirtualFile(contentCatalog, "list_of_tables.adoc", "loft", targetModule, component, version, newContent.join("\n"), base))
 }
 
+/**
+ * Replaces an xref macro with title attribute with the value of said title attribute (for use inside another xref).
+ * @param {String} titleText - A string where the xref macro needs to be replaced with its title attribute.
+ * @returns {String} The updated title.
+ */
 function replaceXrefsInTitleLink(titleText) {
     const re = /(xref:[^\[]+\[(.*)\])/m
     const match = titleText.match(re)

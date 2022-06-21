@@ -11,11 +11,11 @@
 
 /**
  * Analyze a path of an include macro and identifies the linked file, if it exists.
- * @param {Array} pages - An array of all pages.
+ * @param {Array <Object>} pages - An array of all pages.
  * @param {Object} thisPage - The page where the include macro was found.
- * @param {*} includePath - The path extracted from the page.
+ * @param {*} includePath - The path extracted from the page. Either a split path (Array) or a single String.
  * @param {Boolean} published - Optional: If false, also considers content that is not published. Useful for partials.
- * @returns {Object} - The identified page.
+ * @returns {Object} The identified page.
  */
 function determineTargetPageFromIncludeMacro(pages, thisPage, includePath, published = true) {
     if (!Array.isArray(includePath)) {
@@ -55,7 +55,7 @@ function updatePageAttributes(pageAttributes, line) {
  * @param {Object} componentAttributes - All attributes set in the component or the site.
  * @param {Object} pageAttributes - All attributes set up to the provided line.
  * @param {String} line - The line where any attributes should be replaced.
- * @returns {String} - The updated line, if possible.
+ * @returns {String} The updated line, if possible.
  */
 function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
     const reAttributeApplied = /(\/\/.*)?{([^}]+)}/gm;
@@ -88,13 +88,13 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
 /**
  *
  * Extracts all manually defined anchors from an AsciiDoc file. Also traverses through included files.
- * @param {*} catalog - An array of all pages and partials.
+ * @param {Array <Object>} catalog - An array of all pages and partials.
  * @param {Object} thisFile - The current page.
  * @param {Object} componentAttributes - An object containing all attributes of the component.
  * @param {Object} inheritedAttributes - Optional: An object with the previously determined attributes for this file.
- * @param {Array} tags - Optional: An array of tags to filter for.
+ * @param {Array <String>} tags - Optional: An array of tags to filter for.
  * @param {Object} lineOffset - Optional: An object containing a key "line" with Integer values denoting the line number offset accumulated from included files.
- * @returns {Map} - A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
+ * @returns {Map <String,Object>} A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
 function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inheritedAttributes = {}, tags = [], lineOffset = {line:0}) {
     const re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)(,([^\]]*))?\]|anchor:([^\[]+)(,([^\]]*))?\[/
@@ -217,7 +217,7 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
 
 /**
  * Update function specifically designed for anchor maps.
- * @param {Map} inputMap - The in put map whose entry needs to be updated.
+ * @param {Map <String, Object>} inputMap - The in put map whose entry needs to be updated.
  * @param {String} key - The key which needs to be updated.
  * @param {*} addedValue - The new value.
  * @param {Integer} line - The line index at which the entry was found.
@@ -236,7 +236,7 @@ function updateAnchorMapEntry(inputMap, key, addedValue, line) {
 /**
  * Returns the values of the keywords attribute of a file.
  * @param {Object} page - The page that is analyzed.
- * @returns {*} - The match of the regular expression, where the first group contains the list of keywords and res.line is the line the attribute was found in.
+ * @returns {*} The match of the regular expression, where the first group contains the list of keywords and res.line is the line the attribute was found in.
  */
 function getAllKeywordsAsArray(page) {
     var re = /^\s*:keywords:(.*)/
@@ -257,11 +257,11 @@ function getAllKeywordsAsArray(page) {
 /**
  * Determines the number of relevant sections up to a maximum section value.
  * This function also parses all included files that may be relevant depending on their accumulated leveloffset value.
- * @param {Array} pages - An array of pages.
+ * @param {Array <Object>} pages - An array of pages.
  * @param {Object} page - The current page.
- * @param {Number} targetSectionLevel - The sectionlevel that is currently relevant.
+ * @param {Integer} targetSectionLevel - The sectionlevel that is currently relevant.
  * @param {String} startText - Optional: If set, finds a specific anchor of type [#anchor] or [[anchor]].
- * @returns {Array} - The determined number of sections for the targetSectionLevel and below.
+ * @returns {Array <Integer>} The determined number of sections for the targetSectionLevel and below.
  */
 function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, startText = "") {
     let currentTargetSectionLevel = targetSectionLevel
@@ -349,12 +349,12 @@ function getActivePageAttributesAtLine(catalog, componentAttributes, inheritedAt
 /**
  * Retrieves the name associated with an anchor so it can be used as label when linking to other pages.
  * @param {Object} componentAttributes - An object containing all attributes of the component.
- * @param {Map} anchorPageMap - A map containing all found anchors and their pages.
- * @param {Array} pages - An array of all pages.
+ * @param {Map <String, Object>} anchorPageMap - A map containing all found anchors and their pages.
+ * @param {Array <Object>} pages - An array of all pages.
  * @param {Object} page - The current page.
  * @param {String} anchor - The anchor in question.
  * @param {String} style - Optional: A specific reference style to be returned. Options: "full", "short", or "basic".
- * @returns {String} - The extracted alt text.
+ * @returns {String} The extracted alt text.
  */
 function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, page, anchor, style = "") {
     const reSectionEqualSigns = /^\s*(=+)\s+(.*)$/m
@@ -465,7 +465,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
  * Defaults to the filename if all else fails.
  * @param {Object} page - The page for which the title needs to be extracted.
  * @param {String} content - The contents of that page.
- * @returns {String} - The extracted title.
+ * @returns {String} The extracted title.
  */
 function getAltTextFromTitle(page, content) {
     const re1 = /:titleprefix:\s*([^\n]+)/m
@@ -491,7 +491,7 @@ function getAltTextFromTitle(page, content) {
  * Extracts the line index of the title, the index of the navtitle attribute, and the index of the reftext attribute, if applicable.
  * It also returns the contents of that page as an array.
  * @param {Object} page - The page that is analyzed.
- * @returns {Array} - [Content as array, indexOfTitle, indexOfNavtitle, indexOfReftext]
+ * @returns {Array <any>} [Content as array, indexOfTitle, indexOfNavtitle, indexOfReftext]
  */
 function getPageContentForExtensionFeatures(page) {
     const contentSum = page.contents.toString()
@@ -520,9 +520,9 @@ function getPageContentForExtensionFeatures(page) {
 /**
  * Extracts links by url from an array of items.
  * Function provided by Antora project.
- * @param {Array} items - The items that need to be analyzed.
+ * @param {Array <Object>} items - The items that need to be analyzed.
  * @param {Object} accum - A previously already aggregated Object of extracted links.
- * @returns {Object} - The extracted links.
+ * @returns {Object} The extracted links.
  */
 function getNavEntriesByUrl(items = [], accum = {}) {
     items.forEach((item) => {
@@ -535,7 +535,7 @@ function getNavEntriesByUrl(items = [], accum = {}) {
 /**
  * Determines if a page is publishable, i.e. it does not start with "_" or ".".
  * @param {Object} page - The page that is to be analyzed.
- * @returns {Boolean} - States if a page will be published.
+ * @returns {Boolean} States if a page will be published.
  */
 function isPublishableFile(page) {
     return (page.src.relative.indexOf("/_") < 0 && page.src.relative.indexOf("/.") < 0 && !page.src.relative.startsWith("_") && !page.src.relative.startsWith("."))
@@ -544,10 +544,10 @@ function isPublishableFile(page) {
 /**
  * Determines the page for an xref entry from a line.
  * @param {String} line - The line where the xref macro is located.
- * @param {Number} indexOfXref - the index of the xref in the line.
- * @param {*} pages - An array of all pages.
+ * @param {Integer} indexOfXref - the index of the xref in the line.
+ * @param {Array <Object>} pages - An array of all pages.
  * @param {Object} nav - The relevant navigation file.
- * @returns {Object} - The matched page.
+ * @returns {Object} The matched page.
  */
 function determinePageForXrefInLine(line, indexOfXref, pages, nav) {
     const endOfXref = line.indexOf("[")
@@ -559,9 +559,9 @@ function determinePageForXrefInLine(line, indexOfXref, pages, nav) {
 /**
  * Generates a map for a regular expression where each matched keyword is an entry and each page it was matched in a value for that entry.
  * @param {RegExp} re - A regular expression that is to be matched for each page.
- * @param {Array} pages - An array of relevant pages.
+ * @param {Array <Object>} pages - An array of relevant pages.
  * @param {Boolean} exclusive - Optional: If true, the function will only look for the first match in the file.
- * @returns {Map} - A map of matched keywords and the pages where that match occurred.
+ * @returns {Map <String, Object>} A map of matched keywords and the pages where that match occurred.
  */
 function generateMapForRegEx(re, pages, exclusive = false) {
     var generatedMap = new Map;
@@ -597,8 +597,8 @@ function generateMapForRegEx(re, pages, exclusive = false) {
 /**
  * Generates a map for the 'keywords' attribute.
  * @param {Boolean} useKeywords - The function is only executed if this is set to true.
- * @param {Array} pages - An array of relevant pages.
- * @returns {Map} - A map of 'keywords' and the pages where they were found in.
+ * @param {Array <Object>} pages - An array of relevant pages.
+ * @returns {Map <String, Object>} A map of 'keywords' and the pages where they were found in.
  */
 function getKeywordPageMapForPages(useKeywords, pages = []) {
     if (!useKeywords) {
@@ -611,8 +611,8 @@ function getKeywordPageMapForPages(useKeywords, pages = []) {
 
 /**
  * Generates a map for the 'role' shorthand.
- * @param {Array} pages - An array of relevant pages
- * @returns {Map} - A map of 'roles' and the pages where they were found in.
+ * @param {Array <Object>} pages - An array of relevant pages
+ * @returns {Map <String, Object>} A map of 'roles' and the pages where they were found in.
  */
 function getRolePageMapForPages(pages = []) {
     var re = new RegExp("{role-([^}]*)}")
@@ -622,11 +622,11 @@ function getRolePageMapForPages(pages = []) {
 
 /**
  * Generates a map for all anchors with ASAM notation.
- * @param {Array} catalog - An array of relevant pages and partials.
- * @param {Array} pages - An array of relevant pages.
- * @param {Array} navFiles - An array of relevant navigation files.
+ * @param {Array <Object>} catalog - An array of relevant pages and partials.
+ * @param {Array <Object>} pages - An array of relevant pages.
+ * @param {Array <Object>} navFiles - An array of relevant navigation files.
  * @param {Object} componentAttributes - The attributes defined in the component or site.
- * @returns {Map} - A map of anchors and the pages where they were found in.
+ * @returns {Map <String, Object>} A map of anchors and the pages where they were found in.
  */
 function getAnchorPageMapForPages(catalog, pages, navFiles, componentAttributes) {
     var anchorMap = new Map;
@@ -653,10 +653,10 @@ function getAnchorPageMapForPages(catalog, pages, navFiles, componentAttributes)
 
 /**
  * Updates a map entry by adding a new value to it. Does not work for anchor maps.
- * @param {Map} inputMap - The map that needs to be updated.
+ * @param {Map <String, Object>} inputMap - The map that needs to be updated.
  * @param {String} key - The key that is to receive an additional value
  * @param {*} addedValue - The new added value.
- * @returns {Map} - The updated map.
+ * @returns {Map <String, Object>} The updated map.
  */
 const updateMapEntry = (inputMap, key, addedValue) => {
     const newValue = inputMap.get(key).add(addedValue)
@@ -665,10 +665,10 @@ const updateMapEntry = (inputMap, key, addedValue) => {
 
 /**
  * Adds or updates an anchor map entry by merging it with another map.
- * @param {Map} anchorMap - The anchor map where one or more entries have to be added.
- * @param {*} updateMap - An additional anchor map that needs to be merged with the original one.
+ * @param {Map <String, Object>} anchorMap - The anchor map where one or more entries have to be added.
+ * @param {Map <String, Object>} updateMap - An additional anchor map that needs to be merged with the original one.
  * @param {Object} overridePage - Optional: If set, replaces the value for each key in the updateMap with a new set containing the overridePage.
- * @returns {Map} - The updated anchor map.
+ * @returns {Map <String, Object>} The updated anchor map.
  */
 function mergeAnchorMapEntries(anchorMap, updateMap, overridePage = null) {
     for (let key of updateMap.keys()) {
@@ -700,7 +700,7 @@ function mergeAnchorMapEntries(anchorMap, updateMap, overridePage = null) {
  * Generator for all relevant maps.
  * This function generates maps for keywords, roles, and anchors.
  * @param {Object} mapInput - A set of configuration parameters relevant for the map generator. Must contain 'useKeywords', 'pages', and 'navFiles'.
- * @returns {Object} - Object containing the determined maps: keywordPageMap, rolePageMap, anchorPageMap.
+ * @returns {Object} Object containing the determined maps: keywordPageMap, rolePageMap, anchorPageMap.
  */
 function generateMapsForPages(mapInput) {
     let keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords, mapInput.pages)
@@ -730,11 +730,11 @@ function generateMapsForPages(mapInput) {
 
 /**
  * Determines the file the link of an include is pointing to in case this is a partial with Antora url.
- * @param {Array} contentFiles - An array of all relevant files.
+ * @param {Array <Object>} contentFiles - An array of all relevant files.
  * @param {Object} thisPage - The current page.
  * @param {String} pathPrefix - A prefix for the path, as determined from the include macro.
  * @param {String} includePath - The path after the prefix, as determined from the include macro.
- * @returns {Object} - The determined partial, if any.
+ * @returns {Object} The determined partial, if any.
  */
 function determineTargetPartialFromIncludeMacro(contentFiles, thisPage, pathPrefix, includePath) {
     const prefixParts = pathPrefix.split(":")
@@ -746,7 +746,7 @@ function determineTargetPartialFromIncludeMacro(contentFiles, thisPage, pathPref
  * @param {Object} catalog - A content catalog with all relevant content (files and attributes).
  * @param {Object} thisFile - The current file.
  * @param {String} line - The line that needs to be analyzed.
- * @returns {Object} - The identified target file.
+ * @returns {Object} The identified target file.
  */
 function checkForIncludedFileFromLine(catalog, thisFile, line) {
     let targetFile;
@@ -775,7 +775,7 @@ function checkForIncludedFileFromLine(catalog, thisFile, line) {
  * @param {Object} file - The file to be analyzed.
  * @param {String} attribute - The attribute in question.
  * @param {Integer} stopAfter - Optional: Defines a maximum number of lines to search before stopping.
- * @returns {*} - The identified attribute value, if found, or null, if not.
+ * @returns {*} The identified attribute value, if found, or null, if not.
  */
 function getAttributeFromFile(file, attribute, stopAfter = 0) {
     if (typeof attribute == 'string' || attribute instanceof String) {
@@ -795,10 +795,10 @@ function getAttributeFromFile(file, attribute, stopAfter = 0) {
 
 /**
  * Tries to retrieve the value of an attribute from a content Array (first occurrence). Returns null if no match is found.
- * @param {Array} content - An Array of String containing a file's content.
+ * @param {Array <String>} content - An Array of String containing a file's content.
  * @param {String} attribute  - An attribute name.
  * @param {Integer} stopAfter - Optional: A maximum number of lines to search.
- * @returns {*} - The value of the requested attribute, if found, or null, if not.
+ * @returns {*} The value of the requested attribute, if found, or null, if not.
  */
 function getAttributeFromContent(content, attribute, stopAfter = 0) {
     if (typeof attribute == 'string' || attribute instanceof String) {
@@ -823,7 +823,7 @@ function getAttributeFromContent(content, attribute, stopAfter = 0) {
 /**
  * Determines the path to a source file from an Antora ID.
  * @param {String} fileId - The ID of an Antora file.
- * @returns {String} - The translated path to the file.
+ * @returns {String} The translated path to the file.
  */
 function getSrcPathFromFileId(fileId) {
     let splitFileId = fileId.split("@")

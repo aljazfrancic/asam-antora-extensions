@@ -18,8 +18,8 @@ const FileCreator = require('../../core/file_creator.js')
  * - ":!antora_mapping:"
  * - ":antora_mapping!:"
  * - EOF
- * @param {*} pages - Array of all pages in a component-version-combination.
- * @param {*} navFiles - Array of all navigation files in a component-version-combination.
+ * @param {Array <Object>} pages - Array of all pages in a component-version-combination.
+ * @param {Array <Object>} navFiles - Array of all navigation files in a component-version-combination.
  */
 function createAntoraNavigationFromIndex( pages, navFiles ) {
     for (let page of pages) {

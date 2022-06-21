@@ -21,12 +21,12 @@ const ContentManipulator = require("../../../core/content_manipulator.js")
 // Note: This addon requires the Asciidoctor extension "sectnumoffset_antora" to work!
 /**
  * Updates a page's index attribute for images and tables.
- * @param {*} catalog - An array of pages and partials.
+ * @param {Array <Object>} catalog - An array of pages and partials.
  * @param {Object} page - The current page.
  * @param {Object} componentAttributes - The list of inherited component attributes.
- * @param {Number} imageIndex - The image index that needs to be applied as offset.
- * @param {Number} tableIndex - The table index that needs to be applied as offset.
- * @returns {Array} - [Updated image index, updated table index, number of level 2 sections ]
+ * @param {Integer} imageIndex - Optional: The image index that needs to be applied as offset.
+ * @param {Integer} tableIndex - Optional: The table index that needs to be applied as offset.
+ * @returns {Array <any>} [Updated image index, updated table index, number of level 2 sections ]
  */
 function updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex=0, tableIndex=0){
     let newImageIndex = imageIndex
@@ -43,7 +43,7 @@ function updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex
 /**
  * Adds an imageoffset attribute to a page with a given value.
  * @param {Object} page - The page the value needs to be applied to.
- * @param {Number} value - The value that is to be applied as image offset.
+ * @param {Integer} value - The value that is to be applied as image offset.
  */
 function addImageOffsetAttributeToPage( page, value ) {
     let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)
@@ -53,7 +53,7 @@ function addImageOffsetAttributeToPage( page, value ) {
 /**
  * Adds an tableoffset attribute to a page with a given value.
  * @param {Object} page - The page the value needs to be applied to.
- * @param {Number} value - The value that is to be applied as table offset.
+ * @param {Integer} value - The value that is to be applied as table offset.
  */
 function addTableOffsetAttributeToPage( page, value ) {
     let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)

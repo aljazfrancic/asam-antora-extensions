@@ -48,7 +48,7 @@ module.exports = function (registry) {
      * @param {Integer} offset - The offset value that needs to be applied.
      * @param {String} node_name - The expected node_name (table or figure).
      * @param {Boolean} verbose - Optional: States whether verbose output is required.
-     * @returns {Integer} - The updated offset value.
+     * @returns {Integer} The updated offset value.
      */
     function applyOffset (doc, offset, node_name, verbose = false) {
         let newOffset = offset
@@ -107,7 +107,7 @@ module.exports = function (registry) {
      * @param {*} doc - The document.
      * @param {Number} imageOffset - The image offset value.
      * @param {Boolean} verbose - Optional: If true, will print verbose output in the console.
-     * @returns {Number} - The updated imageOffset.
+     * @returns {Number} The updated imageOffset.
      */
     function updateImageOffset( doc, imageOffset, verbose=false ) {
         return (applyOffset(doc, imageOffset,"image", verbose))
@@ -118,7 +118,7 @@ module.exports = function (registry) {
      * @param {*} doc - The document.
      * @param {Number} tableOffset - The table offset value.
      * @param {Boolean} verbose - Optional: If true, will print verbose output in the console.
-     * @returns {Number} - The updated tableOffset.
+     * @returns {Number} The updated tableOffset.
      */
     function updateTableOffset( doc, tableOffset, verbose=false) {
         return (applyOffset(doc, tableOffset,"table", verbose))
