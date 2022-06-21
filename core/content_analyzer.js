@@ -365,10 +365,15 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     let content = page.contents.toString()
     const resultAnchorType = anchor.match(reAnchorType)
     // const indexOfAnchor = content.indexOf(anchor)
-    const indexOfAnchor = content.match(reAnchor).index
+    if (!content.match(reAnchor)) {console.log(anchor); console.log(content)}
+    const indexOfAnchor = content.match(reAnchor).index | null
     let inheritedAttributes = {}
     if (indexOfAnchor && indexOfAnchor > -1) {
         getActivePageAttributesAtLine(pages, componentAttributes, inheritedAttributes, indexOfAnchor, page)
+    }
+    else {
+        console.warn(`cannot operate on ${anchor} in file ${page.src}`)
+        return null
     }
     const resultForNextHeading = content.slice(indexOfAnchor).match(reSectionEqualSigns)
     // const resultForPreviousHeading = content.slice(0,indexOfAnchor).match(reSectionEqualSigns)
