@@ -49,6 +49,7 @@ function addXrefStyleToSectionAndPageXrefs (catalog, componentAttributes, anchor
  */
 function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, style, appendixCaption, inheritedAttributes = {}) {
     const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)([^\]]*,\s*)*(xrefstyle\s*=\s*([^,\]]*))?(, *.*)*\]/gm
+    const reIncorrectXref = /xref:([^\[]*)(#[^\[]*)?(\[)([^\]]*,\s*)*(xrefstyle\s*=\s*([^,\]]*))?(, *.*)*\]/gm
     const validStyles = ["full","short","basic"]
     if (!file.contents) {
         return
@@ -75,6 +76,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
         let newLine = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
         re.lastIndex = 0
         let match
+        if (!newLine.match(re) && newLine.match(reIncorrectXref)) {console.warn("incomplete xref link found:", newLine.match(reIncorrectXref)[0])}
         while ((match = re.exec(newLine)) !== null) {
             if (match.index === re.lastIndex) {
                 re.lastIndex++;
