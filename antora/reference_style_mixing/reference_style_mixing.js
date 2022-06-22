@@ -65,6 +65,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
             break;
     }
     if (reftext) {ContentManipulator.updateAttributeWithValueOnPage(file, "reftext", reftext)}
+    // if (file.src.stem === "environment-actions") {console.log(reftext); throw "pause"}
     // else {console.log("skipping file",file.src.relative)}
     let content = file.contents.toString().split("\n")
     for (let line of content) {
@@ -77,7 +78,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
             if (match.index === re.lastIndex) {
                 re.lastIndex++;
             }
-            if (match[5] || match[4] || match[7] || (match[2] && (match[2].startsWith("fig-")||match[2].startsWith("tab-")))) {}
+            if (match[5] || match[4] || match[7] || (match[2] && (match[2].startsWith("#fig-")||match[2].startsWith("#tab-")))) {}
             else if (match[2]) {
                 const targetPath = ContentAnalyzer.getSrcPathFromFileId(match[1])
                 if (!targetPath.module) {targetPath.module = file.src.module}

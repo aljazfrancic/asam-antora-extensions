@@ -386,6 +386,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     let returnValue = ""
     let prefix = ""
     let title = ""
+    let reftext
     const sectionRefsig = componentAttributes['section-refsig'] ? componentAttributes['section-refsig'] : "Section"
     const appendixRefsig = componentAttributes['appendix-caption'] ? componentAttributes['appendix-caption'] : "Appendix"
     // let verbose = (anchor==="sec-lc-aggregate-types" && style === "full")
@@ -418,6 +419,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 returnValue = getAltTextFromTitle(page, content);
                 title = content.match(/^= (.*)$/m)[1];
                 title = title ? title : returnValue;
+                reftext = getAttributeFromFile(page, "reftext");
                 const titleoffset = getAttributeFromFile(page, "titleoffset");
                 const titleprefix = getAttributeFromFile(page, "tileprefix");
                 prefix = titleprefix ? titleprefix : titleoffset ? titleoffset : "";
@@ -444,13 +446,13 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
         //-------------
         switch (style) {
             case "full":
-                returnValue = prefix ? `${prefix}, "${title}"` : `${title}`;
+                returnValue = reftext ? reftext : prefix ? `${prefix}, "${title}"` : `${title}`;
                 break;
             case "short":
-                returnValue = prefix;
+                returnValue = reftext ? reftext : prefix;
                 break;
             case "basic":
-                returnValue = `${title}`;
+                returnValue = reftext ? reftext : `${title}`;
                 break;
             default:
                 break;
