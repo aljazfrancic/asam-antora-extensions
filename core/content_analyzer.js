@@ -419,7 +419,17 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 returnValue = getAltTextFromTitle(page, content);
                 title = content.match(/^= (.*)$/m)[1];
                 title = title ? title : returnValue;
-                reftext = getAttributeFromFile(page, "reftext");
+                switch (style) {
+                    case "full":
+                        reftext = getAttributeFromFile(page, "reftext_full");
+                        break;
+                    case "short":
+                        reftext = getAttributeFromFile(page, "reftext_short");
+                        break;
+                    case "basic":
+                        reftext = getAttributeFromFile(page, "reftext_basic");
+                        break;
+                }
                 const titleoffset = getAttributeFromFile(page, "titleoffset");
                 const titleprefix = getAttributeFromFile(page, "tileprefix");
                 prefix = titleprefix ? titleprefix : titleoffset ? titleoffset : "";

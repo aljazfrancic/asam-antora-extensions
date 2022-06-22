@@ -48,7 +48,8 @@ function addXrefStyleToSectionAndPageXrefs (catalog, componentAttributes, anchor
  * @param {Object} inheritedAttributes - Optional: An object containing all aggregated page attributes.
  */
 function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, style, appendixCaption, inheritedAttributes = {}) {
-    const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)([^\]]*,\s*)*(xrefstyle=([^,\]]*))?(, *.*)*\]/gm
+    const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)([^\]]*,\s*)*(xrefstyle\s*=\s*([^,\]]*))?(, *.*)*\]/gm
+    const validStyles = ["full","short","basic"]
     if (!file.contents) {
         return
     }
@@ -78,22 +79,26 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
             if (match.index === re.lastIndex) {
                 re.lastIndex++;
             }
-            if (match[5] || match[4] || match[7] || (match[2] && (match[2].startsWith("#fig-")||match[2].startsWith("#tab-")))) {}
+            const tempStyle = (match[6] && validStyles.includes(match[6])) ? match[6] : style
+            if (match[4] || match[7] || (match[2] && (match[2].startsWith("#fig-")||match[2].startsWith("#tab-")))) {}
             else if (match[2]) {
                 const targetPath = ContentAnalyzer.getSrcPathFromFileId(match[1])
                 if (!targetPath.module) {targetPath.module = file.src.module}
                 const xrefTarget = catalog.find(x => x.src.module == targetPath.module && x.src.relative === targetPath.relative)
                 if (!xrefTarget) {console.warn("could not determine target of xref...", match[0]); continue}
-                const xrefLabel = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, anchorPageMap, catalog,xrefTarget,match[2].slice(1), style)
+                let xrefLabel = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, anchorPageMap, catalog,xrefTarget,match[2].slice(1), tempStyle)
                 const start = newLine.indexOf("[",match.index) +1
-                if (xrefTarget === file || xrefLabel === "") {
+                if ((xrefTarget === file && match[5]) || (["",null].includes(xrefLabel) && match[5])) {}
+                else if (xrefTarget === file || ["",null].includes(xrefLabel)) {
                     newLine = newLine.slice(0,start) + `xrefstyle=${style}` + newLine.slice(start)
                 }
                 else {
+                    xrefLabel = match[5] ? xrefLabel+", " : xrefLabel
                     newLine = newLine.slice(0,start) + `${xrefLabel}` + newLine.slice(start)
                 }
                 content[index] = newLine
             }
+            else if (match[5]) {}
             else {
                 const start = newLine.indexOf("[",match.index) +1
                 newLine = newLine.slice(0,start) + `xrefstyle=${style}` + newLine.slice(start)
