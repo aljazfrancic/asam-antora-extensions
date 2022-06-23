@@ -361,11 +361,14 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const reCaptionLabel = /^\.(\S.+)$/m
     const reAnchorType = /#?([^-\]]+)-?[^\]]*/m
     const regexAnchor = anchor.replaceAll("-","\\-").replaceAll(".","\\.").replaceAll("(","\\(").replaceAll(")","\\)")
+    const regexAltAnchor = regexAnchor.slice(4)
     const reAnchor = new RegExp(`\\[\\[${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
+    const reAltAnchor = new RegExp(`\\[\\[${regexAltAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAltAnchor}(,([^\\]]*))?\\]|anchor:${regexAltAnchor}(,([^\\]]*))?`, 'm')
     let content = page.contents.toString()
     const resultAnchorType = anchor.match(reAnchorType)
     // const indexOfAnchor = content.indexOf(anchor)
-    if (!content.match(reAnchor)) {console.warn(`${anchor} could not be found in file ${page.src.abspath}`); return null}
+    if(!content.match(reAnchor) && content.match(reAltAnchor)) {console.warn(`${anchor} could not be found in file ${page.src.abspath}, but found similar match instead! Please check file`); return null}
+    else if (!content.match(reAnchor)) {console.warn(`${anchor} could not be found in file ${page.src.abspath}`); return null}
     const indexOfAnchor = content.match(reAnchor).index | null
     let inheritedAttributes = {}
     if (indexOfAnchor!== null && indexOfAnchor > -1) {

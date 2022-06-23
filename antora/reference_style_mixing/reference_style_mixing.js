@@ -88,7 +88,12 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
                 if (!targetPath.module) {targetPath.module = file.src.module}
                 const xrefTarget = catalog.find(x => x.src.module == targetPath.module && x.src.relative === targetPath.relative)
                 if (!xrefTarget) {console.warn("could not determine target of xref...", match[0]); continue}
-                let xrefLabel = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, anchorPageMap, catalog,xrefTarget,match[2].slice(1), tempStyle)
+                const anchorSource = anchorPageMap.get(match[2].slice(1)) ? anchorPageMap.get(match[2].slice(1)).source : xrefTarget
+                if (anchorSource !== xrefTarget && !anchorPageMap.get(match[2].slice(1)).usedIn.find(x => x === xrefTarget)) {
+                    console.warn("no anchor entry in map for",match[2].slice(1),"in file",xrefTarget.src.abspath)
+                    continue
+                }
+                let xrefLabel = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, anchorPageMap, catalog,anchorSource,match[2].slice(1), tempStyle)
                 const start = newLine.indexOf("[",match.index) +1
                 if ((xrefTarget === file && match[5]) || (["",null].includes(xrefLabel) && match[5])) {}
                 else if (xrefTarget === file || ["",null].includes(xrefLabel)) {
