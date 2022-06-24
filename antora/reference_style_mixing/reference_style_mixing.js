@@ -14,7 +14,7 @@ const ContentAnalyzer = require("../../core/content_analyzer.js")
 const ContentManipulator = require("../../core/content_manipulator.js")
 
 /**
- *
+ * Applies an alternate xref style to section and page xrefs for all pages and partials.
  * @param {Array <Object>} catalog - The filtered content catalog for the current component-version combination.
  * @param {Object} componentAttributes - The attributes of the component.
  * @param {Map <String, Object>} anchorPageMap - A map containing anchors and their associated pages.
@@ -22,7 +22,8 @@ const ContentManipulator = require("../../core/content_manipulator.js")
  */
 function addXrefStyleToSectionAndPageXrefs (catalog, componentAttributes, anchorPageMap, style) {
     const appendixCaption = Object.keys(componentAttributes).indexOf("appendix-caption") > -1 ? componentAttributes["appendix-caption"] : "Appendix"
-    const pages = catalog.filter(x => x.src.family === "page")
+    // const pages = catalog.filter(x => x.src.family === "page")
+    const pages = catalog.filter(x => (x.src.mediaType === "text/asciidoc" && (x.src.family === "page" || x.src.family === "partial")))
     switch(style) {
         case 'full':
         case 'short':
@@ -48,8 +49,8 @@ function addXrefStyleToSectionAndPageXrefs (catalog, componentAttributes, anchor
  * @param {Object} inheritedAttributes - Optional: An object containing all aggregated page attributes.
  */
 function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, style, appendixCaption, inheritedAttributes = {}) {
-    const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)([^\]]*,\s*)*(xrefstyle\s*=\s*([^,\]]*))?(, *.*)*\]/gm
-    const reIncorrectXref = /xref:([^\[]*)(#[^\[]*)?(\[)([^\]]*,\s*)*(xrefstyle\s*=\s*([^,\]]*))?(, *.*)*\]/gm
+    const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)([^\]]*,?\s*)*(xrefstyle\s*=\s*([^,\]]*))?(, *.*)*\]/gm
+    const reIncorrectXref = /xref:([^\[]*)(#[^\[]*)?(\[)([^\]]*,?\s*)*(xrefstyle\s*=\s*([^,\]]*))?(, *.*)*\]/gm
     const validStyles = ["full","short","basic"]
     if (!file.contents) {
         return
@@ -67,10 +68,9 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
             break;
     }
     if (reftext) {ContentManipulator.updateAttributeWithValueOnPage(file, "reftext", reftext)}
-    // if (file.src.stem === "environment-actions") {console.log(reftext); throw "pause"}
-    // else {console.log("skipping file",file.src.relative)}
     let content = file.contents.toString().split("\n")
     for (let line of content) {
+        if(line.trim().startsWith("//")) {continue}
         let index = content.indexOf(line)
         ContentAnalyzer.updatePageAttributes(inheritedAttributes, line)
         let newLine = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
@@ -78,22 +78,38 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
         let match
         if (!newLine.match(re) && newLine.match(reIncorrectXref)) {console.warn("incomplete xref link found:", newLine.match(reIncorrectXref)[0])}
         while ((match = re.exec(newLine)) !== null) {
+            let anchorSource
+            let xrefLabel
             if (match.index === re.lastIndex) {
                 re.lastIndex++;
             }
             const tempStyle = (match[6] && validStyles.includes(match[6])) ? match[6] : style
-            if (match[4] || match[7] || (match[2] && (match[2].startsWith("#fig-")||match[2].startsWith("#tab-")))) {}
-            else if (match[2]) {
-                const targetPath = ContentAnalyzer.getSrcPathFromFileId(match[1])
-                if (!targetPath.module) {targetPath.module = file.src.module}
-                const xrefTarget = catalog.find(x => x.src.module == targetPath.module && x.src.relative === targetPath.relative)
-                if (!xrefTarget) {console.warn("could not determine target of xref...", match[0]); continue}
-                const anchorSource = anchorPageMap.get(match[2].slice(1)) ? anchorPageMap.get(match[2].slice(1)).source : xrefTarget
-                if (anchorSource !== xrefTarget && !anchorPageMap.get(match[2].slice(1)).usedIn.find(x => x === xrefTarget)) {
-                    console.warn("no anchor entry in map for",match[2].slice(1),"in file",xrefTarget.src.abspath)
+            const targetPath = ContentAnalyzer.getSrcPathFromFileId(match[1])
+            if (!targetPath.module) {targetPath.module = file.src.module}
+            const xrefTarget = catalog.find(x => x.src.module == targetPath.module && x.src.relative === targetPath.relative)
+            if (!xrefTarget) {console.warn("could not determine target of xref...", match[0], "in",file.src.abspath); continue}
+            if (match[2]) {
+                anchorSource = anchorPageMap.get(match[2].slice(1)) ? anchorPageMap.get(match[2].slice(1)).source : xrefTarget
+                if (!anchorPageMap.get(match[2].slice(1))) {
+                    console.warn("ERROR IN FILE",file.src.abspath)
+                    console.warn("anchor",match[2].slice(1),"not found in anchor map!")
+                    const altMatch = anchorPageMap.get(match[2].slice(1).replace("top-","sec-"))
+                    if (altMatch) {
+                        console.warn("found alternate match", match[2].slice(1).replace("top-","sec-"), "instead...")
+                    }
                     continue
                 }
-                let xrefLabel = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, anchorPageMap, catalog,anchorSource,match[2].slice(1), tempStyle)
+                if (anchorSource !== xrefTarget && (!anchorPageMap.get(match[2].slice(1)).usedIn || !anchorPageMap.get(match[2].slice(1)).usedIn.find(x => x === xrefTarget))) {
+                    console.warn("ERROR IN FILE",file.src.abspath)
+                    const usedIn = anchorPageMap.get(match[2].slice(1)).usedIn ? anchorPageMap.get(match[2].slice(1)).usedIn : anchorPageMap.get(match[2].slice(1)).source
+                    console.warn("anchor",match[2].slice(1),"has no occurrence in file",xrefTarget.src.abspath,".\nAnchor is actually found in", usedIn.src.abspath)
+                    continue
+                }
+                xrefLabel= ContentAnalyzer.getReferenceNameFromSource(componentAttributes, anchorPageMap, catalog,anchorSource,match[2].slice(1), tempStyle)
+            }
+
+            if (match[4] || match[7] || (match[2] && (match[2].startsWith("#fig-")||match[2].startsWith("#tab-")))) {}
+            else if (match[2]) {
                 const start = newLine.indexOf("[",match.index) +1
                 if ((xrefTarget === file && match[5]) || (["",null].includes(xrefLabel) && match[5])) {}
                 else if (xrefTarget === file || ["",null].includes(xrefLabel)) {

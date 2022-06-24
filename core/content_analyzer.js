@@ -97,7 +97,7 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
  * @returns {Map <String,Object>} A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
 function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inheritedAttributes = {}, tags = [], lineOffset = {line:0}) {
-    const re = /\[\[([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)(,([^\]]*))?\]|anchor:([^\[]+)(,([^\]]*))?\[/
+    const re = /\[\[{1,2}([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)(,([^\]]*))?\]|anchor:([^\[]+)(,([^\]]*))?\[/
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[(.+)?\]/m;
     const reTags = /.*,?tags?=([^,]+)/m;
     const reTaggedStart = /\/\/\s*tag::(.+)\[\]/m
@@ -212,6 +212,7 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
     }
     lineOffset.line += currentLineIndex
 
+    // if (thisFile.src.abspath.includes("pages/bibliography")) {console.log(resultMap); throw "break"}
     return resultMap
 }
 
@@ -362,7 +363,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const reAnchorType = /#?([^-\]]+)-?[^\]]*/m
     const regexAnchor = anchor.replaceAll("-","\\-").replaceAll(".","\\.").replaceAll("(","\\(").replaceAll(")","\\)")
     const regexAltAnchor = regexAnchor.slice(4)
-    const reAnchor = new RegExp(`\\[\\[${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
+    const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     const reAltAnchor = new RegExp(`\\[\\[${regexAltAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAltAnchor}(,([^\\]]*))?\\]|anchor:${regexAltAnchor}(,([^\\]]*))?`, 'm')
     let content = page.contents.toString()
     const resultAnchorType = anchor.match(reAnchorType)

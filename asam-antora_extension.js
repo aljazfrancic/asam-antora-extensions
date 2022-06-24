@@ -120,6 +120,7 @@ module.exports.register = function ({ config }) {
                 //-------------
                 if (parsedConfig.loft) {
                     console.log("Creating list of figures and tables...")
+                    catalog =  contentCatalog.findBy({ component, version})
                     Loft.createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles, catalog, component, version)
                 }
                 //-------------
@@ -129,6 +130,7 @@ module.exports.register = function ({ config }) {
                 //-------------
                 if (parsedConfig.numberedTitles) {
                     console.log("Create sequential section numbers, titles, and captions...")
+                    catalog =  contentCatalog.findBy({ component, version})
                     ConsistentNumbering.applySectionAndTitleNumbers(catalog, pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component)
                 }
                 //-------------
@@ -147,7 +149,7 @@ module.exports.register = function ({ config }) {
                 //-------------
                 if (parsedConfig.alternateXrefStyle && parsedConfig.alternateXrefStyle !== "") {
                     console.log(`Applying explicit xref style ${parsedConfig.alternateXrefStyle} for xrefs...`)
-                    // TODO: Add function call
+                    catalog =  contentCatalog.findBy({ component, version})
                     RefStyle.addXrefStyleToSectionAndPageXrefs(catalog, componentAttributes, anchorPageMap, parsedConfig.alternateXrefStyle)
                 }
                 //-------------
