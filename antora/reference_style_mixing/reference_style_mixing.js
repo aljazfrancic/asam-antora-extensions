@@ -52,7 +52,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
     const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?([^\]]*)\]/gm
     const reIncorrectXref = /xref:([^\[]*)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?(.*)\]/gm
     const validStyles = ["full","short","basic"]
-    const debugName = "#sec-lc-types-compound-modifiers"
+    const debugName = null
     let debug = false
     if (!file.contents) {
         return

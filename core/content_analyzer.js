@@ -63,14 +63,17 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
     let newLine = line
     let m;
     let i = 0
+    let debug = false
+    if (debug) {console.log(line)}
     while ((m = reAttributeApplied.exec(newLine)) !== null) {
+        if (debug) {console.log(m)}
         if (m[1]) { break; }
         if (m.index === reAttributeApplied.lastIndex && i >= 20) {
             reAttributeApplied.lastIndex++;
             i = 0;
         }
         else if (m.index === reAttributeApplied.lastIndex) { i++; }
-        const replacement = componentAttributes[m[2]] ? componentAttributes[m[2]].trim() : (pageAttributes[m[2]] ? pageAttributes[m[2]].trim() : undefined)
+        const replacement = componentAttributes[`'${m[2]}'`] ? componentAttributes[`'${m[2]}'`].trim() :componentAttributes[m[2]] ? componentAttributes[m[2]].trim() : (pageAttributes[m[2]] ? pageAttributes[m[2]].trim() : undefined)
         if (replacement) {
             newLine = newLine.replace(m[0], replacement)
             reAttributeApplied.lastIndex = 0
@@ -155,11 +158,13 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
         // Get all attributes from this line and parse its content. If a file is included, check it. Otherwise, check if any anchor is found and, if so, add it to the list.
         //-------------
         updatePageAttributes(inheritedAttributes, line)
+        line = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
         let includeSearchResult = line.match(reInclude)
-        if (includeSearchResult && includeSearchResult.length > 0) {
-            line = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
-            includeSearchResult = line.match(reInclude)
-        }
+        // if (includeSearchResult && includeSearchResult.length > 0) {
+        //     line = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
+        //     includeSearchResult = line.match(reInclude)
+        // }
+        // line = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
         if (includeSearchResult && includeSearchResult.length > 0) {
             let targetFile
             if (includeSearchResult[1]) {
@@ -365,13 +370,23 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const regexAltAnchor = regexAnchor.slice(4)
     const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     const reAltAnchor = new RegExp(`\\[\\[${regexAltAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAltAnchor}(,([^\\]]*))?\\]|anchor:${regexAltAnchor}(,([^\\]]*))?`, 'm')
+    let inheritedAttributes = {}
     let content = page.contents.toString()
+    const contentSplit = content.split("\n")
+    getActivePageAttributesAtLine(pages, componentAttributes, inheritedAttributes, contentSplit.length, page)
+    for (let line of contentSplit) {
+        updatePageAttributes(inheritedAttributes, line)
+        const index = contentSplit.indexOf(line)
+        contentSplit[index] = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
+    }
+    content = contentSplit.join("\n")
+    // if(anchor === "ocr") {console.log(content); console.log(inheritedAttributes); throw ""}
+
     const resultAnchorType = anchor.match(reAnchorType)
     // const indexOfAnchor = content.indexOf(anchor)
     if(!content.match(reAnchor) && content.match(reAltAnchor)) {console.warn(`${anchor} could not be found in file ${page.src.abspath}, but found similar match instead! Please check file`); return null}
     else if (!content.match(reAnchor)) {console.warn(`${anchor} could not be found in file ${page.src.abspath}`); return null}
     const indexOfAnchor = content.match(reAnchor).index | null
-    let inheritedAttributes = {}
     if (indexOfAnchor!== null && indexOfAnchor > -1) {
         getActivePageAttributesAtLine(pages, componentAttributes, inheritedAttributes, indexOfAnchor, page)
     }
@@ -830,7 +845,6 @@ function getAttributeFromContent(content, attribute, stopAfter = 0) {
         let attributes = {}
         let i = 0
         for (let line of content) {
-            console.log(line)
             if (stopAfter > 0 && i > stopAfter) { break; }
             updatePageAttributes(attributes, line)
             if (attribute in attributes) {
