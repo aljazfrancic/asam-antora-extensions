@@ -13,6 +13,8 @@
 const ContentAnalyzer = require("../../core/content_analyzer.js")
 const ContentManipulator = require("../../core/content_manipulator.js")
 
+var anchorErrors = []
+
 /**
  * Applies an alternate xref style to section and page xrefs for all pages and partials.
  * @param {Array <Object>} catalog - The filtered content catalog for the current component-version combination.
@@ -52,7 +54,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
     const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?([^\]]*)\]/gm
     const reIncorrectXref = /xref:([^\[]*)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?(.*)\]/gm
     const validStyles = ["full","short","basic"]
-    const debugName = null
+    const debugName = "terminology-maneuver-link-short"
     let debug = false
     if (!file.contents) {
         return
@@ -76,6 +78,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
         let index = content.indexOf(line)
         ContentAnalyzer.updatePageAttributes(inheritedAttributes, line)
         let newLine = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
+        // if (debugName && newLine.includes(debugName)){debug = true; console.log(inheritedAttributes);console.log(newLine); throw "hello"}
         re.lastIndex = 0
         let match
         if (!newLine.match(re) && newLine.match(reIncorrectXref)) {console.warn("incomplete xref link found:", newLine.match(reIncorrectXref)[0])}
@@ -96,11 +99,20 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
             if (match[2]) {
                 anchorSource = anchorPageMap.get(match[2].slice(1)) ? anchorPageMap.get(match[2].slice(1)).source : xrefTarget
                 if (!anchorPageMap.get(match[2].slice(1))) {
-                    console.warn("ERROR IN FILE",file.src.abspath)
-                    console.warn("anchor",match[2].slice(1),"not found in anchor map!")
-                    const altMatch = anchorPageMap.get(match[2].slice(1).replace("top-","sec-"))
-                    if (altMatch) {
-                        console.warn("found alternate match", match[2].slice(1).replace("top-","sec-"), "instead...")
+                    if (!anchorErrors.find(x => (x.file === file && x.anchors.includes(match[2].slice(1))))) {
+                        console.warn("ERROR IN FILE",file.src.abspath)
+                        console.warn("anchor",match[2].slice(1),"not found in anchor map!")
+                        const altMatch = anchorPageMap.get(match[2].slice(1).replace("top-","sec-"))
+                        if (altMatch) {
+                            console.warn("found alternate match", match[2].slice(1).replace("top-","sec-"), "instead...")
+                        }
+                        if (anchorErrors[file]) {
+                            anchorErrors[file].anchors.push(match[2].slice(1))
+                        }
+                        else {
+                            const newError = {file:file, anchors:[match[2].slice(1)]}
+                            anchorErrors.push(newError)
+                        }
                     }
                     continue
                 }
@@ -136,8 +148,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
         }
         let targetFile = ContentAnalyzer.checkForIncludedFileFromLine(catalog, file, newLine)
         if (targetFile) {
-
-            applyXrefStyle(catalog, componentAttributes, targetFile, style, appendixCaption, inheritedAttributes)
+            applyXrefStyle(catalog, componentAttributes, anchorPageMap, targetFile, style, appendixCaption, inheritedAttributes)
         }
     }
     file.contents = Buffer.from(content.join("\n"))

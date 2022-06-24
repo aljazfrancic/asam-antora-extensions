@@ -9,6 +9,8 @@
 //-------------
 //-------------
 
+var nonStandardAnchors = []
+
 /**
  * Analyze a path of an include macro and identifies the linked file, if it exists.
  * @param {Array <Object>} pages - An array of all pages.
@@ -466,7 +468,10 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 title = result[2].trim();
                 break;
             default:
-                console.warn("non-standard anchor type detected: ", anchor);
+                if (!nonStandardAnchors.includes(anchor)) {
+                    console.warn("non-standard anchor type detected: ", anchor);
+                    nonStandardAnchors.push(anchor)
+                }
                 returnValue = getAltTextFromTitle(page, content);
                 break;
         }
