@@ -49,9 +49,11 @@ function addXrefStyleToSectionAndPageXrefs (catalog, componentAttributes, anchor
  * @param {Object} inheritedAttributes - Optional: An object containing all aggregated page attributes.
  */
 function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, style, appendixCaption, inheritedAttributes = {}) {
-    const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)([^\]]*,?\s*)*(xrefstyle\s*=\s*([^,\]]*))?(, *.*)*\]/gm
-    const reIncorrectXref = /xref:([^\[]*)(#[^\[]*)?(\[)([^\]]*,?\s*)*(xrefstyle\s*=\s*([^,\]]*))?(, *.*)*\]/gm
+    const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?([^\]]*)\]/gm
+    const reIncorrectXref = /xref:([^\[]*)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?(.*)\]/gm
     const validStyles = ["full","short","basic"]
+    const debugName = "#sec-lc-types-compound-modifiers"
+    let debug = false
     if (!file.contents) {
         return
     }
@@ -77,13 +79,16 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
         re.lastIndex = 0
         let match
         if (!newLine.match(re) && newLine.match(reIncorrectXref)) {console.warn("incomplete xref link found:", newLine.match(reIncorrectXref)[0])}
+        if (debugName && newLine.includes(debugName)){debug = true}
+        else(debug = false)
         while ((match = re.exec(newLine)) !== null) {
+            if (debug){console.log(match)}
             let anchorSource
             let xrefLabel
             if (match.index === re.lastIndex) {
                 re.lastIndex++;
             }
-            const tempStyle = (match[6] && validStyles.includes(match[6])) ? match[6] : style
+            const tempStyle = (match[5] && validStyles.includes(match[5])) ? match[5] : style
             const targetPath = ContentAnalyzer.getSrcPathFromFileId(match[1])
             if (!targetPath.module) {targetPath.module = file.src.module}
             const xrefTarget = catalog.find(x => x.src.module == targetPath.module && x.src.relative === targetPath.relative)
@@ -106,9 +111,10 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
                     continue
                 }
                 xrefLabel= ContentAnalyzer.getReferenceNameFromSource(componentAttributes, anchorPageMap, catalog,anchorSource,match[2].slice(1), tempStyle)
+                if (debug){console.log(xrefLabel)}
             }
 
-            if (match[4] || match[7] || (match[2] && (match[2].startsWith("#fig-")||match[2].startsWith("#tab-")))) {}
+            if (match[6] || (match[2] && (match[2].startsWith("#fig-")||match[2].startsWith("#tab-")))) {if (debug){throw "MISTAKES WERE MADE"}}
             else if (match[2]) {
                 const start = newLine.indexOf("[",match.index) +1
                 if ((xrefTarget === file && match[5]) || (["",null].includes(xrefLabel) && match[5])) {}
@@ -128,9 +134,9 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
                 content[index] = newLine
             }
         }
-
         let targetFile = ContentAnalyzer.checkForIncludedFileFromLine(catalog, file, newLine)
         if (targetFile) {
+
             applyXrefStyle(catalog, componentAttributes, targetFile, style, appendixCaption, inheritedAttributes)
         }
     }
