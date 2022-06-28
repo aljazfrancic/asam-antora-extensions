@@ -374,6 +374,8 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const regexAltAnchor = regexAnchor.slice(4)
     const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     const reAltAnchor = new RegExp(`\\[\\[${regexAltAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAltAnchor}(,([^\\]]*))?\\]|anchor:${regexAltAnchor}(,([^\\]]*))?`, 'm')
+    const reExampleBlock = /^={4}$/m
+    const reSourceBlock = /^\[source([^\]]+)?\]\s*\n-{4}\s*$/m
     let inheritedAttributes = {}
     let content = page.contents.toString()
     const contentSplit = content.split("\n")
@@ -402,6 +404,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const resultForNextHeading = content.slice(indexOfAnchor).match(reSectionEqualSigns)
     // const resultForPreviousHeading = content.slice(0,indexOfAnchor).match(reSectionEqualSigns)
     const resultNextCaption = content.slice(indexOfAnchor).match(reCaptionLabel)
+    const countLineBreaksHeading = resultForNextHeading ? content.slice(indexOfAnchor,indexOfAnchor+resultForNextHeading.index).split("\n").length : 0
     const countLineBreaks = resultNextCaption ? content.slice(indexOfAnchor,indexOfAnchor+resultNextCaption.index).split("\n").length : 0
     const lineBreakLimitBreached = countLineBreaks > 4 ? true : false
     // Use special anchor formats: sec, top, fig, tab, ...
@@ -414,12 +417,52 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const appendixRefsig = componentAttributes['appendix-caption'] ? componentAttributes['appendix-caption'] : "Appendix"
     const figureCaption = inheritedAttributes['figure-caption'] ? inheritedAttributes['figure-caption'] : componentAttributes['figure-caption'] ? componentAttributes['figure-caption'] : "Figure"
     const tableCaption = inheritedAttributes['table-caption'] ? inheritedAttributes['table-caption'] : componentAttributes['table-caption'] ? componentAttributes['table-caption'] : "Table"
-    const codeCaption = inheritedAttributes['example-caption'] ? inheritedAttributes['example-caption'] : componentAttributes['example-caption'] ? componentAttributes['example-caption'] : "Example"
+    const exampleCaption = inheritedAttributes['example-caption'] ? inheritedAttributes['example-caption'] : componentAttributes['example-caption'] ? componentAttributes['example-caption'] : "Example"
+    const codeCaption = inheritedAttributes['listing-caption'] ? inheritedAttributes['listing-caption'] : componentAttributes['listing-caption'] ? componentAttributes['listing-caption'] : ""
     // let verbose = (anchor==="sec-lc-aggregate-types" && style === "full")
     //-------------
     // Only act on anchors that match one of the ASAM anchor types (matching reAnchorType).
     //-------------
     if (resultAnchorType) {
+        switch (resultAnchorType[1]) {
+            case "fig":
+                break;
+            case "tab":
+                break;
+            case "code":
+                if (countLineBreaks > 2) {
+                    console.warn(`ASAM rule violation: No title found in next line after ${anchor}!\nFile: ${page.src.abspath}`);
+                    break;
+                }
+                let matchExample = content.slice(indexOfAnchor).match(reExampleBlock);
+                let matchSource = content.slice(indexOfAnchor).match(reSourceBlock);
+                if (!matchExample || content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length !== 2 || !matchSource || content.slice(indexOfAnchor,indexOfAnchor+matchSource.index).split("\n").length !== 2 ){
+                    console.warn(`ASAM rule violation: Code anchor ${anchor} not immediately followed by block after title!\nFile: ${page.src.abspath}`);
+                }
+                if (matchExample && content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length === 2 ) {
+                    console.warn(`INFO: Code anchor ${anchor} used with example block!\nFile: ${page.src.abspath}`);
+                }
+                break;
+            case "top":
+                if (countLineBreaksHeading > 2) {
+                    console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}`);
+                }
+                else if (page.src.family === "partial") {
+                    console.warn(`ASAM rule violation: Top anchor ${anchor} used in partil!\nFile: ${page.src.abspath}`);
+                }
+                else if (!resultForNextHeading || resultForNextHeading[1].length !== 1) {
+                    console.warn(`ASAM rule violation: Anchor ${anchor} used for section, not title!\nFile: ${page.src.abspath}`)
+                }
+                break;
+            case "sec":
+                if (countLineBreaksHeading > 2) {
+                    console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}`);
+                }
+                else if (page.src.family === "page" && (!resultForNextHeading || resultForNextHeading[1].length === 1)) {
+                    console.warn(`ASAM rule violation: Anchor ${anchor} used for title, not section!\nFile: ${page.src.abspath}`)
+                }
+                break;
+        }
         switch (resultAnchorType[1]) {
             case "fig":
                 result = lineBreakLimitBreached ? null : resultNextCaption;
@@ -447,7 +490,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 let codeIndex = Array.from(codeMap.keys()).indexOf(anchor)
                 if (result) {
                     title = result[1];
-                    prefix = codeCaption + ' ' + codeIndex;
+                    prefix = codeCaption.length > 0 ? codeCaption + ' ' + codeIndex : null;
                     returnValue = title;
                 }
                 break;
