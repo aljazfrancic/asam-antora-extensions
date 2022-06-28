@@ -36,9 +36,13 @@ function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles
     }
     mergedNavContents = mergedNavContents.join("\n")
     const figureMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("fig-")))
+    const figureArray = createSortedArrayFromMap(figureMap, mergedNavContents)
     const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("tab-")))
-    let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, catalog, figureMap, targetModule, component, version)
-    let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, targetModule, component, version)
+    const tableArray = createSortedArrayFromMap(tableMap, mergedNavContents)
+    // let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, catalog, figureMap, targetModule, component, version)
+    let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, catalog, figureMap, figureArray, targetModule, component, version)
+    // let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, targetModule, component, version)
+    let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, tableArray, targetModule, component, version)
 
     if (figuresPage) {
         navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${figuresPage.src.relative}[]\n`))
@@ -48,6 +52,38 @@ function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles
         navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${tablesPage.src.relative}[]\n`))
     }
 
+}
+
+function createSortedArrayFromMap(inputMap, mergedNavContents) {
+    let newArray = []
+    for (let entry of inputMap.keys()) {
+        if (inputMap.get(entry).usedIn) {
+            for (let p of inputMap.get(entry).usedIn) {
+                if(p.src.family === "partial") {
+                    continue;
+                }
+                const index = inputMap.get(entry).usedIn.indexOf(p)
+                newArray.push({anchor:entry, page:p, source:inputMap.get(entry).source, line:inputMap.get(entry).usedInLine[index]})
+            }
+        }
+        else {
+            newArray.push({anchor:entry, page:inputMap.get(entry).source, source:inputMap.get(entry).source, line: inputMap.get(entry).line})
+        }
+    }
+
+    newArray.sort((a,b) => {
+        let indexA = mergedNavContents.indexOf(a.page.src.relative)
+        let indexB = mergedNavContents.indexOf(b.page.src.relative)
+
+        if (indexA === indexB) {
+            indexA = parseInt(a.line)
+            indexB = parseInt(b.line)
+            // if (a[0] === "tab-trafficparticipant-entity-movable_object-basic" || b[0] === "tab-trafficparticipant-entity-movable_object-basic") {console.log(indexA, indexB)}
+        }
+        return indexA - indexB
+    })
+
+    return newArray
 }
 
 /**
@@ -61,7 +97,7 @@ function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles
  * @param {String} version - The current version.
  * @returns {*} The new virtual file, if created. If no file is created, returns null instead.
  */
-function createListOfFiguresPage( componentAttributes, contentCatalog, catalog, figureMap, targetModule, component, version ){
+ function createListOfFiguresPage( componentAttributes, contentCatalog, catalog, figureMap, figureArray, targetModule, component, version ){
     if (!figureMap || figureMap.length === 0) {return null;}
     let newContent = ['= List of figures']
     newContent.push('')
@@ -70,12 +106,12 @@ function createListOfFiguresPage( componentAttributes, contentCatalog, catalog, 
     newContent.push('|Figure      |Description')
     let entryIndex = 1
     const base = figureMap.entries().next().value[1].source.base
-    for (let entry of figureMap) {
-        const page = entry[1].usedIn ? entry[1].usedIn.at(-1) : entry[1].source
-        const anchor = entry[0]
+    for (let entry of figureArray) {
+        const page = entry.page
+        const anchor = entry.anchor
         const srcModule = page.src.module
         const path = page.src.relative
-        const src = entry[1].source
+        const src = entry.source
         let title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, figureMap, catalog, src, anchor)
         // title = replaceXrefsInTitleLink(title)
 
@@ -105,7 +141,7 @@ function createListOfFiguresPage( componentAttributes, contentCatalog, catalog, 
  * @param {String} version - The current version.
  * @returns {*} The new virtual file, if created. If no file is created, returns null instead.
  */
-function createListOfTablesPage( componentAttributes, contentCatalog, catalog, tableMap, targetModule, component, version ){
+ function createListOfTablesPage( componentAttributes, contentCatalog, catalog, tableMap, tableArray, targetModule, component, version ){
     if (!tableMap || tableMap.length === 0) {return null;}
     let newContent = ['= List of tables']
     newContent.push('')
@@ -114,12 +150,12 @@ function createListOfTablesPage( componentAttributes, contentCatalog, catalog, t
     newContent.push('|Table      |Description')
     let entryIndex = 1
     const base = tableMap.entries().next().value[1].source.base
-    for (let entry of tableMap) {
-        const page = entry[1].usedIn ? entry[1].usedIn.at(-1) : entry[1].source
-        const anchor = entry[0]
+    for (let entry of tableArray) {
+        const page = entry.page
+        const anchor = entry.anchor
         const srcModule = page.src.module
         const path = page.src.relative
-        const src = entry[1].source
+        const src = entry.source
         let title = ContentAnalyzer.getReferenceNameFromSource(componentAttributes, tableMap, catalog, src, anchor)
         // title = replaceXrefsInTitleLink(title)
 
