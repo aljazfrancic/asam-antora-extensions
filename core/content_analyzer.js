@@ -374,7 +374,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const regexAltAnchor = regexAnchor.slice(4)
     const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     const reAltAnchor = new RegExp(`\\[\\[${regexAltAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAltAnchor}(,([^\\]]*))?\\]|anchor:${regexAltAnchor}(,([^\\]]*))?`, 'm')
-    const reExampleBlock = /^={4}$/m
+    const reExampleBlock = /^(\[source([^\]]+)?\]\s*\n)?={4}$/m
     const reSourceBlock = /^\[source([^\]]+)?\]\s*\n-{4}\s*$/m
     let inheritedAttributes = {}
     let content = page.contents.toString()
@@ -436,10 +436,10 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 }
                 let matchExample = content.slice(indexOfAnchor).match(reExampleBlock);
                 let matchSource = content.slice(indexOfAnchor).match(reSourceBlock);
-                if (!matchExample || content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length !== 2 || !matchSource || content.slice(indexOfAnchor,indexOfAnchor+matchSource.index).split("\n").length !== 2 ){
+                if (!(matchExample && content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length === 3) && !(matchSource && content.slice(indexOfAnchor,indexOfAnchor+matchSource.index).split("\n").length === 3) ){
                     console.warn(`ASAM rule violation: Code anchor ${anchor} not immediately followed by block after title!\nFile: ${page.src.abspath}`);
                 }
-                if (matchExample && content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length === 2 ) {
+                if (matchExample && content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length === 3 ) {
                     console.warn(`INFO: Code anchor ${anchor} used with example block!\nFile: ${page.src.abspath}`);
                 }
                 break;
