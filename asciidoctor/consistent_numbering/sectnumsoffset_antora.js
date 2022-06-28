@@ -3,23 +3,26 @@ module.exports = function (registry) {
       const self = this
       let    verbose = false
       self.process(function (doc) {
-        // if (doc.getTitle() && doc.getTitle().includes("Physical object actors")){verbose = true}
+        // if (doc.getTitle() && doc.getTitle().includes("Scenario abstraction")){verbose = true}
         // Check if sectnums and sectnumoffset is found. Only act if true
         if (verbose){console.log("Title: ",doc.getTitle())}
         if (verbose){console.log("has imageoffset attribute: ",doc.hasAttribute("imageoffset"))}
         if (verbose){console.log("has tableoffset attribute: ",doc.hasAttribute("tableoffset"))}
-        if (doc.hasAttribute("sectnums") && (doc.hasAttribute("sectnumoffset") || doc.hasAttribute("titleoffset") || doc.hasAttribute("imageoffset") || doc.hasAttribute("tableoffset"))) {
+        if (verbose){console.log("has exampleoffset attribute: ",doc.hasAttribute("exampleoffset"))}
+        if (doc.hasAttribute("sectnums") && (doc.hasAttribute("sectnumoffset") || doc.hasAttribute("titleoffset") || doc.hasAttribute("imageoffset") || doc.hasAttribute("tableoffset") || doc.hasAttribute("exampleoffset"))) {
             let offsetValue = Math.abs(doc.getAttribute("sectnumoffset",0))
             let pageTitle = doc.getTitle()
             let titleOffset = doc.getAttribute("titleoffset",null)
             let titlePrefix = doc.getAttribute("titleprefix","")
             let imageOffset = Math.abs(doc.getAttribute("imageoffset",0))
             let tableOffset = Math.abs(doc.getAttribute("tableoffset",0))
+            let exampleOffset = Math.abs(doc.getAttribute("exampleoffset",0))
 
             if (verbose){console.log("titleoffset attribute: ",titleOffset)}
             if (verbose){console.log("titleprefix attribute: ",titlePrefix)}
             if (verbose){console.log("imageOffset attribute: ",imageOffset)}
             if (verbose){console.log("tableoffset attribute: ",tableOffset)}
+            if (verbose){console.log("exampleoffset attribute: ",exampleOffset)}
             // if (verbose){console.log("attributes: ", doc.getAttributes())}
 
             if (titlePrefix) {
@@ -37,6 +40,7 @@ module.exports = function (registry) {
             }
             imageOffset = updateImageOffset(doc, imageOffset, verbose)
             tableOffset = updateTableOffset(doc, tableOffset, verbose)
+            exampleOffset = updateExampleOffset(doc, exampleOffset, verbose)
         }
       })
     })
@@ -122,5 +126,9 @@ module.exports = function (registry) {
      */
     function updateTableOffset( doc, tableOffset, verbose=false) {
         return (applyOffset(doc, tableOffset,"table", verbose))
+    }
+
+    function updateExampleOffset( doc, exampleOffset, verbose=false) {
+        return (applyOffset(doc, exampleOffset, "example", verbose))
     }
   }

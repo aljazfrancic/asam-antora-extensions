@@ -60,7 +60,8 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
     let generateNumbers = true
     let chapterIndex = Helper.setStartingChapterIndex(style,"0")
     let imageIndex = 0,
-        tableIndex = 0
+        tableIndex = 0,
+        exampleIndex = 0
     //-------------
     // Iterate over all (sorted) navigation files.
     //-------------
@@ -96,22 +97,22 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
                     currentRole = "default";
                     break;
                 case "appendix":
-                    [content, chapterIndex, imageIndex, tableIndex, generateNumbers,currentRole] = handleAppendix(nav, catalog,  pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, appendixCaption, appendixOffset);
+                    [content, chapterIndex, imageIndex, tableIndex, exampleIndex, generateNumbers,currentRole] = handleAppendix(nav, catalog,  pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, exampleIndex, style, appendixCaption, appendixOffset);
                     break;
                 case "glossary":
                     currentRole = "default";
                     break;
                 case "bibliography":
-                    [currentRole, imageIndex, tableIndex] = handleBibliography(nav, catalog, pages, componentAttributes, line, imageIndex, tableIndex)
+                    [currentRole, imageIndex, tableIndex, exampleIndex] = handleBibliography(nav, catalog, pages, componentAttributes, line, imageIndex, tableIndex, exampleIndex)
                     break;
                 case "index":
                     currentRole = "default";
                     break;
                 case "preface":
-                    [currentRole, imageIndex, tableIndex]  = handlePreface(nav, catalog, pages, componentAttributes, line, imageIndex, tableIndex)
+                    [currentRole, imageIndex, tableIndex, exampleIndex]  = handlePreface(nav, catalog, pages, componentAttributes, line, imageIndex, tableIndex, exampleIndex)
                     break;
                 case "default":
-                    [content, chapterIndex, imageIndex, tableIndex, generateNumbers,currentRole] = tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style)
+                    [content, chapterIndex, imageIndex, tableIndex, exampleIndex, generateNumbers,currentRole] = tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, exampleIndex, style)
                     break;
             }
         }
@@ -133,16 +134,16 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
  * @param {Integer} tableIndex - The current table index used for the corresponding offset attribute.
  * @returns {Array <any>} [new role, current image index, current table index]
  */
-function handlePreface( nav, catalog, pages, componentAttributes, line, imageIndex, tableIndex ) {
+function handlePreface( nav, catalog, pages, componentAttributes, line, imageIndex, tableIndex, exampleIndex ) {
     const indexOfXref = line.indexOf("xref:")
     let page = ContentAnalyzer.determinePageForXrefInLine(line, indexOfXref, pages, nav)[0]
     if (!page) {
-        return ["default", imageIndex, tableIndex]
+        return ["default", imageIndex, tableIndex, exampleIndex]
     }
     Helper.unsetSectnumsAttributeInFile(page)
-    let [newImageIndex,newTableIndex] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex, tableIndex)
+    let [newImageIndex,newTableIndex,newExampleIndex] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex, tableIndex, exampleIndex)
     ContentManipulator.addSpecialSectionTypeToPage(page, "preface")
-    return ["default", newImageIndex, newTableIndex]
+    return ["default", newImageIndex, newTableIndex, newExampleIndex]
 }
 
 /**
@@ -163,9 +164,9 @@ function handlePreface( nav, catalog, pages, componentAttributes, line, imageInd
  * @param {Integer} appendixOffset - An offset value for appendices, if an appendix needs to start with a different letter than "A".
  * @returns {Array <any>} [new role, current image index, current table index]
  */
-function handleAppendix( nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, appendixCaption, appendixOffset ) {
+function handleAppendix( nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, exampleIndex, style, appendixCaption, appendixOffset ) {
     const appendixStartLevel = isNaN(parseInt(startLevel)+parseInt(appendixOffset)) ? startLevel : (parseInt(startLevel)+parseInt(appendixOffset)).toString()
-    return tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, content, line, generateNumbers, appendixStartLevel, chapterIndex, imageIndex, tableIndex, style, "appendix", appendixCaption, true)
+    return tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, content, line, generateNumbers, appendixStartLevel, chapterIndex, imageIndex, tableIndex, exampleIndex, style, "appendix", appendixCaption, true)
 }
 
 /**
@@ -179,7 +180,7 @@ function handleAppendix( nav, catalog, pages, componentAttributes, content, line
  * @param {Integer} tableIndex - The current table index used for the corresponding offset attribute.
  * @returns {Array <any>} [new role, current image index, current table index]
  */
-function handleBibliography(nav, catalog, pages, componentAttributes, line, imageIndex, tableIndex) {
+function handleBibliography(nav, catalog, pages, componentAttributes, line, imageIndex, tableIndex, exampleIndex) {
     const indexOfXref = line.indexOf("xref:")
     let bibliographyPage = ContentAnalyzer.determinePageForXrefInLine(line, indexOfXref, pages, nav)
     let page = bibliographyPage[0]
@@ -187,9 +188,9 @@ function handleBibliography(nav, catalog, pages, componentAttributes, line, imag
         return ["default", imageIndex, tableIndex]
     }
     Helper.unsetSectnumsAttributeInFile(page)
-    let [newImageIndex,newTableIndex] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex, tableIndex)
+    let [newImageIndex,newTableIndex,newExampleIndex] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex, tableIndex, exampleIndex)
     ContentManipulator.addSpecialSectionTypeToPage(page, "bibliography")
-    return ["default", newImageIndex, newTableIndex]
+    return ["default", newImageIndex, newTableIndex, newExampleIndex]
 }
 
 /**
@@ -213,9 +214,10 @@ function handleBibliography(nav, catalog, pages, componentAttributes, line, imag
  * @param {Boolean} isAppendix - Optional: If true, activates the features reserved for appendices.
  * @returns {Array <any>} [Changed content, new chapterIndex, new imageIndex, new tableIndex, generateNumbers = true, new option]
  */
-function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, style, option="default", appendixCaption="", isAppendix = false ) {
+function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, chapterIndex, imageIndex, tableIndex, exampleIndex, style, option="default", appendixCaption="", isAppendix = false ) {
     let newImageIndex = imageIndex
     let newTableIndex = tableIndex
+    let newExampleIndex = exampleIndex
     let numberOfLevelTwoSections = 0
     const indexOfXref = line.indexOf("xref:")
     //-------------
@@ -230,7 +232,7 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, compo
         //-------------
         if (indexOfXref <= 0) {
             if (!generateNumbers) {
-                return [content, chapterIndex, newImageIndex, newTableIndex, !generateNumbers,"default"]
+                return [content, chapterIndex, newImageIndex, newTableIndex, newExampleIndex, !generateNumbers,"default"]
             }
             chapterIndex = Helper.determineNextChapterIndex(targetLevel, chapterIndex, style)
             const changedLine = line.slice(0,level) + " " + chapterIndex + line.slice(level)
@@ -251,18 +253,19 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, compo
                 let page = foundPage[0]
                 if (!generateNumbers) {
                     Helper.unsetSectnumsAttributeInFile(page)
-                    let [a,b,c] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex, tableIndex)
-                    return [content, chapterIndex, a, b,!generateNumbers, "default"]
+                    let [a,b,c,d] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex, tableIndex, exampleIndex)
+                    return [content, chapterIndex, a, b, c, !generateNumbers, "default"]
                 }
                 //-------------
                 // If section number shall be applied, apply current values and determine the next ones.
                 //-------------
                 chapterIndex = Helper.determineNextChapterIndex(targetLevel, chapterIndex, style, appendixCaption, isAppendix)
                 Helper.addTitleoffsetAttributeToPage( page, chapterIndex)
-                let [a,b,c] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex, tableIndex)
+                let [a,b,c,d] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex, tableIndex, exampleIndex)
                 newImageIndex = a
                 newTableIndex = b
-                numberOfLevelTwoSections = c
+                newExampleIndex = c
+                numberOfLevelTwoSections = d
                 let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)
                 const targetIndex = style === "iso" ? chapterIndex.split(".") : chapterIndex.split(".").slice(0,-1)
                 if (isAppendix && targetLevel === 1) {
@@ -295,7 +298,7 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, compo
             }
         }
     }
-    return [content, chapterIndex, newImageIndex, newTableIndex,generateNumbers, option]
+    return [content, chapterIndex, newImageIndex, newTableIndex, newExampleIndex, generateNumbers, option]
 }
 
 module.exports = {

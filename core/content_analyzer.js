@@ -234,9 +234,11 @@ function updateAnchorMapEntry(inputMap, key, addedValue, line) {
     let entry = inputMap.get(key)
     if (entry.usedIn) {
         entry.usedIn.push(addedValue)
+        entry.usedInLine.push(line)
     }
     else {
         entry.usedIn = [addedValue]
+        entry.usedInLine = [line]
     }
     entry.line = line
 }
@@ -410,6 +412,9 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     let reftext
     const sectionRefsig = componentAttributes['section-refsig'] ? componentAttributes['section-refsig'] : "Section"
     const appendixRefsig = componentAttributes['appendix-caption'] ? componentAttributes['appendix-caption'] : "Appendix"
+    const figureCaption = inheritedAttributes['figure-caption'] ? inheritedAttributes['figure-caption'] : componentAttributes['figure-caption'] ? componentAttributes['figure-caption'] : "Figure"
+    const tableCaption = inheritedAttributes['table-caption'] ? inheritedAttributes['table-caption'] : componentAttributes['table-caption'] ? componentAttributes['table-caption'] : "Table"
+    const codeCaption = inheritedAttributes['example-caption'] ? inheritedAttributes['example-caption'] : componentAttributes['example-caption'] ? componentAttributes['example-caption'] : "Example"
     // let verbose = (anchor==="sec-lc-aggregate-types" && style === "full")
     //-------------
     // Only act on anchors that match one of the ASAM anchor types (matching reAnchorType).
@@ -422,17 +427,27 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 let figureIndex = Array.from(figureMap.keys()).indexOf(anchor) + 1
                 if (result) {
                     title = result[1];
-                    prefix = 'Figure ' + figureIndex;
+                    prefix = figureCaption + ' ' + figureIndex;
                     returnValue = title;
                 }
                 break;
             case "tab":
                 result = lineBreakLimitBreached ? null : resultNextCaption;
-                const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("fig-")))
+                const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("tab-")))
                 let tableIndex = Array.from(tableMap.keys()).indexOf(anchor)
                 if (result) {
                     title = result[1];
-                    prefix = 'Table ' + tableIndex;
+                    prefix = tableCaption + ' ' + tableIndex;
+                    returnValue = title;
+                }
+                break;
+            case "code":
+                result = lineBreakLimitBreached ? null : resultNextCaption;
+                const codeMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("code-")))
+                let codeIndex = Array.from(codeMap.keys()).indexOf(anchor)
+                if (result) {
+                    title = result[1];
+                    prefix = codeCaption + ' ' + codeIndex;
                     returnValue = title;
                 }
                 break;
@@ -717,18 +732,22 @@ function mergeAnchorMapEntries(anchorMap, updateMap, overridePage = null) {
         if (overridePage) {
             if (updateMap.get(key).usedIn) {
                 updateMap.get(key).usedIn.push(overridePage)
+                updateMap.get(key).usedInLine.push(updateMap.get(key).line)
             }
             else {
                 updateMap.get(key).usedIn = [overridePage]
+                updateMap.get(key).usedInLine = [updateMap.get(key).line]
             }
         }
         if (anchorMap.get(key)) {
             anchorMap.get(key).line = anchorMap.get(key).line + updateMap.get(key).line
             if (anchorMap.get(key).usedIn) {
                 anchorMap.get(key).usedIn = updateMap.get(key).usedIn ? anchorMap.get(key).usedIn.concat(updateMap.get(key).usedIn) : anchorMap.get(key).usedIn.push(updateMap.get(key).source)
+                anchorMap.get(key).usedInLine = updateMap.get(key).usedInLine ? anchorMap.get(key).usedInLine.concat(updateMap.get(key).usedInLine) : anchorMap.get(key).usedInLine.push(updateMap.get(key).line)
             }
             else {
                 anchorMap.get(key).usedIn = updateMap.get(key).usedIn ? updateMap.get(key).usedIn : [updateMap.get(key).source]
+                anchorMap.get(key).usedInLine = updateMap.get(key).usedInLine ? updateMap.get(key).usedInLine : [updateMap.get(key).line]
             }
         }
         else {

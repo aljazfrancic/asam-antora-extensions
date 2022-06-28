@@ -28,16 +28,19 @@ const ContentManipulator = require("../../../core/content_manipulator.js")
  * @param {Integer} tableIndex - Optional: The table index that needs to be applied as offset.
  * @returns {Array <any>} [Updated image index, updated table index, number of level 2 sections ]
  */
-function updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex=0, tableIndex=0){
+function updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex=0, tableIndex=0, exampleIndex=0){
     let newImageIndex = imageIndex
     let newTableIndex = tableIndex
+    let newExampleIndex = exampleIndex
     addImageOffsetAttributeToPage(page, newImageIndex)
     addTableOffsetAttributeToPage(page, newTableIndex)
-    let [numberOfLevelTwoSections, numberOfImages, numberOfTables] = Helper.getIncludedPagesContentForExtensionFeatures(catalog, page, componentAttributes)
+    addExampleOffsetAttributeToPage(page, newExampleIndex)
+    let [numberOfLevelTwoSections, numberOfImages, numberOfTables, numberOfExamples] = Helper.getIncludedPagesContentForExtensionFeatures(catalog, page, componentAttributes)
     // if (page.src.stem === "entity") {console.log(numberOfImages, numberOfTables, numberOfLevelTwoSections); throw ""}
     newImageIndex += parseInt(numberOfImages)
     newTableIndex += parseInt(numberOfTables)
-    return ([newImageIndex,newTableIndex,numberOfLevelTwoSections])
+    newExampleIndex += parseInt(numberOfExamples)
+    return ([newImageIndex,newTableIndex,newExampleIndex,numberOfLevelTwoSections])
 }
 
 /**
@@ -58,6 +61,11 @@ function addImageOffsetAttributeToPage( page, value ) {
 function addTableOffsetAttributeToPage( page, value ) {
     let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)
     ContentManipulator.addAttributeWithValueToPage(page, newContent, indexOfTitle, "tableoffset", value)
+}
+
+function addExampleOffsetAttributeToPage( page, value ) {
+    let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)
+    ContentManipulator.addAttributeWithValueToPage(page, newContent, indexOfTitle, "exampleoffset", value)
 }
 
 module.exports = {
