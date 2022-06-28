@@ -79,6 +79,10 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
         //-------------
         let startLevel = navContentSum.match(reStartLevel) && navContentSum.match(reStartLevel)[1] ? navContentSum.match(reStartLevel)[1] : 1
         for (let line of nav._contents.toString().split("\n")) {
+            //---
+            //workaround!!! TODO: replace
+            //
+            exampleIndex = 0
             //-------------
             // Check if the line contains a role or the sectnums attribute
             //-------------
