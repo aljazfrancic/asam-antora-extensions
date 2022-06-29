@@ -10,6 +10,7 @@
 //-------------
 
 var nonStandardAnchors = []
+var anchorWarnings = []
 
 /**
  * Analyze a path of an include macro and identifies the linked file, if it exists.
@@ -424,6 +425,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     // Only act on anchors that match one of the ASAM anchor types (matching reAnchorType).
     //-------------
     if (resultAnchorType) {
+        let anchorWarningEntry = {anchor:anchor,page:page, type:null} //anchorWarnings
         switch (resultAnchorType[1]) {
             case "fig":
                 break;
@@ -431,35 +433,43 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 break;
             case "code":
                 if (countLineBreaks > 2) {
-                    console.warn(`ASAM rule violation: No title found in next line after ${anchor}!\nFile: ${page.src.abspath}`);
+                    anchorWarningEntry.type = "title";
+                    if(anchorWarnings.indexOf(anchorWarningEntry) === -1){console.warn(`ASAM rule violation: No title found in next line after ${anchor}!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry)}
                     break;
                 }
                 let matchExample = content.slice(indexOfAnchor).match(reExampleBlock);
                 let matchSource = content.slice(indexOfAnchor).match(reSourceBlock);
                 if (!(matchExample && content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length === 3) && !(matchSource && content.slice(indexOfAnchor,indexOfAnchor+matchSource.index).split("\n").length === 3) ){
-                    console.warn(`ASAM rule violation: Code anchor ${anchor} not immediately followed by block after title!\nFile: ${page.src.abspath}`);
+                    anchorWarningEntry.type = "block";
+                    if(anchorWarnings.indexOf(anchorWarningEntry) === -1){console.warn(`ASAM rule violation: Code anchor ${anchor} not immediately followed by block after title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry)}
                 }
                 if (matchExample && content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length === 3 ) {
-                    console.warn(`INFO: Code anchor ${anchor} used with example block!\nFile: ${page.src.abspath}`);
+                    anchorWarningEntry.type = "exAsCode";
+                    if(anchorWarnings.indexOf(anchorWarningEntry) === -1){console.warn(`INFO: Code anchor ${anchor} used with example block!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry)}
                 }
                 break;
             case "top":
                 if (countLineBreaksHeading > 2) {
-                    console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}`);
+                    anchorWarningEntry.type = "title";
+                    if(anchorWarnings.indexOf(anchorWarningEntry) === -1){console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry)}
                 }
                 else if (page.src.family === "partial") {
-                    console.warn(`ASAM rule violation: Top anchor ${anchor} used in partil!\nFile: ${page.src.abspath}`);
+                    anchorWarningEntry.type = "partialTitle";
+                    if(anchorWarnings.indexOf(anchorWarningEntry) === -1){console.warn(`ASAM rule violation: Top anchor ${anchor} used in partil!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry)}
                 }
                 else if (!resultForNextHeading || resultForNextHeading[1].length !== 1) {
-                    console.warn(`ASAM rule violation: Anchor ${anchor} used for section, not title!\nFile: ${page.src.abspath}`)
+                    anchorWarningEntry.type = "section";
+                    if(anchorWarnings.indexOf(anchorWarningEntry) === -1){console.warn(`ASAM rule violation: Anchor ${anchor} used for section, not title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry)}
                 }
                 break;
             case "sec":
                 if (countLineBreaksHeading > 2) {
-                    console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}`);
+                    anchorWarningEntry.type = "title";
+                    if(anchorWarnings.indexOf(anchorWarningEntry) === -1){console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry)}
                 }
                 else if (page.src.family === "page" && (!resultForNextHeading || resultForNextHeading[1].length === 1)) {
-                    console.warn(`ASAM rule violation: Anchor ${anchor} used for title, not section!\nFile: ${page.src.abspath}`)
+                    anchorWarningEntry.type = "section";
+                    if(anchorWarnings.indexOf(anchorWarningEntry) === -1){console.warn(`ASAM rule violation: Anchor ${anchor} used for title, not section!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry)}
                 }
                 break;
         }
