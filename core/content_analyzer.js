@@ -959,6 +959,46 @@ function getSrcPathFromFileId(fileId) {
     return { version: version, component: component, module: antoraModule, type: type, relative: relative }
 }
 
+/**
+ * Determines for an anchor found in a given file whether it is related to a listing block.
+ * @param {Object} file - The file where the anchor is located in.
+ * @param {String} anchor - The anchor in question
+ * @returns {Boolean} Whether the anchor is a listing block.
+ */
+function isListingBlock(file, anchor) {
+    const reSourceBlock = /^\[source([^\]]+)?\]\s*\n-{4}\s*$/m
+    const regexAnchor = anchor.replaceAll("-","\\-").replaceAll(".","\\.").replaceAll("(","\\(").replaceAll(")","\\)")
+    const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
+    const content = file.contents.toString()
+    const start = content.match(reAnchor) ? content.match(reAnchor).index : null
+    if (!start) {return false}
+    const match = content.slice(start).match(reSourceBlock)
+    if (!match) {return false}
+    const end = match.index
+    // console.log("is listing: ",content.slice(start,start+end).split("\n").length === 3); console.log(content.slice(start,start+end).split("\n"), content.slice(start,start+end).split("\n").length)
+    return (content.slice(start,start+end).split("\n").length === 3)
+}
+
+/**
+ * Determines for an anchor found in a given file whether it is related to an example block.
+ * @param {Object} file - The file where the anchor is located in.
+ * @param {String} anchor - The anchor in question
+ * @returns {Boolean} Whether the anchor is an example block.
+ */
+function isExampleBlock(file, anchor) {
+    const reExampleBlock = /^(\[source([^\]]+)?\]\s*\n)?={4}$/m
+    const regexAnchor = anchor.replaceAll("-","\\-").replaceAll(".","\\.").replaceAll("(","\\(").replaceAll(")","\\)")
+    const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
+    const content = file.contents.toString()
+    const start = content.match(reAnchor) ? content.match(reAnchor).index : null
+    if (!start) {return false}
+    const match = content.slice(start).match(reExampleBlock)
+    if (!match) {return false}
+    const end = match.index
+    // console.log("is example: ",content.slice(start,start+end).split("\n").length === 3); console.log(content.slice(start,start+end).split("\n"), content.slice(start,start+end).split("\n").length)
+    return (content.slice(start,start+end).split("\n").length === 3)
+}
+
 module.exports = {
     determineTargetPageFromIncludeMacro,
     getAllKeywordsAsArray,
@@ -976,5 +1016,7 @@ module.exports = {
     checkForIncludedFileFromLine,
     getAttributeFromFile,
     getSrcPathFromFileId,
-    getAttributeFromContent
+    getAttributeFromContent,
+    isExampleBlock,
+    isListingBlock
 }
