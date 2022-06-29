@@ -16,14 +16,15 @@ module.exports = function (registry) {
             let titlePrefix = doc.getAttribute("titleprefix","")
             let imageOffset = Math.abs(doc.getAttribute("imageoffset",0))
             let tableOffset = Math.abs(doc.getAttribute("tableoffset",0))
-            let exampleOffset = Math.abs(doc.getAttribute("codeoffset",0))
+            let codeOffset = Math.abs(doc.getAttribute("codeoffset",0))
 
             if (verbose){console.log("titleoffset attribute: ",titleOffset)}
             if (verbose){console.log("titleprefix attribute: ",titlePrefix)}
             if (verbose){console.log("imageOffset attribute: ",imageOffset)}
             if (verbose){console.log("tableoffset attribute: ",tableOffset)}
-            if (verbose){console.log("codeoffset attribute: ",exampleOffset)}
+            if (verbose){console.log("codeoffset attribute: ",codeOffset)}
             // if (verbose){console.log("attributes: ", doc.getAttributes())}
+            // if (verbose){console.log(doc.getBlocks()); throw ""}
 
             if (titlePrefix) {
                 pageTitle = doc.setTitle(titlePrefix + " " + pageTitle)
@@ -40,7 +41,7 @@ module.exports = function (registry) {
             }
             imageOffset = updateImageOffset(doc, imageOffset, verbose)
             tableOffset = updateTableOffset(doc, tableOffset, verbose)
-            exampleOffset = updateExampleOffset(doc, exampleOffset, verbose)
+            codeOffset = updateCodeOffset(doc, codeOffset, verbose)
         }
       })
     })
@@ -128,7 +129,14 @@ module.exports = function (registry) {
         return (applyOffset(doc, tableOffset,"table", verbose))
     }
 
-    function updateExampleOffset( doc, exampleOffset, verbose=false) {
-        return (applyOffset(doc, exampleOffset, "example", verbose))
+    /**
+     * Updates and applies the code offset to each code block.
+     * @param {*} doc - The document.
+     * @param {Number} codeOffset - The code offset value.
+     * @param {Boolean} verbose - Optional: If true, will print verbose output in the console.
+     * @returns {Number} The updated tableOffset.
+     */
+    function updateCodeOffset( doc, codeOffset, verbose=false) {
+        return (applyOffset(doc, codeOffset, "source", verbose))
     }
   }
