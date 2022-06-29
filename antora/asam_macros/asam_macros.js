@@ -274,7 +274,6 @@ function replaceAutonavMacro( contentCatalog, pages, nav, component, version, fi
  * Traverses through the adoc files of a component-version-combination and replaces all found ASAM macros.
  * This covers the following macros:
  * autonav, reference, related, role_related, pages
- *
  * @param {Object} contentCatalog - The complete content catalog provided by Antora.
  * @param {Array <Object>} pages - The array of pages for this component-version-combination.
  * @param {Array <Object>} navFiles - The navigation files for this component-version-combination.

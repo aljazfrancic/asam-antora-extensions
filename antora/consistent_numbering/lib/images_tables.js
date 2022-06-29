@@ -26,21 +26,22 @@ const ContentManipulator = require("../../../core/content_manipulator.js")
  * @param {Object} componentAttributes - The list of inherited component attributes.
  * @param {Integer} imageIndex - Optional: The image index that needs to be applied as offset.
  * @param {Integer} tableIndex - Optional: The table index that needs to be applied as offset.
+ * @param {Integer} codeIndex - Optional: The code index that needs to be applied as offset.
  * @returns {Array <any>} [Updated image index, updated table index, number of level 2 sections ]
  */
-function updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex=0, tableIndex=0, exampleIndex=0){
+function updateImageAndTableIndex(catalog, page, componentAttributes, imageIndex=0, tableIndex=0, codeIndex=0){
     let newImageIndex = imageIndex
     let newTableIndex = tableIndex
-    let newExampleIndex = exampleIndex
+    let newCodeIndex = codeIndex
     addImageOffsetAttributeToPage(page, newImageIndex)
     addTableOffsetAttributeToPage(page, newTableIndex)
-    addExampleOffsetAttributeToPage(page, newExampleIndex)
+    addCodeOffsetAttributeToPage(page, newCodeIndex)
     let [numberOfLevelTwoSections, numberOfImages, numberOfTables, numberOfExamples] = Helper.getIncludedPagesContentForExtensionFeatures(catalog, page, componentAttributes)
     // if (page.src.stem === "entity") {console.log(numberOfImages, numberOfTables, numberOfLevelTwoSections); throw ""}
     newImageIndex += parseInt(numberOfImages)
     newTableIndex += parseInt(numberOfTables)
-    newExampleIndex += parseInt(numberOfExamples)
-    return ([newImageIndex,newTableIndex,newExampleIndex,numberOfLevelTwoSections])
+    newCodeIndex += parseInt(numberOfExamples)
+    return ([newImageIndex,newTableIndex,newCodeIndex,numberOfLevelTwoSections])
 }
 
 /**
@@ -63,9 +64,14 @@ function addTableOffsetAttributeToPage( page, value ) {
     ContentManipulator.addAttributeWithValueToPage(page, newContent, indexOfTitle, "tableoffset", value)
 }
 
-function addExampleOffsetAttributeToPage( page, value ) {
+/**
+ * Adds an codeoffset attribute to a page with a given value.
+ * @param {Object} page - The page the value needs to be applied to.
+ * @param {Integer} value - The value that is to be applied as code offset.
+ */
+function addCodeOffsetAttributeToPage( page, value ) {
     let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)
-    ContentManipulator.addAttributeWithValueToPage(page, newContent, indexOfTitle, "exampleoffset", value)
+    ContentManipulator.addAttributeWithValueToPage(page, newContent, indexOfTitle, "codeoffset", value)
 }
 
 module.exports = {

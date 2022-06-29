@@ -8,21 +8,21 @@ module.exports = function (registry) {
         if (verbose){console.log("Title: ",doc.getTitle())}
         if (verbose){console.log("has imageoffset attribute: ",doc.hasAttribute("imageoffset"))}
         if (verbose){console.log("has tableoffset attribute: ",doc.hasAttribute("tableoffset"))}
-        if (verbose){console.log("has exampleoffset attribute: ",doc.hasAttribute("exampleoffset"))}
-        if (doc.hasAttribute("sectnums") && (doc.hasAttribute("sectnumoffset") || doc.hasAttribute("titleoffset") || doc.hasAttribute("imageoffset") || doc.hasAttribute("tableoffset") || doc.hasAttribute("exampleoffset"))) {
+        if (verbose){console.log("has codeoffset attribute: ",doc.hasAttribute("codeoffset"))}
+        if (doc.hasAttribute("sectnums") && (doc.hasAttribute("sectnumoffset") || doc.hasAttribute("titleoffset") || doc.hasAttribute("imageoffset") || doc.hasAttribute("tableoffset") || doc.hasAttribute("codeoffset"))) {
             let offsetValue = Math.abs(doc.getAttribute("sectnumoffset",0))
             let pageTitle = doc.getTitle()
             let titleOffset = doc.getAttribute("titleoffset",null)
             let titlePrefix = doc.getAttribute("titleprefix","")
             let imageOffset = Math.abs(doc.getAttribute("imageoffset",0))
             let tableOffset = Math.abs(doc.getAttribute("tableoffset",0))
-            let exampleOffset = Math.abs(doc.getAttribute("exampleoffset",0))
+            let exampleOffset = Math.abs(doc.getAttribute("codeoffset",0))
 
             if (verbose){console.log("titleoffset attribute: ",titleOffset)}
             if (verbose){console.log("titleprefix attribute: ",titlePrefix)}
             if (verbose){console.log("imageOffset attribute: ",imageOffset)}
             if (verbose){console.log("tableoffset attribute: ",tableOffset)}
-            if (verbose){console.log("exampleoffset attribute: ",exampleOffset)}
+            if (verbose){console.log("codeoffset attribute: ",exampleOffset)}
             // if (verbose){console.log("attributes: ", doc.getAttributes())}
 
             if (titlePrefix) {

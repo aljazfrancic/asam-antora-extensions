@@ -54,6 +54,12 @@ function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles
 
 }
 
+/**
+ * Analyzes an anchor map and converts it to a sorted array, where each anchor-page combination has its own entry.
+ * @param {Map <String, Object>} inputMap - The map that is to be converted.
+ * @param {String} mergedNavContents - The merged contents of all relevant navigation files.
+ * @returns {Array <Object>} {anchor, page, source, line}
+ */
 function createSortedArrayFromMap(inputMap, mergedNavContents) {
     let newArray = []
     for (let entry of inputMap.keys()) {
@@ -92,6 +98,7 @@ function createSortedArrayFromMap(inputMap, mergedNavContents) {
  * @param {Object} contentCatalog - The content catalog as provided by Antora.
  * @param {Array <Object>} catalog - An array of all pages and partials of this component-version combination.
  * @param {Map <String, Object>} figureMap - A map containing all figure anchors.
+ * @param {Array <Object>} figureArray - A sorted array created from the figureMap.
  * @param {String} targetModule - The determined target module for the new/updated file.
  * @param {String} component - The current component.
  * @param {String} version - The current version.
@@ -136,6 +143,7 @@ function createSortedArrayFromMap(inputMap, mergedNavContents) {
  * @param {Object} contentCatalog - The content catalog as provided by Antora.
  * @param {Array <Object>} catalog - An array of all pages and partials of this component-version combination.
  * @param {Map <String, Object>} tableMap - A map containing all table anchors.
+ * @param {Array <Object>} tableArray - A sorted array created from the tableMap.
  * @param {String} targetModule - The determined target module for the new/updated file.
  * @param {String} component - The current component.
  * @param {String} version - The current version.
