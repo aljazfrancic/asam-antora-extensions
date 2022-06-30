@@ -69,7 +69,7 @@ ASAM, therefore, recommends always using the provided Docker image when building
 == ASAM extensions
 This repository contains the following extensions:
 
-[cols="3h,1,1,3,1,6"]
+[cols="4h,2,2,1,8"]
 |===
 |Feature |Antora |Asciidoctor | Active by default |Notes
 
