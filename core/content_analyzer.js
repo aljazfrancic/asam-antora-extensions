@@ -727,7 +727,7 @@ function getKeywordPageMapForPages(useKeywords, pages = []) {
  * @param {Array <Object>} pages - An array of relevant pages
  * @returns {Map <String, Object>} A map of 'roles' and the pages where they were found in.
  */
-function getRolePageMapForPages(pages = []) {
+function getRolePageMapForPages(pages) {
     var re = new RegExp("{role-([^}]*)}")
     var rolesMap = generateMapForRegEx(re, pages)
     return rolesMap
