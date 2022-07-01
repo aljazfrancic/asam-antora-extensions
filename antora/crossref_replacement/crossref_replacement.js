@@ -33,7 +33,8 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
         }
         references.forEach(ref => {
             if (anchorMap.get(ref[1])) {
-                const referencePage = [...anchorMap.get(ref[1])][0]
+                const val = anchorMap.get(ref[1])
+                const referencePage = [...val][0]
                 if (page !== referencePage) {
                     let autoAltText = ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1] )
                     const altText = ref[3] ? ref[3] : autoAltText
