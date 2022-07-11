@@ -40,16 +40,21 @@ function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles
     const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("tab-")))
     const tableArray = createSortedArrayFromMap(tableMap, mergedNavContents)
     // let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, catalog, figureMap, targetModule, component, version)
-    let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, catalog, figureMap, figureArray, targetModule, component, version)
-    // let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, targetModule, component, version)
-    let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, tableArray, targetModule, component, version)
 
-    if (figuresPage) {
-        navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${figuresPage.src.relative}[]\n`))
+    // let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, targetModule, component, version)
+
+    if (figureArray && figureArray.length > 0){
+        let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, catalog, figureMap, figureArray, targetModule, component, version)
+        if (figuresPage) {
+            navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${figuresPage.src.relative}[]\n`))
+        }
     }
 
-    if (tablesPage) {
-        navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${tablesPage.src.relative}[]\n`))
+    if (tableArray && tableArray.length > 0){
+        let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, tableArray, targetModule, component, version)
+        if (tablesPage) {
+            navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${tablesPage.src.relative}[]\n`))
+        }
     }
 
 }
@@ -76,6 +81,7 @@ function createSortedArrayFromMap(inputMap, mergedNavContents) {
             newArray.push({anchor:entry, page:inputMap.get(entry).source, source:inputMap.get(entry).source, line: inputMap.get(entry).line})
         }
     }
+
 
     newArray.sort((a,b) => {
         let indexA = mergedNavContents.indexOf(a.page.src.relative)
