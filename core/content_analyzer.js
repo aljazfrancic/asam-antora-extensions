@@ -10,6 +10,8 @@
 //-------------
 
 var nonStandardAnchors = []
+var anchorWarnings = []
+var count = 0
 
 /**
  * Analyze a path of an include macro and identifies the linked file, if it exists.
@@ -374,6 +376,8 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const regexAltAnchor = regexAnchor.slice(4)
     const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     const reAltAnchor = new RegExp(`\\[\\[${regexAltAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAltAnchor}(,([^\\]]*))?\\]|anchor:${regexAltAnchor}(,([^\\]]*))?`, 'm')
+    const reExampleBlock = /^(\[source([^\]]+)?\]\s*\n)?={4}$/m
+    const reSourceBlock = /^\[source([^\]]+)?\]\s*\n-{4}\s*$/m
     let inheritedAttributes = {}
     let content = page.contents.toString()
     const contentSplit = content.split("\n")
@@ -402,6 +406,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const resultForNextHeading = content.slice(indexOfAnchor).match(reSectionEqualSigns)
     // const resultForPreviousHeading = content.slice(0,indexOfAnchor).match(reSectionEqualSigns)
     const resultNextCaption = content.slice(indexOfAnchor).match(reCaptionLabel)
+    const countLineBreaksHeading = resultForNextHeading ? content.slice(indexOfAnchor,indexOfAnchor+resultForNextHeading.index).split("\n").length : 0
     const countLineBreaks = resultNextCaption ? content.slice(indexOfAnchor,indexOfAnchor+resultNextCaption.index).split("\n").length : 0
     const lineBreakLimitBreached = countLineBreaks > 4 ? true : false
     // Use special anchor formats: sec, top, fig, tab, ...
@@ -414,12 +419,63 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const appendixRefsig = componentAttributes['appendix-caption'] ? componentAttributes['appendix-caption'] : "Appendix"
     const figureCaption = inheritedAttributes['figure-caption'] ? inheritedAttributes['figure-caption'] : componentAttributes['figure-caption'] ? componentAttributes['figure-caption'] : "Figure"
     const tableCaption = inheritedAttributes['table-caption'] ? inheritedAttributes['table-caption'] : componentAttributes['table-caption'] ? componentAttributes['table-caption'] : "Table"
-    const codeCaption = inheritedAttributes['example-caption'] ? inheritedAttributes['example-caption'] : componentAttributes['example-caption'] ? componentAttributes['example-caption'] : "Example"
+    const exampleCaption = inheritedAttributes['example-caption'] ? inheritedAttributes['example-caption'] : componentAttributes['example-caption'] ? componentAttributes['example-caption'] : "Example"
+    const codeCaption = inheritedAttributes['listing-caption'] ? inheritedAttributes['listing-caption'] : componentAttributes['listing-caption'] ? componentAttributes['listing-caption'] : ""
     // let verbose = (anchor==="sec-lc-aggregate-types" && style === "full")
     //-------------
     // Only act on anchors that match one of the ASAM anchor types (matching reAnchorType).
     //-------------
     if (resultAnchorType) {
+        let anchorWarningEntry = {anchor:anchor,page:page, type:null}
+        switch (resultAnchorType[1]) {
+            case "fig":
+                break;
+            case "tab":
+                break;
+            case "code":
+                if (countLineBreaks > 2) {
+                    anchorWarningEntry.type = "title";
+                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: No title found in next line after ${anchor}!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
+                    break;
+                }
+                else {
+                    let matchExample = content.slice(indexOfAnchor).match(reExampleBlock);
+                    let matchSource = content.slice(indexOfAnchor).match(reSourceBlock);
+                    if (!(matchExample && content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length === 3) && !(matchSource && content.slice(indexOfAnchor,indexOfAnchor+matchSource.index).split("\n").length === 3) ){
+                        anchorWarningEntry.type = "block";
+                        if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Code anchor ${anchor} not immediately followed by block after title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
+                    }
+                    if (matchExample && content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length === 3 ) {
+                        anchorWarningEntry.type = "exAsCode";
+                        if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`INFO: Code anchor ${anchor} used with example block!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
+                    }
+                    break;
+                }
+            case "top":
+                if (countLineBreaksHeading > 2) {
+                    anchorWarningEntry.type = "title";
+                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
+                }
+                else if (page.src.family === "partial") {
+                    anchorWarningEntry.type = "partialTitle";
+                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Top anchor ${anchor} used in partil!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
+                }
+                else if (!resultForNextHeading || resultForNextHeading[1].length !== 1) {
+                    anchorWarningEntry.type = "section";
+                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Anchor ${anchor} used for section, not title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
+                }
+                break;
+            case "sec":
+                if (countLineBreaksHeading > 2) {
+                    anchorWarningEntry.type = "title";
+                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
+                }
+                else if (page.src.family === "page" && (!resultForNextHeading || resultForNextHeading[1].length === 1)) {
+                    anchorWarningEntry.type = "section";
+                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Anchor ${anchor} used for title, not section!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
+                }
+                break;
+        }
         switch (resultAnchorType[1]) {
             case "fig":
                 result = lineBreakLimitBreached ? null : resultNextCaption;
@@ -447,7 +503,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 let codeIndex = Array.from(codeMap.keys()).indexOf(anchor)
                 if (result) {
                     title = result[1];
-                    prefix = codeCaption + ' ' + codeIndex;
+                    prefix = codeCaption.length > 0 ? codeCaption + ' ' + codeIndex : null;
                     returnValue = title;
                 }
                 break;
@@ -671,7 +727,7 @@ function getKeywordPageMapForPages(useKeywords, pages = []) {
  * @param {Array <Object>} pages - An array of relevant pages
  * @returns {Map <String, Object>} A map of 'roles' and the pages where they were found in.
  */
-function getRolePageMapForPages(pages = []) {
+function getRolePageMapForPages(pages) {
     var re = new RegExp("{role-([^}]*)}")
     var rolesMap = generateMapForRegEx(re, pages)
     return rolesMap
@@ -916,6 +972,46 @@ function getSrcPathFromFileId(fileId) {
     return { version: version, component: component, module: antoraModule, type: type, relative: relative }
 }
 
+/**
+ * Determines for an anchor found in a given file whether it is related to a listing block.
+ * @param {Object} file - The file where the anchor is located in.
+ * @param {String} anchor - The anchor in question
+ * @returns {Boolean} Whether the anchor is a listing block.
+ */
+function isListingBlock(file, anchor) {
+    const reSourceBlock = /^\[source([^\]]+)?\]\s*\n-{4}\s*$/m
+    const regexAnchor = anchor.replaceAll("-","\\-").replaceAll(".","\\.").replaceAll("(","\\(").replaceAll(")","\\)")
+    const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
+    const content = file.contents.toString()
+    const start = content.match(reAnchor) ? content.match(reAnchor).index : null
+    if (!start) {return false}
+    const match = content.slice(start).match(reSourceBlock)
+    if (!match) {return false}
+    const end = match.index
+    // console.log("is listing: ",content.slice(start,start+end).split("\n").length === 3); console.log(content.slice(start,start+end).split("\n"), content.slice(start,start+end).split("\n").length)
+    return (content.slice(start,start+end).split("\n").length === 3)
+}
+
+/**
+ * Determines for an anchor found in a given file whether it is related to an example block.
+ * @param {Object} file - The file where the anchor is located in.
+ * @param {String} anchor - The anchor in question
+ * @returns {Boolean} Whether the anchor is an example block.
+ */
+function isExampleBlock(file, anchor) {
+    const reExampleBlock = /^(\[source([^\]]+)?\]\s*\n)?={4}$/m
+    const regexAnchor = anchor.replaceAll("-","\\-").replaceAll(".","\\.").replaceAll("(","\\(").replaceAll(")","\\)")
+    const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
+    const content = file.contents.toString()
+    const start = content.match(reAnchor) ? content.match(reAnchor).index : null
+    if (!start) {return false}
+    const match = content.slice(start).match(reExampleBlock)
+    if (!match) {return false}
+    const end = match.index
+    // console.log("is example: ",content.slice(start,start+end).split("\n").length === 3); console.log(content.slice(start,start+end).split("\n"), content.slice(start,start+end).split("\n").length)
+    return (content.slice(start,start+end).split("\n").length === 3)
+}
+
 module.exports = {
     determineTargetPageFromIncludeMacro,
     getAllKeywordsAsArray,
@@ -933,5 +1029,7 @@ module.exports = {
     checkForIncludedFileFromLine,
     getAttributeFromFile,
     getSrcPathFromFileId,
-    getAttributeFromContent
+    getAttributeFromContent,
+    isExampleBlock,
+    isListingBlock
 }

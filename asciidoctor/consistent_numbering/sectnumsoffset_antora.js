@@ -3,25 +3,28 @@ module.exports = function (registry) {
       const self = this
       let    verbose = false
       self.process(function (doc) {
-        // if (doc.getTitle() && doc.getTitle().includes("Scenario abstraction")){verbose = true}
+        // if (doc.getTitle() && doc.getTitle().includes("Movement modifiers")){verbose = true}
         // Check if sectnums and sectnumoffset is found. Only act if true
         if (verbose){console.log("Title: ",doc.getTitle())}
         if (verbose){console.log("has imageoffset attribute: ",doc.hasAttribute("imageoffset"))}
         if (verbose){console.log("has tableoffset attribute: ",doc.hasAttribute("tableoffset"))}
+        if (verbose){console.log("has codeoffset attribute: ",doc.hasAttribute("codeoffset"))}
         if (verbose){console.log("has exampleoffset attribute: ",doc.hasAttribute("exampleoffset"))}
-        if (doc.hasAttribute("sectnums") && (doc.hasAttribute("sectnumoffset") || doc.hasAttribute("titleoffset") || doc.hasAttribute("imageoffset") || doc.hasAttribute("tableoffset") || doc.hasAttribute("exampleoffset"))) {
+        if (doc.hasAttribute("sectnums") && (doc.hasAttribute("sectnumoffset") || doc.hasAttribute("titleoffset") || doc.hasAttribute("imageoffset") || doc.hasAttribute("tableoffset") || doc.hasAttribute("codeoffset") || doc.hasAttribute("exampleoffset"))) {
             let offsetValue = Math.abs(doc.getAttribute("sectnumoffset",0))
             let pageTitle = doc.getTitle()
             let titleOffset = doc.getAttribute("titleoffset",null)
             let titlePrefix = doc.getAttribute("titleprefix","")
             let imageOffset = Math.abs(doc.getAttribute("imageoffset",0))
             let tableOffset = Math.abs(doc.getAttribute("tableoffset",0))
+            let codeOffset = Math.abs(doc.getAttribute("codeoffset",0))
             let exampleOffset = Math.abs(doc.getAttribute("exampleoffset",0))
 
             if (verbose){console.log("titleoffset attribute: ",titleOffset)}
             if (verbose){console.log("titleprefix attribute: ",titlePrefix)}
             if (verbose){console.log("imageOffset attribute: ",imageOffset)}
             if (verbose){console.log("tableoffset attribute: ",tableOffset)}
+            if (verbose){console.log("codeoffset attribute: ",codeOffset)}
             if (verbose){console.log("exampleoffset attribute: ",exampleOffset)}
             // if (verbose){console.log("attributes: ", doc.getAttributes())}
 
@@ -40,6 +43,7 @@ module.exports = function (registry) {
             }
             imageOffset = updateImageOffset(doc, imageOffset, verbose)
             tableOffset = updateTableOffset(doc, tableOffset, verbose)
+            codeOffset = updateCodeOffset(doc, codeOffset, verbose)
             exampleOffset = updateExampleOffset(doc, exampleOffset, verbose)
         }
       })
@@ -57,6 +61,7 @@ module.exports = function (registry) {
     function applyOffset (doc, offset, node_name, verbose = false) {
         let newOffset = offset
         // if (verbose && doc.node_name && doc.node_name === "table"){console.log("doc.node_name: ",doc.node_name); console.log("doc.getNodeName()", doc.getNodeName()); console.log("Array.isArray(doc)",Array.isArray(doc)); throw ""}
+        // if(verbose && node_name === "listing"){console.log(doc.getNodeName())}
         if (doc.getNodeName && doc.getNodeName() === node_name ) {
             if (verbose) {console.log("found",node_name)}
             newOffset = 1 + newOffset
@@ -128,7 +133,25 @@ module.exports = function (registry) {
         return (applyOffset(doc, tableOffset,"table", verbose))
     }
 
-    function updateExampleOffset( doc, exampleOffset, verbose=false) {
+    /**
+     * Updates and applies the code offset to each code block.
+     * @param {*} doc - The document.
+     * @param {Number} codeOffset - The code offset value.
+     * @param {Boolean} verbose - Optional: If true, will print verbose output in the console.
+     * @returns {Number} The updated tableOffset.
+     */
+    function updateCodeOffset( doc, codeOffset, verbose=false) {
+        return (applyOffset(doc, codeOffset, "listing", verbose))
+    }
+
+    /**
+     * Updates and applies the example offset to each example block.
+     * @param {*} doc - The document.
+     * @param {Number} exampleOffset - The example offset value.
+     * @param {Boolean} verbose - Optional: If true, will print verbose output in the console.
+     * @returns {Number} The updated tableOffset.
+     */
+     function updateExampleOffset( doc, exampleOffset, verbose=false) {
         return (applyOffset(doc, exampleOffset, "example", verbose))
     }
   }

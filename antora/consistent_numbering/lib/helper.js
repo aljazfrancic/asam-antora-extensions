@@ -160,6 +160,7 @@ function getIncludedPagesContentForExtensionFeatures( catalog, pagePartial, comp
     let numberOfImages = 0
     let numberOfTables = 0
     let numberOfExamples = 0
+    let numberOfCodes = 0
     let ignoreLine = false
     //-------------
     // Ignore everything between "ifndef::use-antora-rules[]" and the next "endif::[]"
@@ -218,24 +219,26 @@ function getIncludedPagesContentForExtensionFeatures( catalog, pagePartial, comp
                 let filteredPagesList = catalog.filter(file => file.src && file.src.path === targetPath)
                 if (filteredPagesList.length > 0) {
                     let includedPage = filteredPagesList[0]
-                    let [numberOfLevelTwoSectionsIncluded, numberOfImagesIncluded, numberOfTablesIncluded, numberOfExamplesIncluded] = getIncludedPagesContentForExtensionFeatures(catalog, includedPage, componentAttributes, includeLeveloffset)
+                    let [numberOfLevelTwoSectionsIncluded, numberOfImagesIncluded, numberOfTablesIncluded, numberOfCodesIncluded, numberOfExamplesIncluded] = getIncludedPagesContentForExtensionFeatures(catalog, includedPage, componentAttributes, includeLeveloffset)
                     numberOfLevelTwoSections += numberOfLevelTwoSectionsIncluded
                     numberOfImages += numberOfImagesIncluded
                     numberOfTables += numberOfTablesIncluded
                     numberOfExamples += numberOfExamplesIncluded
+                    numberOfCodes += numberOfCodesIncluded
                 }
             }
         }
     }
     //-------------
-    // Find all valid images (with "fig-" anchor) and tables (with "tab-" anchor) and examples (with "code-" anchor).
+    // Find all valid blocks (images, tables, examples, source/listing).
     //-------------
     const pageAnchorMap = ContentAnalyzer.getAnchorsFromPageOrPartial(catalog, pagePartial, componentAttributes)
     numberOfImages = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("fig-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
-    numberOfTables = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("tab-")&& ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
-    numberOfExamples = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("code-")&& ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
+    numberOfTables = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("tab-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
+    numberOfCodes = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("code-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "" && ContentAnalyzer.isListingBlock(v.source, k))).length
+    numberOfExamples = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("code-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "" && ContentAnalyzer.isExampleBlock(v.source, k))).length
 
-    return [numberOfLevelTwoSections, numberOfImages, numberOfTables, numberOfExamples]
+    return [numberOfLevelTwoSections, numberOfImages, numberOfTables, numberOfCodes, numberOfExamples]
 }
 
 module.exports = {

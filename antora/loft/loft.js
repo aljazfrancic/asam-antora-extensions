@@ -40,20 +40,31 @@ function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles
     const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("tab-")))
     const tableArray = createSortedArrayFromMap(tableMap, mergedNavContents)
     // let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, catalog, figureMap, targetModule, component, version)
-    let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, catalog, figureMap, figureArray, targetModule, component, version)
-    // let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, targetModule, component, version)
-    let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, tableArray, targetModule, component, version)
 
-    if (figuresPage) {
-        navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${figuresPage.src.relative}[]\n`))
+    // let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, targetModule, component, version)
+
+    if (figureArray && figureArray.length > 0){
+        let figuresPage = createListOfFiguresPage(componentAttributes, contentCatalog, catalog, figureMap, figureArray, targetModule, component, version)
+        if (figuresPage) {
+            navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${figuresPage.src.relative}[]\n`))
+        }
     }
 
-    if (tablesPage) {
-        navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${tablesPage.src.relative}[]\n`))
+    if (tableArray && tableArray.length > 0){
+        let tablesPage = createListOfTablesPage(componentAttributes, contentCatalog, catalog, tableMap, tableArray, targetModule, component, version)
+        if (tablesPage) {
+            navFiles.at(-1).contents = Buffer.from(navFiles.at(-1).contents.toString().concat("\n",`* xref:${tablesPage.src.relative}[]\n`))
+        }
     }
 
 }
 
+/**
+ * Analyzes an anchor map and converts it to a sorted array, where each anchor-page combination has its own entry.
+ * @param {Map <String, Object>} inputMap - The map that is to be converted.
+ * @param {String} mergedNavContents - The merged contents of all relevant navigation files.
+ * @returns {Array <Object>} {anchor, page, source, line}
+ */
 function createSortedArrayFromMap(inputMap, mergedNavContents) {
     let newArray = []
     for (let entry of inputMap.keys()) {
@@ -70,6 +81,7 @@ function createSortedArrayFromMap(inputMap, mergedNavContents) {
             newArray.push({anchor:entry, page:inputMap.get(entry).source, source:inputMap.get(entry).source, line: inputMap.get(entry).line})
         }
     }
+
 
     newArray.sort((a,b) => {
         let indexA = mergedNavContents.indexOf(a.page.src.relative)
@@ -92,6 +104,7 @@ function createSortedArrayFromMap(inputMap, mergedNavContents) {
  * @param {Object} contentCatalog - The content catalog as provided by Antora.
  * @param {Array <Object>} catalog - An array of all pages and partials of this component-version combination.
  * @param {Map <String, Object>} figureMap - A map containing all figure anchors.
+ * @param {Array <Object>} figureArray - A sorted array created from the figureMap.
  * @param {String} targetModule - The determined target module for the new/updated file.
  * @param {String} component - The current component.
  * @param {String} version - The current version.
@@ -136,6 +149,7 @@ function createSortedArrayFromMap(inputMap, mergedNavContents) {
  * @param {Object} contentCatalog - The content catalog as provided by Antora.
  * @param {Array <Object>} catalog - An array of all pages and partials of this component-version combination.
  * @param {Map <String, Object>} tableMap - A map containing all table anchors.
+ * @param {Array <Object>} tableArray - A sorted array created from the tableMap.
  * @param {String} targetModule - The determined target module for the new/updated file.
  * @param {String} component - The current component.
  * @param {String} version - The current version.
