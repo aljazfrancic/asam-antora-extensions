@@ -1,6 +1,9 @@
 = Navigation from index
 This extension scans all pages and finds passages marked with the AsciiDoc attribute "antora_mapping".
-All content between ":antora_mapping: true" and either a negation of the attribute (":!antora_mapping:" or ":antora_mapping!:") or the end of the page are considered input for the navigation file for this page's module.
+All content between ":antora_mapping: <value>" and either a negation of the attribute (":!antora_mapping:" or ":antora_mapping!:") or the end of the page are considered input for the navigation file for this page's module.
+
+If :antora_mapping: is set to "title", the main file (e.g. "index.adoc") functions as a parent page for all the mapping files as well as the component's starting page. +
+If :antora_mapping: is set to "true", the main file will only be the component's starting page.
 
 == Configuration
 The nav_from_index extension is always active.
