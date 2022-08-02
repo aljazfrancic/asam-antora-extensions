@@ -27,7 +27,7 @@ function determineTargetPageFromIncludeMacro(pages, thisPage, includePath, publi
     }
     let currentPath = thisPage.src.path.split("/")
     currentPath.pop()
-    if (thisPage.out) { currentPath = thisPage.out.dirname.split("/") }
+    if (published && thisPage.out) { currentPath = thisPage.out.dirname.split("/") }
     includePath.forEach(part => {
         if (part === "..") { currentPath = currentPath.slice(0, -1) }
         else if (part === ".") { }
@@ -189,7 +189,7 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
                 resultMap = mergeAnchorMapEntries(resultMap, partialAnchorMap, thisFile)
             }
             else {
-                console.warn("could not find", includeSearchResult)
+                console.warn("could not find", includeSearchResult[0])
             }
         }
         else {
@@ -784,6 +784,7 @@ const updateMapEntry = (inputMap, key, addedValue) => {
  * @returns {Map <String, Object>} The updated anchor map.
  */
 function mergeAnchorMapEntries(anchorMap, updateMap, overridePage = null) {
+    if (!updateMap || updateMap.size === 0) {return anchorMap}
     for (let key of updateMap.keys()) {
         if (overridePage) {
             if (updateMap.get(key).usedIn) {
@@ -796,10 +797,19 @@ function mergeAnchorMapEntries(anchorMap, updateMap, overridePage = null) {
             }
         }
         if (anchorMap.get(key)) {
-            anchorMap.get(key).line = anchorMap.get(key).line + updateMap.get(key).line
-            if (anchorMap.get(key).usedIn) {
-                anchorMap.get(key).usedIn = updateMap.get(key).usedIn ? anchorMap.get(key).usedIn.concat(updateMap.get(key).usedIn) : anchorMap.get(key).usedIn.push(updateMap.get(key).source)
-                anchorMap.get(key).usedInLine = updateMap.get(key).usedInLine ? anchorMap.get(key).usedInLine.concat(updateMap.get(key).usedInLine) : anchorMap.get(key).usedInLine.push(updateMap.get(key).line)
+            // anchorMap.get(key).line = anchorMap.get(key).line + updateMap.get(key).line
+            if (anchorMap.get(key).usedIn && updateMap.get(key).usedIn) {
+                 updateMap.get(key).usedIn.forEach(function (entry, index) {
+                    if (anchorMap.get(key).usedIn.indexOf(entry) === -1) {
+                        anchorMap.get(key).usedIn = anchorMap.get(key).usedIn.concat([entry])
+                        anchorMap.get(key).usedInLine = anchorMap.get(key).usedInLine.concat([updateMap.get(key).usedInLine[index]])
+                    }
+                 })
+
+            }
+            else if (anchorMap.get(key).usedIn) {
+                anchorMap.get(key).usedIn = anchorMap.get(key).usedIn.concat([updateMap.get(key).source])
+                anchorMap.get(key).usedInLine = updateMap.get(key).usedInLine ? anchorMap.get(key).usedInLine.concat(updateMap.get(key).usedInLine) : anchorMap.get(key).usedInLine.concat([updateMap.get(key).line])
             }
             else {
                 anchorMap.get(key).usedIn = updateMap.get(key).usedIn ? updateMap.get(key).usedIn : [updateMap.get(key).source]

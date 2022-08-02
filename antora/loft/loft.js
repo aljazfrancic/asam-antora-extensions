@@ -81,7 +81,7 @@ function createSortedArrayFromMap(inputMap, mergedNavContents) {
             newArray.push({anchor:entry, page:inputMap.get(entry).source, source:inputMap.get(entry).source, line: inputMap.get(entry).line})
         }
     }
-
+    newArray = newArray.filter(entry => (entry.page.out && mergedNavContents.indexOf(entry.page.src.relative) > -1))
 
     newArray.sort((a,b) => {
         let indexA = mergedNavContents.indexOf(a.page.src.relative)
