@@ -509,7 +509,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 break;
             case "top":
                 returnValue = getAltTextFromTitle(page, content);
-                title = content.match(/^= (.*)$/m)[1];
+                title = content.match(/^= (.*)$/m) ? content.match(/^= (.*)$/m)[1] : null;
                 title = title ? title : returnValue;
                 switch (style) {
                     case "full":
