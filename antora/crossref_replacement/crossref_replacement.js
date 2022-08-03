@@ -35,9 +35,12 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
             if (anchorMap.get(ref[1])) {
                 const val = anchorMap.get(ref[1])
                 let referencePage
-                if (val.usedIn) {
-                    console.log(`Anchor ${ref[1]} used in multiple pages. Cannot determine actual source for local link in page ${page.src.relpath}`)
-                    referencePage = page
+                if (val.usedIn && val.usedIn.length > 1) {
+                    console.log(`Anchor ${ref[1]} used in multiple pages. Cannot determine actual source for local link in page ${page.src.relative}. Using fist valid entry instead...`)
+                    referencePage = val.usedIn[0]
+                }
+                else if (val.usedIn) {
+                    referencePage = val.usedIn[0]
                 }
                 else {
                     referencePage = val.source

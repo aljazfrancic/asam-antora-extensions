@@ -24,10 +24,11 @@ const ContentManipulator = require("../../../core/content_manipulator.js")
  * @param {Array <Object>} catalog - An array of pages and partials.
  * @param {Object} page - The current page.
  * @param {Object} componentAttributes - The list of inherited component attributes.
+ * @param {Object} navFiles - An object containing all navigation files.
  * @param {Object} indices - The current indices
  * @returns {Array <any>} [Updated image index, updated table index, updated code index, updated examples index, number of level 2 sections ]
  */
-function updateImageAndTableIndex(catalog, page, componentAttributes, indices){
+function updateImageAndTableIndex(catalog, page, componentAttributes, navFiles, indices){
     let newImageIndex = indices.imageIndex
     let newTableIndex = indices.tableIndex
     let newCodeIndex = indices.codeIndex
@@ -36,7 +37,7 @@ function updateImageAndTableIndex(catalog, page, componentAttributes, indices){
     addTableOffsetAttributeToPage(page, newTableIndex)
     addCodeOffsetAttributeToPage(page, newCodeIndex)
     addExampleOffsetAttributeToPage(page, newExampleIndex)
-    let [numberOfLevelTwoSections, numberOfImages, numberOfTables, numberOfCode, numberOfExamples] = Helper.getIncludedPagesContentForExtensionFeatures(catalog, page, componentAttributes)
+    let [numberOfLevelTwoSections, numberOfImages, numberOfTables, numberOfCode, numberOfExamples] = Helper.getIncludedPagesContentForExtensionFeatures(catalog, page, componentAttributes, navFiles)
     // if (page.src.stem === "entity") {console.log(numberOfImages, numberOfTables, numberOfLevelTwoSections); throw ""}
     newImageIndex += parseInt(numberOfImages)
     newTableIndex += parseInt(numberOfTables)

@@ -149,11 +149,12 @@ function checkForRoleInLine( content, line, currentRole ) {
  * @param {Array <Object>} catalog - - An array of pages and partials.
  * @param {Object} pagePartial - The current page or partial.
  * @param {Object} componentAttributes - The list of inherited component attributes.
+ * @param {Object} navFiles - An object containing all navigation files.
  * @param {Integer} leveloffset - Optional: A given leveleoffset for sections and other numbers.
  * @param {Object} inheritedAttributes - Optional: An object containing all inherited attributes from the parent page.
  * @returns {Array <any>} [Number of relevant sections, number of images, number of tables]
  */
-function getIncludedPagesContentForExtensionFeatures( catalog, pagePartial, componentAttributes, leveloffset=0, inheritedAttributes = {} ) {
+function getIncludedPagesContentForExtensionFeatures( catalog, pagePartial, componentAttributes, navFiles, leveloffset=0, inheritedAttributes = {} ) {
     const contentSum = pagePartial.contents.toString()
     let newContent = contentSum.split("\n")
     let numberOfLevelTwoSections = 0
@@ -219,7 +220,7 @@ function getIncludedPagesContentForExtensionFeatures( catalog, pagePartial, comp
                 let filteredPagesList = catalog.filter(file => file.src && file.src.path === targetPath)
                 if (filteredPagesList.length > 0) {
                     let includedPage = filteredPagesList[0]
-                    let [numberOfLevelTwoSectionsIncluded, numberOfImagesIncluded, numberOfTablesIncluded, numberOfCodesIncluded, numberOfExamplesIncluded] = getIncludedPagesContentForExtensionFeatures(catalog, includedPage, componentAttributes, includeLeveloffset)
+                    let [numberOfLevelTwoSectionsIncluded, numberOfImagesIncluded, numberOfTablesIncluded, numberOfCodesIncluded, numberOfExamplesIncluded] = getIncludedPagesContentForExtensionFeatures(catalog, includedPage, componentAttributes, navFiles, includeLeveloffset)
                     numberOfLevelTwoSections += numberOfLevelTwoSectionsIncluded
                     numberOfImages += numberOfImagesIncluded
                     numberOfTables += numberOfTablesIncluded
@@ -232,7 +233,7 @@ function getIncludedPagesContentForExtensionFeatures( catalog, pagePartial, comp
     //-------------
     // Find all valid blocks (images, tables, examples, source/listing).
     //-------------
-    const pageAnchorMap = ContentAnalyzer.getAnchorsFromPageOrPartial(catalog, pagePartial, componentAttributes)
+    const pageAnchorMap = ContentAnalyzer.getAnchorsFromPageOrPartial(catalog, pagePartial, componentAttributes, navFiles)
     numberOfImages = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("fig-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
     numberOfTables = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("tab-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
     numberOfCodes = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("code-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "" && ContentAnalyzer.isListingBlock(v.source, k))).length

@@ -100,22 +100,22 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
                     currentRole = "default";
                     break;
                 case "appendix":
-                    [content, generateNumbers,currentRole] = handleAppendix(nav, catalog,  pages, componentAttributes, content, line, generateNumbers, startLevel, indices, style, appendixCaption, appendixOffset);
+                    [content, generateNumbers,currentRole] = handleAppendix(nav, catalog,  pages, componentAttributes, navFiles, content, line, generateNumbers, startLevel, indices, style, appendixCaption, appendixOffset);
                     break;
                 case "glossary":
                     currentRole = "default";
                     break;
                 case "bibliography":
-                    currentRole = handleBibliography(nav, catalog, pages, componentAttributes, line, indices)
+                    currentRole = handleBibliography(nav, catalog, pages, componentAttributes, navFiles, line, indices)
                     break;
                 case "index":
                     currentRole = "default";
                     break;
                 case "preface":
-                    currentRole  = handlePreface(nav, catalog, pages, componentAttributes, line, indices)
+                    currentRole  = handlePreface(nav, catalog, pages, componentAttributes, navFiles, line, indices)
                     break;
                 case "default":
-                    [content, generateNumbers,currentRole] = tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, indices, style)
+                    [content, generateNumbers,currentRole] = tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, navFiles, content, line, generateNumbers, startLevel, indices, style)
                     break;
             }
         }
@@ -132,18 +132,19 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
  * @param {Array <Object>} catalog - An array of pages and partials.
  * @param {Array <Object>} pages - An array of pages.
  * @param {Object} componentAttributes - The list of inherited component attributes.
+ * @param {Object} navFiles - An object containing all navigation files.
  * @param {String} line - The next valid line after the role "preface" was declared.
  * @param {Object} indices - The current indices.
  * @returns {String} The new role "default"
  */
-function handlePreface( nav, catalog, pages, componentAttributes, line, indices ) {
+function handlePreface( nav, catalog, pages, componentAttributes, navFiles, line, indices ) {
     const indexOfXref = line.indexOf("xref:")
     let page = ContentAnalyzer.determinePageForXrefInLine(line, indexOfXref, pages, nav)[0]
     if (!page) {
         return "default"
     }
     Helper.unsetSectnumsAttributeInFile(page)
-    let [newImageIndex,newTableIndex,newCodeIndex,newExampleIndex,newLevelTwoSections] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, indices)
+    let [newImageIndex,newTableIndex,newCodeIndex,newExampleIndex,newLevelTwoSections] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, navFiles, indices)
     indices.imageIndex = newImageIndex
     indices.tableIndex = newTableIndex
     indices.codeIndex = newCodeIndex
@@ -158,6 +159,7 @@ function handlePreface( nav, catalog, pages, componentAttributes, line, indices 
  * @param {Array <Object>} catalog - An array of pages and partials.
  * @param {Array <Object>} pages - An array of pages.
  * @param {Object} componentAttributes - The list of inherited component attributes.
+ * @param {Object} navFiles - An object containing all navigation files.
  * @param {Array <String>} content - The content of the navigation file.
  * @param {String} line - The next valid line after the role "preface" was declared.
  * @param {Boolean} generateNumbers - Defines if sectnums are allowed.
@@ -168,9 +170,9 @@ function handlePreface( nav, catalog, pages, componentAttributes, line, indices 
  * @param {Integer} appendixOffset - An offset value for appendices, if an appendix needs to start with a different letter than "A".
  * @returns {Array <any>} [new role, generateNumbers, new option]
  */
-function handleAppendix( nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, indices, style, appendixCaption, appendixOffset ) {
+function handleAppendix( nav, catalog, pages, componentAttributes, navFiles, content, line, generateNumbers, startLevel, indices, style, appendixCaption, appendixOffset ) {
     const appendixStartLevel = isNaN(parseInt(startLevel)+parseInt(appendixOffset)) ? startLevel : (parseInt(startLevel)+parseInt(appendixOffset)).toString()
-    return tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, content, line, generateNumbers, appendixStartLevel, indices, style, "appendix", appendixCaption, true)
+    return tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, navFiles, content, line, generateNumbers, appendixStartLevel, indices, style, "appendix", appendixCaption, true)
 }
 
 /**
@@ -179,11 +181,12 @@ function handleAppendix( nav, catalog, pages, componentAttributes, content, line
  * @param {Array <Object>} catalog - An array of pages and partials.
  * @param {Array <Object>} pages - An array of pages.
  * @param {Object} componentAttributes - The list of inherited component attributes.
+ * @param {Object} navFiles - An object containing all navigation files.
  * @param {String} line - The next valid line after the role "preface" was declared.
  * @param {Object} indices - The current indices.
  * @returns {String} The new role "default"
  */
-function handleBibliography(nav, catalog, pages, componentAttributes, line, indices) {
+function handleBibliography(nav, catalog, pages, componentAttributes, navFiles, line, indices) {
     const indexOfXref = line.indexOf("xref:")
     let bibliographyPage = ContentAnalyzer.determinePageForXrefInLine(line, indexOfXref, pages, nav)
     let page = bibliographyPage[0]
@@ -191,7 +194,7 @@ function handleBibliography(nav, catalog, pages, componentAttributes, line, indi
         return "default"
     }
     Helper.unsetSectnumsAttributeInFile(page)
-    let [newImageIndex,newTableIndex,newCodeIndex,newExampleIndex,newLevelTwoSections] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, indices)
+    let [newImageIndex,newTableIndex,newCodeIndex,newExampleIndex,newLevelTwoSections] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, navFiles, indices)
     indices.imageIndex = newImageIndex
     indices.tableIndex = newTableIndex
     indices.codeIndex = newCodeIndex
@@ -208,6 +211,7 @@ function handleBibliography(nav, catalog, pages, componentAttributes, line, indi
  * @param {Array <Object>} catalog - An array of pages and partials.
  * @param {Array <Object>} pages - An array of pages.
  * @param {Object} componentAttributes - The list of inherited component attributes.
+ * @param {Object} navFiles - An object containing all navigation files.
  * @param {Array <String>} content - The content of the navigation file.
  * @param {String} line - The next valid line after the role "preface" was declared.
  * @param {Boolean} generateNumbers - Defines if sectnums are allowed.
@@ -219,7 +223,7 @@ function handleBibliography(nav, catalog, pages, componentAttributes, line, indi
  * @param {Boolean} isAppendix - Optional: If true, activates the features reserved for appendices.
  * @returns {Array <any>} [Changed content, generateNumbers = true, new option]
  */
-function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, componentAttributes, content, line, generateNumbers, startLevel, indices, style, option="default", appendixCaption="", isAppendix = false ) {
+function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, componentAttributes, navFiles, content, line, generateNumbers, startLevel, indices, style, option="default", appendixCaption="", isAppendix = false ) {
     let newImageIndex = indices.imageIndex
     let newTableIndex = indices.tableIndex
     let newCodeIndex = indices.codeIndex
@@ -260,7 +264,7 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, compo
                 let page = foundPage[0]
                 if (!generateNumbers) {
                     Helper.unsetSectnumsAttributeInFile(page)
-                    let [updateImageIndex,updateTableIndex,updateCodeIndex,updateExampleIndex,newLevelTwoSections] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, indices)
+                    let [updateImageIndex,updateTableIndex,updateCodeIndex,updateExampleIndex,newLevelTwoSections] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, navFiles, indices)
                     indices.chapterIndex = chapterIndex
                     indices.imageIndex = updateImageIndex
                     indices.tableIndex = updateTableIndex
@@ -273,7 +277,7 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, compo
                 //-------------
                 chapterIndex = Helper.determineNextChapterIndex(targetLevel, chapterIndex, style, appendixCaption, isAppendix)
                 Helper.addTitleoffsetAttributeToPage( page, chapterIndex)
-                let [updateImageIndex,updateTableIndex,updateCodeIndex,updateExampleIndex,newLevelTwoSections] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, indices)
+                let [updateImageIndex,updateTableIndex,updateCodeIndex,updateExampleIndex,newLevelTwoSections] = ImgTab.updateImageAndTableIndex(catalog, page, componentAttributes, navFiles, indices)
                 newImageIndex = updateImageIndex
                 newTableIndex = updateTableIndex
                 newCodeIndex = updateCodeIndex

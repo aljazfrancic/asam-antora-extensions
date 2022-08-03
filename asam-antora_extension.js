@@ -69,6 +69,12 @@ module.exports.register = function ({ config }) {
                 //-------------
                 let pages = contentCatalog.findBy({ component, version, family: 'page'})
                 let navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
+                //-------------
+                // Addon AsciiNav: Parse files and create navigation if attribute "antora_mapping" is used.
+                //-------------
+                console.log("Check if Asciidoctor mapping page needs to be converted to Antora navigation file...")
+                AsciiNav.createAntoraNavigationFromIndex(pages, navFiles)
+                navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
                 let catalog =  contentCatalog.findBy({ component, version})
                 const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].asciidoc.attributes
                 //-------------
@@ -110,11 +116,6 @@ module.exports.register = function ({ config }) {
                 // Get updated nav files. This is important because one of the macros may have added an additional navigation file or changed an existing one.
                 //-------------
                 navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
-                //-------------
-                // Addon AsciiNav: Parse files and create navigation if attribute "antora_mapping" is used.
-                //-------------
-                console.log("Check if Asciidoctor mapping page needs to be converted to Antora navigation file...")
-                AsciiNav.createAntoraNavigationFromIndex(pages, navFiles)
                 //-------------
                 // Addon Loft: Creates a List Of Figures and Tables
                 //-------------

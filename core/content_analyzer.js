@@ -98,12 +98,13 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
  * @param {Array <Object>} catalog - An array of all pages and partials.
  * @param {Object} thisFile - The current page.
  * @param {Object} componentAttributes - An object containing all attributes of the component.
+ * @param {Object} navFiles - An object containing all navigation files.
  * @param {Object} inheritedAttributes - Optional: An object with the previously determined attributes for this file.
  * @param {Array <String>} tags - Optional: An array of tags to filter for.
  * @param {Object} lineOffset - Optional: An object containing a key "line" with Integer values denoting the line number offset accumulated from included files.
  * @returns {Map <String,Object>} A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
-function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inheritedAttributes = {}, tags = [], lineOffset = {line:0}) {
+function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, navFiles, inheritedAttributes = {}, tags = [], lineOffset = {line:0}) {
     const re = /\[\[{1,2}([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)(,([^\]]*))?\]|anchor:([^\[]+)(,([^\]]*))?\[/
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[(.+)?\]/m;
     const reTags = /.*,?tags?=([^,]+)/m;
@@ -184,9 +185,9 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
                     tags = tags[1].split(";")
                 }
                 lineOffset.line += currentLineIndex
-                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog, targetFile, componentAttributes, inheritedAttributes, tags, lineOffset)
+                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog, targetFile, componentAttributes, navFiles, inheritedAttributes, tags, lineOffset)
                 lineOffset.line -= currentLineIndex
-                resultMap = mergeAnchorMapEntries(resultMap, partialAnchorMap, thisFile)
+                resultMap = mergeAnchorMapEntries(resultMap, partialAnchorMap, navFiles, thisFile)
             }
             else {
                 console.warn("could not find", includeSearchResult[0])
@@ -212,7 +213,7 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
 
             const resultValue = e1 ? e1 : e2 ? e2 : e3
             if (resultMap.has(resultValue)) {
-                updateAnchorMapEntry(resultMap, resultValue, thisFile, line)
+                updateAnchorMapEntry(resultMap, resultValue, thisFile, line, navFiles)
             }
             else {
                 resultMap.set(resultValue, { source: thisFile, line: line })
@@ -231,10 +232,36 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, inh
  * @param {String} key - The key which needs to be updated.
  * @param {*} addedValue - The new value.
  * @param {Integer} line - The line index at which the entry was found.
+ * @param {Object} navFiles - An object containing all navigation files.
  */
-function updateAnchorMapEntry(inputMap, key, addedValue, line) {
+function updateAnchorMapEntry(inputMap, key, addedValue, line, navFiles) {
     let entry = inputMap.get(key)
     if (entry.usedIn) {
+        // const verbose = key == "top-EAID_E5B4C9F4_52A5_4673_9790_6A042A3E3CB0" ? true : false
+        const mergedNavFileContent = navFiles.map(a => a.contents.toString()).join("\n")
+        const newUsedInIndex = mergedNavFileContent.indexOf(addedValue.src.relative)
+        // if (verbose){console.log(newUsedInIndex)}
+        if (newUsedInIndex === -1) {
+            entry.usedIn.push(addedValue)
+            entry.usedInLine.push(line)
+        }
+        else {
+            for (let index in entry.usedIn) {
+                const currentUsedInIndex = entry.usedIn[index]
+                // if (verbose){console.log(index, currentUsedInIndex, anchorMap.get(key).usedIn[index])}
+                if (currentUsedInIndex === -1 || currentUsedInIndex > newUsedInIndex) {
+                    entry.usedIn.splice(index,0,addedValue)
+                    entry.usedInLine.splice(index,0,line)
+                    break;
+                }
+                if (index === entry.usedIn.length -1) {
+                    entry.usedIn.push(addedValue)
+                    entry.usedInLine.push(line)
+                    break;
+                }
+
+            }
+        }
         entry.usedIn.push(addedValue)
         entry.usedInLine.push(line)
     }
@@ -751,16 +778,17 @@ function getAnchorPageMapForPages(catalog, pages, navFiles, componentAttributes)
                 break;
             }
         }
-        let updateMap = getAnchorsFromPageOrPartial(catalog, page, componentAttributes)
+        let updateMap = getAnchorsFromPageOrPartial(catalog, page, componentAttributes, navFiles)
         if (updateMap && updateMap.size > 0) {
             if (hasPriority) {
-                anchorMap = mergeAnchorMapEntries(updateMap, anchorMap)
+                anchorMap = mergeAnchorMapEntries(updateMap, anchorMap, navFiles)
             }
             else {
-                anchorMap = mergeAnchorMapEntries(anchorMap, updateMap)
+                anchorMap = mergeAnchorMapEntries(anchorMap, updateMap, navFiles)
             }
         }
     }
+
     return anchorMap
 }
 
@@ -780,16 +808,40 @@ const updateMapEntry = (inputMap, key, addedValue) => {
  * Adds or updates an anchor map entry by merging it with another map.
  * @param {Map <String, Object>} anchorMap - The anchor map where one or more entries have to be added.
  * @param {Map <String, Object>} updateMap - An additional anchor map that needs to be merged with the original one.
+ * @param {Object} navFiles - An object containing all navigation files.
  * @param {Object} overridePage - Optional: If set, replaces the value for each key in the updateMap with a new set containing the overridePage.
  * @returns {Map <String, Object>} The updated anchor map.
  */
-function mergeAnchorMapEntries(anchorMap, updateMap, overridePage = null) {
+function mergeAnchorMapEntries(anchorMap, updateMap, navFiles, overridePage = null) {
     if (!updateMap || updateMap.size === 0) {return anchorMap}
+    const mergedNavFileContent = navFiles.map(a => a.contents.toString()).join("\n")
     for (let key of updateMap.keys()) {
+        // const verbose = key == "top-EAID_E5B4C9F4_52A5_4673_9790_6A042A3E3CB0" ? true : false
         if (overridePage) {
             if (updateMap.get(key).usedIn) {
+                const newUsedInIndex = mergedNavFileContent.indexOf(overridePage.src.relative)
+                // if (verbose) {console.log("newUsedInIndex",newUsedInIndex)}
+                if (newUsedInIndex === -1) {
                 updateMap.get(key).usedIn.push(overridePage)
                 updateMap.get(key).usedInLine.push(updateMap.get(key).line)
+                }
+                else {
+                    for (let index in updateMap.get(key).usedIn) {
+                        const currentUsedInIndex = mergedNavFileContent.indexOf(updateMap.get(key).usedIn[index])
+                        // if (verbose){console.log(index, currentUsedInIndex, updateMap.get(key).usedIn[index])}
+                        if (currentUsedInIndex === -1 || currentUsedInIndex > newUsedInIndex) {
+                            updateMap.get(key).usedIn.splice(index,0,overridePage)
+                            updateMap.get(key).usedInLine.splice(index,0,updateMap.get(key).line)
+                            break;
+                        }
+                        if (index === updateMap.get(key).usedIn.length -1) {
+                            updateMap.get(key).usedIn.push(overridePage)
+                            updateMap.get(key).usedInLine.push(updateMap.get(key).line)
+                            break;
+                        }
+
+                    }
+                }
             }
             else {
                 updateMap.get(key).usedIn = [overridePage]
@@ -801,8 +853,29 @@ function mergeAnchorMapEntries(anchorMap, updateMap, overridePage = null) {
             if (anchorMap.get(key).usedIn && updateMap.get(key).usedIn) {
                  updateMap.get(key).usedIn.forEach(function (entry, index) {
                     if (anchorMap.get(key).usedIn.indexOf(entry) === -1) {
-                        anchorMap.get(key).usedIn = anchorMap.get(key).usedIn.concat([entry])
-                        anchorMap.get(key).usedInLine = anchorMap.get(key).usedInLine.concat([updateMap.get(key).usedInLine[index]])
+                        const newUsedInIndex = mergedNavFileContent.indexOf(entry.src.relative)
+                        // if (verbose){console.log(newUsedInIndex, entry.src.relative);console.log(updateMap.get(key),anchorMap.get(key))}
+                        if (newUsedInIndex === -1) {
+                            anchorMap.get(key).usedIn = anchorMap.get(key).usedIn.concat([entry])
+                            anchorMap.get(key).usedInLine = anchorMap.get(key).usedInLine.concat([updateMap.get(key).usedInLine[index]])
+                        }
+                        else {
+                            for (let index in anchorMap.get(key).usedIn) {
+                                const currentUsedInIndex = mergedNavFileContent.indexOf(anchorMap.get(key).usedIn[index])
+                                // if (verbose){console.log(index, currentUsedInIndex, anchorMap.get(key).usedIn[index])}
+                                if (currentUsedInIndex === -1 || currentUsedInIndex > newUsedInIndex) {
+                                    anchorMap.get(key).usedIn.splice(index,0,entry)
+                                    anchorMap.get(key).usedInLine.splice(index,0,updateMap.get(key).usedInLine[index])
+                                    break;
+                                }
+                                if (index === anchorMap.get(key).usedIn.length -1) {
+                                    anchorMap.get(key).usedIn = anchorMap.get(key).usedIn.concat([entry])
+                                    anchorMap.get(key).usedInLine = anchorMap.get(key).usedInLine.concat([updateMap.get(key).usedInLine[index]])
+                                    break;
+                                }
+
+                            }
+                        }
                     }
                  })
 
