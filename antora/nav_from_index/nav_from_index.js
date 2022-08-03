@@ -29,6 +29,7 @@ function createAntoraNavigationFromIndex( pages, navFiles ) {
         const reSection = /^(=)+ (.*)/;
         const reExceptions = /ifndef::use-antora-rules\[\]|endif::\[\]/
         const reLeveloffset = /leveloffset=\+([^\],;]*)/
+        const reXref = /(\*+ xref:.+)/
         let pageContent = page.contents.toString().split("\n")
         let considerForMapping = false
         let newNavContent = []
@@ -37,6 +38,7 @@ function createAntoraNavigationFromIndex( pages, navFiles ) {
         for (let line of pageContent) {
             const result = reAntoraMapping.exec(line)
             const resExceptions = reExceptions.exec(line)
+            const resXref = reXref.exec(line)
             if (result && (result[1] || result[2])) {considerForMapping = false}
             else if (result) {considerForMapping = true; parentEntry = result[3].trim() === "title" ? true : false}
             else if (resExceptions) {continue}
@@ -62,6 +64,7 @@ function createAntoraNavigationFromIndex( pages, navFiles ) {
                     newNavContent.push("*".repeat(level) + " " +sectionText)
                 }
                 else if (line.trim().length>0) {newNavContent.push(line)}
+                else if (resXref) {newNavContent.push(resXref[1])}
             }
         }
         if (newNavContent.length>0) {
