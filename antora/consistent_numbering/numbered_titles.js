@@ -71,6 +71,7 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
         let content = navContentSum.split("\n")
         if (navContentSum.match(reResetLevelOffset)) {
             chapterIndex = Helper.setStartingChapterIndex(style,"0")
+            indices = {chapterIndex: chapterIndex, imageIndex: 0, tableIndex: 0, exampleIndex: 0, codeIndex: 0}
         }
         //-------------
         // Check if the start-level attribute was set and, if so, use its value as an offset
