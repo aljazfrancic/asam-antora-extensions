@@ -561,7 +561,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 else { pageNumber = pageNumber.trim(); }
                 let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages, page, result[1].split("=").length - 1, anchor);
                 relativeSectionNumber[0] = ""
-                prefix = isNaN(pageNumber.charAt(0)) ? `${appendixRefsig} ${pageNumber}` : `${sectionRefsig} ${pageNumber}`;
+                prefix = isNaN(pageNumber.charAt(0)) ? `${appendixRefsig} ${pageNumber}`.trim() : `${sectionRefsig} ${pageNumber}`.trim();
                 prefix = relativeSectionNumber.length > 1 && pageNumber !== "" ? prefix + relativeSectionNumber.join(".") : prefix;
                 title = result[2].trim();
                 break;
@@ -578,7 +578,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
         //-------------
         switch (style) {
             case "full":
-                returnValue = reftext ? reftext : prefix ? `${prefix}, "${title}"` : `${title}`;
+                returnValue = reftext ? reftext : prefix && (prefix !== sectionRefsig && prefix !== appendixRefsig) ? `${prefix}, "${title}"` : prefix ? `${prefix} "${title}"`: `${title}`;
                 break;
             case "short":
                 returnValue = reftext ? reftext : prefix;
