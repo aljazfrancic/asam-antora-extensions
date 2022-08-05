@@ -17,9 +17,10 @@ const ContentAnalyzer = require("../../core/content_analyzer.js")
  * @param {Object} componentAttributes - An object containing all component attributes.
  * @param {Map <String, Object>} anchorMap - A map of anchors and their page.
  * @param {Array <Object>} pages - An array of pages.
+ * @param {String} alternateXrefStyle - (Optional) A string with an alternate xref style when using the xref style replacement.
  * @returns {Array <Object>} The updated array of pages.
  */
-function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorMap, pages ) {
+function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorMap, pages, alternateXrefStyle=null ) {
     if (anchorMap.size === 0) {return pages}
     const re = /<<([^>,]+)(,\s*([^>]+))?>>/g
     const reAlt = /xref:{1,2}#([^\[]+)\[(([^\]]*))\]/gm
@@ -46,8 +47,9 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                     referencePage = val.source
                 }
 
-                if (page !== referencePage) {
-                    let autoAltText = ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1] )
+                // if (page !== referencePage )
+                if ( true ) {
+                    let autoAltText = ref[1].startsWith("top-") ? "" : ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" ? "" : ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1] )
                     const altText = ref[3] ? ref[3] : autoAltText
                     const anchorLink = ref[1]
                     const replacementXref = "xref:"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+anchorLink+"["+altText+"]"

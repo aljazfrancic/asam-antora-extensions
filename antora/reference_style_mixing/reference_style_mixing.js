@@ -54,7 +54,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
     const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?([^\]]*)\]/gm
     const reIncorrectXref = /xref:([^\[]*)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?(.*)\]/gm
     const validStyles = ["full","short","basic"]
-    const debugName = "terminology-maneuver-link-short"
+    const debugName = "gustav"
     let debug = false
     if (!file.contents) {
         return
@@ -78,14 +78,14 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
         let index = content.indexOf(line)
         ContentAnalyzer.updatePageAttributes(inheritedAttributes, line)
         let newLine = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
-        // if (debugName && newLine.includes(debugName)){debug = true; console.log(inheritedAttributes);console.log(newLine); throw "hello"}
+        // if (debugName && newLine.includes(debugName)){debug = true; console.log(newLine); throw "hello"}
         re.lastIndex = 0
         let match
         if (!newLine.match(re) && newLine.match(reIncorrectXref)) {console.warn("incomplete xref link found:", newLine.match(reIncorrectXref)[0])}
-        if (debugName && newLine.includes(debugName)){debug = true}
+        if (debugName && newLine.includes(debugName)){debug = true; console.log(newLine.match(re))}
         else(debug = false)
         while ((match = re.exec(newLine)) !== null) {
-            if (debug){console.log(match)}
+            // if (debug){console.log(match);throw new Error ("test")}
             let anchorSource
             let xrefLabel
             if (match.index === re.lastIndex) {

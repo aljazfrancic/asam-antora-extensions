@@ -141,7 +141,7 @@ module.exports.register = function ({ config }) {
                 //-------------
                 if (anchorPageMap.size > 0 && parsedConfig.localToGlobalReferences) {
                     console.log("Replace local references to global anchors with xref macro...")
-                    pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorPageMap, pages )
+                    pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorPageMap, pages, parsedConfig.alternateXrefStyle )
                 }
                 //-------------
                 // Addon CrossrefReplacement: Replace Asciidoctor local references ("<<ref>>") where the anchor is now located on a different page.
