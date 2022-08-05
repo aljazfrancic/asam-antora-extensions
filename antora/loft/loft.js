@@ -29,6 +29,7 @@ function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles
     navFiles.sort((a,b) => {
         return a.nav.index - b.nav.index
     })
+    if (!navFiles || navFiles.length === 0) {return}
     const targetModule = navFiles.at(-1).src.module
     for (let nav of navFiles) {
         const newNavContent = nav.contents.toString().split("\n")
