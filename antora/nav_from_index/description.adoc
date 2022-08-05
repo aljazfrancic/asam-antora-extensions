@@ -5,6 +5,8 @@ All content between ":antora_mapping: <value>" and either a negation of the attr
 If :antora_mapping: is set to "title", the main file (e.g. "index.adoc") functions as a parent page for all the mapping files as well as the component's starting page. +
 If :antora_mapping: is set to "true", the main file will only be the component's starting page.
 
+Content between 'ifdef::show_hidden[]' and 'endif::[]' will only show up in the navigation file in both AsciiDoc (hidden) and Antora (navigation only).
+
 == Configuration
 The nav_from_index extension is always active.
 
