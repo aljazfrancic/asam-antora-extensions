@@ -70,7 +70,7 @@ function createAntoraNavigationFromIndex( pages, navFiles ) {
         if (newNavContent.length>0) {
             newNavContent.unshift(":show_hidden:")
             if (navFiles && navFiles.length > 0) {
-                let nav = navFiles.filter(x => {x.src.module === page.src.component})
+                let nav = navFiles.filter(x => x.src.module === page.src.module)
                 if (nav && nav.length > 0) {nav[0].contents = Buffer.from(newNavContent.join("\n"))}
                 else {navFiles[0].contents = Buffer.from(newNavContent.join("\n"))}
             }
