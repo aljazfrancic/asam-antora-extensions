@@ -11,6 +11,7 @@
 const File = require('./file.js');
 const fs = require("fs");
 const path = require("path");
+const helper = require("./helper.js")
 
 /**
  * Creates a new virtual file in Antora with a given filename and path in a module.
@@ -106,7 +107,7 @@ function createVirtualFilesForFolders( contentCatalog, component, version, modul
                         }
                     }) === -1) {
                         let content = new Array(
-                            "= "+capitalizeFirstLetter(folderName).replace("_"," "),
+                            "= "+helper.capitalizeFirstLetter(folderName).replace("_"," "),
                             ":description: Auto-generated folder page",
                             ":keywords: generated, autonav",
                             "",
