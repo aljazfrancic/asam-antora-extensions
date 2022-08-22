@@ -33,6 +33,8 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
             if (referencesAlt.length > 0) {references = references + referencesAlt}
         }
         references.forEach(ref => {
+            let debug = false
+            if(ref[1] === "fig-60c22aa8-d229-456a-b39d-645b894d4cad") {console.log("fig-60c22aa8-d229-456a-b39d-645b894d4cad"); debug = true}
             if (anchorMap.get(ref[1])) {
                 const val = anchorMap.get(ref[1])
                 let referencePage
@@ -48,7 +50,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                 }
 
                 // if (page !== referencePage )
-                if ( true ) {
+                if ( ref[1].startsWith("top-") || ref[1].startsWith("sec-") ) {
                     let autoAltText = ref[1].startsWith("top-") ? "" : ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" ? "" : ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1] )
                     const altText = ref[3] ? ref[3] : autoAltText
                     const anchorLink = ref[1]
