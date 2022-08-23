@@ -110,10 +110,13 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
     const reTags = /.*,?tags?=([^,]+)/m;
     const reTaggedStart = /\/\/\s*tag::(.+)\[\]/m
     const reTaggedEnd = /\/\/\s*end::(.+)\[\]/m
+    const reIgnoreToggle = /-{4}|^`{3}\s*$|\/{4}|^={4}\s*$/m
+    const reIgnoreLine = /\/{2}/m
     // verbose = verbose ? verbose : thisFile.src.stem === "entity"
     let resultMap = new Map
     let results = []
-    let ignoreLine = false
+    let ignoreLine = false,
+        ignoreBlock = false;
     const splitContent = thisFile.contents.toString().split("\n")
     // let lineOffset = 0
     let allowInclude = (tags.length > 0) ? false : true
@@ -158,7 +161,12 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
         else if (ignoreLine && line.indexOf("endif::") > -1) {
             ignoreLine = false
         }
-        if (ignoreLine) { continue; }
+
+        if (line.match(reIgnoreToggle)) {
+            ignoreBlock = !ignoreBlock
+            // console.log("ignoreBlock:",ignoreBlock,"currentLineIndex:",currentLineIndex,"line",line)
+        }
+        if (ignoreLine || ignoreBlock) { continue; }
         //-------------
         // Get all attributes from this line and parse its content. If a file is included, check it. Otherwise, check if any anchor is found and, if so, add it to the list.
         //-------------
