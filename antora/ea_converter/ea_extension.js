@@ -32,14 +32,14 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
         // ----------------
         contentAggregate.forEach(v => {
             if(v.asciidoc.attributes.ea_module || v.asciidoc.attributes.ea_module_path || v.asciidoc.attributes.ea_input_path) {
-                console.log("EA conversion for",v.version)
+                console.log("EA conversion for",v.version,"@",v.title)
                 let eaModulePath = v.asciidoc.attributes.ea_module ? "modules/"+v.asciidoc.attributes.ea_module : "modules/ROOT"
                 let pathInModule = v.asciidoc.attributes.ea_module_path ? "/"+v.asciidoc.attributes.ea_module_path : ""
                 let imgDirOffset = v.asciidoc.attributes.ea_module_path ? "../".repeat(pathInModule.split("/").length) + "_" : "_"
                 const defaultOrigin = v.files[0].src.origin
                 const splitAbsPath = v.files[0].src.abspath ? v.files[0].src.abspath.split("/") : null
                 const abspathPrefix = splitAbsPath ? splitAbsPath.slice(0,splitAbsPath.indexOf("modules")).join("/")+"/" : null
-                const eaInputPath = v.asciidoc.attributes.ea_input_path ? abspathPrefix+eaModulePath+'/pages/'+v.asciidoc.attributes.ea_input_path : abspathPrefix+eaModulePath+'/_attachments'
+                const eaInputPath = v.asciidoc.attributes.ea_input_path ? abspathPrefix+eaModulePath+"/"+v.asciidoc.attributes.ea_input_path : abspathPrefix+eaModulePath+'/_attachments'
                 const imgDirectory = eaInputPath
                 const navigationTitle = v.asciidoc.attributes.ea_navigation_title ? v.asciidoc.attributes.ea_navigation_title : "Model definition"
 

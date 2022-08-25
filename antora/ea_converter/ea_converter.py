@@ -109,9 +109,9 @@ def parse_file_and_create_adoc(source_path,fname,target_path):
         target_path (str): The path at which the converted adoc file is to be stored at.
     """
 
-    content = ""
-    title= ""
-    body= ""
+    content = " "
+    title= " "
+    body= " "
     with open(source_path+"/"+fname+".html", 'r') as source_file:
         content = source_file.read()
 
@@ -135,6 +135,9 @@ def parse_file_and_create_adoc(source_path,fname,target_path):
 
     else:
         body = pq('div#contents').html()
+
+    if not body:
+        body = ""
 
     with open(target_path+"/"+fname+".adoc","w", encoding="utf-8") as file:
         file.write(current_header + "++++")
@@ -181,6 +184,7 @@ def main(argv):
     Path(target_path).mkdir(parents=True, exist_ok= True)
     Path(target_content_path).mkdir(parents=True, exist_ok= True)
     Path(module_path).mkdir(parents=True, exist_ok= True)
+
     for root, dirs, files in os.walk(source_path, followlinks=True):
         rel_path = os.path.relpath(root, source_path)
         rel_target_path = target_content_path
