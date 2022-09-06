@@ -161,7 +161,7 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
         else if (ignoreLine && line.indexOf("endif::") > -1) {
             ignoreLine = false
         }
-
+        
         if (line.match(reIgnoreToggle)) {
             ignoreBlock = !ignoreBlock
             // console.log("ignoreBlock:",ignoreBlock,"currentLineIndex:",currentLineIndex,"line",line)
@@ -699,8 +699,25 @@ function isPublishableFile(page) {
  */
 function determinePageForXrefInLine(line, indexOfXref, pages, nav) {
     const endOfXref = line.indexOf("[")
-    const targetFile = line.slice(indexOfXref + 5, endOfXref)
-    let foundPage = pages.filter(x => x.src.relative === targetFile && x.src.module === nav.src.module)
+    const reducedLine = line.substring(indexOfXref+5,endOfXref)
+    let parts = reducedLine.split("@")
+    const targetVersion = parts.length > 1 ? parts[0] : nav.src.version
+    if(parts.length > 1)
+    {
+        parts = parts[1].split(":")
+    }
+    else {
+        parts = parts[0].split(":")
+    }
+    // const lastColon = reducedLine.lastIndexOf(":")
+    // const numberOfColons = (reducedLine.match(/:/g) || []).length
+    const numberOfColons = parts.length -1
+    // const targetModule = numberOfColons > 0 ? reducedLine.substring(0,lastColon) : nav.src.module
+    const targetModule = numberOfColons > 0 ? parts.at(-2) : nav.src.module
+    const targetComponent = numberOfColons > 1 ? parts.at(-3) : nav.src.component
+    // const targetFile = reducedLine.slice(lastColon+1)
+    const targetFile = parts.at(-1)
+    let foundPage = pages.filter(x => x.src.relative === targetFile && x.src.module === targetModule && x.src.component === targetComponent && x.src.version === targetVersion)
     return foundPage
 }
 

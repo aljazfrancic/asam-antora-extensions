@@ -91,7 +91,9 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
             if (hasChanged) {continue;}
             [currentRole, content, hasChanged] = Helper.checkForRoleInLine(content, line, currentRole)
             if (hasChanged) {continue;}
+            line = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes,{},line)
 
+            if (line.startsWith("//")){content[content.indexOf(line)]="";  continue;}
             //-------------
             // If the line contains no role or the sectnums attribute, apply the currently valid role to it.
             // Currently not supported roles are "abstract", "glossary", and "index".

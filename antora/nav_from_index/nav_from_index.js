@@ -25,7 +25,7 @@ const FileCreator = require('../../core/file_creator.js')
 function createAntoraNavigationFromIndex( pages, navFiles ) {
     for (let page of pages) {
         const reAntoraMapping = /:(!)?antora_mapping(!)?:(.*)/;
-        const reInclude = /include::([^\[]+)\[([^\]]*)\]/;
+        const reInclude = /^\s*include::(\.\/)?([^\[]+)\[([^\]]*)\]/;
         const reSection = /^(=)+ (.*)/;
         const reExceptions = /ifndef::use-antora-rules\[\]|endif::\[\]/
         const reLeveloffset = /leveloffset=\+([^\],;]*)/
@@ -33,27 +33,29 @@ function createAntoraNavigationFromIndex( pages, navFiles ) {
         let pageContent = page.contents.toString().split("\n")
         let considerForMapping = false
         let newNavContent = []
-        let parentEntry = false
+        let parentEntry = false,
+            numberedParent = false;
         let offsetEntry = 0
         for (let line of pageContent) {
             const result = reAntoraMapping.exec(line)
             const resExceptions = reExceptions.exec(line)
             const resXref = reXref.exec(line)
             if (result && (result[1] || result[2])) {considerForMapping = false}
-            else if (result) {considerForMapping = true; parentEntry = result[3].trim() === "title" ? true : false}
+            else if (result) {considerForMapping = true; parentEntry = result[3].trim().split(";").includes("title") ? true : false; numberedParent = parentEntry && result[3].trim().split(";").includes("numbered") ? true : false}
             else if (resExceptions) {continue}
             else if (considerForMapping) {
                 if (parentEntry) {
                     const xrefLink = `${page.src.component}:${page.src.module}:${page.src.relative}`
                     newNavContent.push("*" + " xref:"+xrefLink+"[]")
-                    newNavContent.push(":start-level: 2")
+                    if(!numberedParent){newNavContent.push(":start-level: 2")}
                     offsetEntry = 1
                     parentEntry = false
+                    numberedParent = false
                 }
                 const resInclude = reInclude.exec(line)
                 const resSection = reSection.exec(line)
                 if (resInclude) {
-                    const xrefLink = resInclude[1]
+                    const xrefLink = resInclude[2]
                     const resLeveloffset = reLeveloffset.exec(line)
                     const level = resLeveloffset ? parseInt(resLeveloffset[1]) + offsetEntry : 1 + offsetEntry
                     newNavContent.push("*".repeat(level) + " xref:"+xrefLink+"[]")
