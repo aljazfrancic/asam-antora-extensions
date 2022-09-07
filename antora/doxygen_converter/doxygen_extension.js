@@ -26,7 +26,7 @@ function convertDoxygen(workdir, contentAggregate) {
         // ----------------
         // Execute on every version and component
         // ----------------
-        contentAggregate.forEach(v => {
+        contentAggregate.filter(v => v.asciidoc && v.asciidoc.attributes).forEach(v => {
             console.log("Doxygen conversion for",v.version)
             let interfaceVersion = v.asciidoc.attributes.doxygen_interface_version ? v.asciidoc.attributes.doxygen_interface_version : null
             let documentDate = v.asciidoc.attributes.doxygen_document_date ? v.asciidoc.attributes.doxygen_document_date : null
@@ -83,7 +83,7 @@ function convertDoxygen(workdir, contentAggregate) {
                     virtualTargetPath = doxygenModulePath+"/"+imgDirectory;
                     newFiles = newFiles.concat(FileCreator.addAllFilesInFolderAsVirtualFiles(currentPath, virtualTargetPath, defaultOrigin, abspathPrefix))
                     currentPath = navOutputDirectory;
-                    let navFiles = v.files.filter(x => x.src.stem === "nav" && x.src.path.includes(doxygenModulePath+"/"))
+                    let navFiles = v.files.filter(x => x.src.stem.includes("doxynav")  && x.src.path.includes(doxygenModulePath+"/"))
                     // TODO: Add function that creates the nav.adoc file in case it does not exist!
 
                     navFiles[0].contents = fs.readFileSync(currentPath+"/nav.adoc")
