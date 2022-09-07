@@ -103,6 +103,7 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
                     currentRole = "default";
                     break;
                 case "appendix":
+                    console.log("appendix",line);
                     [content, generateNumbers,currentRole] = handleAppendix(nav, catalog,  pages, componentAttributes, navFiles, content, line, generateNumbers, startLevel, indices, style, appendixCaption, appendixOffset);
                     break;
                 case "glossary":
@@ -175,6 +176,7 @@ function handlePreface( nav, catalog, pages, componentAttributes, navFiles, line
  */
 function handleAppendix( nav, catalog, pages, componentAttributes, navFiles, content, line, generateNumbers, startLevel, indices, style, appendixCaption, appendixOffset ) {
     const appendixStartLevel = isNaN(parseInt(startLevel)+parseInt(appendixOffset)) ? startLevel : (parseInt(startLevel)+parseInt(appendixOffset)).toString()
+    console.log(startLevel,appendixOffset, appendixStartLevel)
     return tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, navFiles, content, line, generateNumbers, appendixStartLevel, indices, style, "appendix", appendixCaption, true)
 }
 
@@ -249,8 +251,8 @@ function tryApplyingPageAndSectionNumberValuesToPage( nav, catalog, pages, compo
 
                 return [content, !generateNumbers,"default"]
             }
-            chapterIndex = Helper.determineNextChapterIndex(targetLevel, chapterIndex, style)
-            const changedLine = line.slice(0,level) + " " + chapterIndex + line.slice(level)
+            chapterIndex = Helper.determineNextChapterIndex(targetLevel, chapterIndex, style, appendixCaption, isAppendix)
+            const changedLine = isAppendix && targetLevel === 1 ? line.slice(0,level) + " " + appendixCaption + " " + chapterIndex + ":" + line.slice(level) : line.slice(0,level) + " " + chapterIndex + line.slice(level)
             content[content.indexOf(line)] = changedLine
             chapterIndex = style === "iso" ? chapterIndex +"."+ 0 : chapterIndex + 0 +"."
         }
