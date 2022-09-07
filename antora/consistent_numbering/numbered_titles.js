@@ -103,7 +103,6 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
                     currentRole = "default";
                     break;
                 case "appendix":
-                    console.log("appendix",line);
                     [content, generateNumbers,currentRole] = handleAppendix(nav, catalog,  pages, componentAttributes, navFiles, content, line, generateNumbers, startLevel, indices, style, appendixCaption, appendixOffset);
                     break;
                 case "glossary":
