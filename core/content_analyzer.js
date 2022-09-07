@@ -541,6 +541,12 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                     prefix = codeCaption.length > 0 ? codeCaption + ' ' + codeIndex : null;
                     returnValue = title;
                 }
+                // if (anchor.includes("1ecce6c35597")) {
+                //     console.log(result)
+                //     console.log(codeIndex)
+                //     console.log("title:",title, "prefix:", prefix, "returnValue:", returnValue, "codeCaption:", codeCaption)
+                //     throw "BRUH"
+                // }
                 break;
             case "top":
                 returnValue = getAltTextFromTitle(page, content);
@@ -589,7 +595,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 returnValue = reftext ? reftext : prefix && (prefix !== sectionRefsig && prefix !== appendixRefsig) ? `${prefix}, "${title}"` : prefix ? `${prefix} "${title}"`: `${title}`;
                 break;
             case "short":
-                returnValue = reftext ? reftext : prefix;
+                returnValue = reftext ? reftext : prefix ? prefix : title;
                 break;
             case "basic":
                 returnValue = reftext ? reftext : `${title}`;
