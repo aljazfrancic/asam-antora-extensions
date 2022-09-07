@@ -199,8 +199,6 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
             }
             else {
                 console.warn("could not find", includeSearchResult[0])
-                console.warn(includeSearchResult)
-                throw "break"
             }
         }
         else {
