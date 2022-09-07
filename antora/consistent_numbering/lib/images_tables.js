@@ -37,7 +37,7 @@ function updateImageAndTableIndex(catalog, page, componentAttributes, navFiles, 
     addTableOffsetAttributeToPage(page, newTableIndex)
     addCodeOffsetAttributeToPage(page, newCodeIndex)
     addExampleOffsetAttributeToPage(page, newExampleIndex)
-    let [numberOfLevelTwoSections, numberOfImages, numberOfTables, numberOfCode, numberOfExamples] = Helper.getIncludedPagesContentForExtensionFeatures(catalog, page, componentAttributes, navFiles)
+    let [numberOfLevelTwoSections, numberOfImages, numberOfTables, numberOfCode, numberOfExamples] = Helper.getIncludedPagesContentForExtensionFeatures(catalog, catalog.filter(x => x.src.component === page.src.component && x.src.version === page.src.version), page, componentAttributes, navFiles)
     // if (page.src.stem === "entity") {console.log(numberOfImages, numberOfTables, numberOfLevelTwoSections); throw ""}
     newImageIndex += parseInt(numberOfImages)
     newTableIndex += parseInt(numberOfTables)

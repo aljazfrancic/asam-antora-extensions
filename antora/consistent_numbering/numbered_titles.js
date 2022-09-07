@@ -19,7 +19,7 @@ const ContentManipulator = require('../../core/content_manipulator.js')
 /**
  * Determines and applies consistent and consecutive numbers for page titles, sections, ASAM-style images, and ASAM-style tables.
  * This also applies section roles such as "appendix", "bibliography", and "preface". Not all roles are currently supported yet, however!
- * @param {Array <Object>} catalog - An array of pages and partials for a given component-version-combination.
+ * @param {Array <Object>} catalog - An array of pages and partials for all component-version-combination.
  * @param {Array <Object>} pages - An array of pages for a given component-version-combination.
  * @param {Array <Object>} navFiles - An array of navigation files for a given component-version-combination.
  * @param {String} sectionNumberStyle - The selected style for section numbers. If "iso", the trailing "." is dropped.

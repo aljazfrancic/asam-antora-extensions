@@ -199,6 +199,8 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
             }
             else {
                 console.warn("could not find", includeSearchResult[0])
+                console.warn(includeSearchResult)
+                throw "break"
             }
         }
         else {
@@ -930,7 +932,7 @@ function mergeAnchorMapEntries(anchorMap, updateMap, navFiles, overridePage = nu
 function generateMapsForPages(mapInput) {
     let keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords, mapInput.pages)
     const rolePageMap = getRolePageMapForPages(mapInput.pages)
-    let anchorPageMap = getAnchorPageMapForPages(mapInput.catalog, mapInput.pages, mapInput.navFiles, mapInput.componentAttributes)
+    let anchorPageMap = getAnchorPageMapForPages(mapInput.contentCatalog, mapInput.pages, mapInput.navFiles, mapInput.componentAttributes)
     let mergedNavContents = []
     for (let nav of mapInput.navFiles.sort((a,b) => {
         return a.nav.index - b.nav.index
@@ -963,7 +965,10 @@ function generateMapsForPages(mapInput) {
  */
 function determineTargetPartialFromIncludeMacro(contentFiles, thisPage, pathPrefix, includePath) {
     const prefixParts = pathPrefix.split(":")
-    return contentFiles.find(file => file.src.family === "partial" && file.src.module === prefixParts.length > 1 ? prefixParts.at(-2) : thisPage.src.module && file.src.relative === includePath)
+    const targetModule = prefixParts.length > 1 ? prefixParts.at(-2) : thisPage.src.module
+    const targetComponent = prefixParts.length > 2 ? prefixParts.at(-3) : thisPage.src.component
+    const targetFamily = prefixParts.at(-1) === "page$" ? "page" : "partial"
+    return contentFiles.find(file => file.src.family === targetFamily && file.src.module === targetModule && file.src.component === targetComponent && file.src.relative === includePath)
 }
 
 /**

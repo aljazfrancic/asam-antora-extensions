@@ -81,6 +81,7 @@ module.exports.register = function ({ config }) {
                 // Analyze the pages and create maps for the addons.
                 //-------------
                 let mapInput = {
+                    contentCatalog: contentCatalog.findBy({ family: 'page' }).concat(contentCatalog.findBy({ family: 'partial' })),
                     catalog: catalog,
                     useKeywords: parsedConfig.useKeywords,
                     pages: pages,
@@ -132,7 +133,7 @@ module.exports.register = function ({ config }) {
                 if (parsedConfig.numberedTitles) {
                     console.log("Create sequential section numbers, titles, and captions...")
                     catalog =  contentCatalog.findBy({ component, version})
-                    ConsistentNumbering.applySectionAndTitleNumbers(catalog, pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component)
+                    ConsistentNumbering.applySectionAndTitleNumbers(mapInput.contentCatalog, pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component)
                 }
                 //-------------
                 // Addon CrossrefReplacement: Replace Asciidoctor local references ("<<ref>>") where the anchor is now located on a different page.
