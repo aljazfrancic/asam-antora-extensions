@@ -175,7 +175,6 @@ function handlePreface( nav, catalog, pages, componentAttributes, navFiles, line
  */
 function handleAppendix( nav, catalog, pages, componentAttributes, navFiles, content, line, generateNumbers, startLevel, indices, style, appendixCaption, appendixOffset ) {
     const appendixStartLevel = isNaN(parseInt(startLevel)+parseInt(appendixOffset)) ? startLevel : (parseInt(startLevel)+parseInt(appendixOffset)).toString()
-    console.log(startLevel,appendixOffset, appendixStartLevel)
     return tryApplyingPageAndSectionNumberValuesToPage(nav, catalog, pages, componentAttributes, navFiles, content, line, generateNumbers, appendixStartLevel, indices, style, "appendix", appendixCaption, true)
 }
 

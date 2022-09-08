@@ -91,18 +91,20 @@ function convertDoxygen(workdir, contentAggregate) {
                     {
                         return a.path - b.path
                     })
-
-                    // ----------------
-                    // Clean up temporary files and folders after this is done, then return back to the previous directory for the next version/component.
-                    // ----------------
-                    fs.rmSync(temporaryDirectory, { recursive: true });
-                    fs.rmSync(targetOutputDirectory, { recursive: true });
-                    fs.rmSync(navOutputDirectory, { recursive: true });
-                    console.log("Temporary output files deleted")
-                    process.chdir(startPath)
                 }
-            } catch(e){
+            } 
+            catch(e){
                 console.log(e)
+            }
+            finally {
+                // ----------------
+                // Clean up temporary files and folders after this is done, then return back to the previous directory for the next version/component.
+                // ----------------
+                fs.rmSync(temporaryDirectory, { recursive: true });
+                fs.rmSync(targetOutputDirectory, { recursive: true });
+                fs.rmSync(navOutputDirectory, { recursive: true });
+                console.log("Temporary output files deleted")
+                process.chdir(startPath)
             }
         })
   }
