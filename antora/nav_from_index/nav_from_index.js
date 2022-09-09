@@ -45,7 +45,7 @@ function createAntoraNavigationFromIndex( pages, navFiles ) {
             else if (resExceptions) {continue}
             else if (considerForMapping) {
                 if (parentEntry) {
-                    const xrefLink = `${page.src.component}:${page.src.module}:${page.src.relative}`
+                    const xrefLink = `${page.src.version}@${page.src.component}:${page.src.module}:${page.src.relative}`
                     newNavContent.push("*" + " xref:"+xrefLink+"[]")
                     if(!numberedParent){newNavContent.push(":start-level: 2")}
                     offsetEntry = 1
