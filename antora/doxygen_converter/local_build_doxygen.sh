@@ -3,14 +3,18 @@ TARGETVERSION=$1
 DOCDATE=$2
 TEMPDIR=$3
 TARGETDIR=$4
+SOURCEREPO=$5
+SOURCEFOLDER=$6
 echo "TARGETVERSION is $TARGETVERSION"
 echo "Document date to be used: $DOCDATE"
 echo "Temporary directory is $TEMPDIR"
 echo "Target directory is $TARGETDIR"
+echo "Interface repository is $SOURCEREPO"
+echo "Folder name is $SOURCEFOLDER"
 
 cd $TEMPDIR
-git clone https://github.com/OpenSimulationInterface/open-simulation-interface.git
-cd open-simulation-interface
+git clone $SOURCEREPO
+cd $SOURCEFOLDER
 if [ $TARGETVERSION ] ;
 then
 git checkout $TARGETVERSION ;

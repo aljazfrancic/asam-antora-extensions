@@ -1,7 +1,8 @@
 'use strict'
-var spawnSync = require("child_process").spawnSync;
+// var spawnSync = require("child_process").spawnSync;
 var exec = require("child_process").execSync, child;
 const fs = require("fs");
+const doxyConvert = require("./lib/doxygen_converter.js")
 
 // const File = require('../file')
 const FileCreator = require('../../core/file_creator.js')
@@ -20,9 +21,7 @@ function convertDoxygen(workdir, contentAggregate) {
         const startPath = process.cwd()
         const temporaryDirectory = "temp"
         const targetOutputDirectory = "gen"
-        const convertedOutputDirectory = "converted_interface"
-        const navOutputDirectory = "navigation_file"
-
+        
         // ----------------
         // Execute on every version and component
         // ----------------
@@ -32,11 +31,9 @@ function convertDoxygen(workdir, contentAggregate) {
             let documentDate = v.asciidoc.attributes.doxygen_document_date ? v.asciidoc.attributes.doxygen_document_date : null
             let doxygenModulePath = v.asciidoc.attributes.doxygen_module ? "modules/"+v.asciidoc.attributes.doxygen_module : "modules/ROOT"
             let pathInModule = v.asciidoc.attributes.doxygen_module_path ? "/"+v.asciidoc.attributes.doxygen_module_path : ""
-            let imgDirectory = v.asciidoc.attributes.doxygen_module_path ? "attachments" + pathInModule : "attachments"
-            let imgDirOffset = v.asciidoc.attributes.doxygen_module_path ? "../".repeat(pathInModule.split("/").length) + "_" : "_"
-            const files = {
-                fileList: v.files
-            }
+            let imgDirectory = v.asciidoc.attributes.doxygen_module_path ? "images" + pathInModule : "images"
+            let sourceRepository = v.asciidoc.attributes.doxygen_source_repo ? v.asciidoc.attributes.doxygen_source_repo : "https://github.com/OpenSimulationInterface/open-simulation-interface.git"
+            let sourceFolder = v.asciidoc.attributes.doxygen_source_folder ? v.asciidoc.attributes.doxygen_source_folder : sourceRepository.split("/").at(-1).split(".git")[0]
             const defaultOrigin = v.files[0].src.origin
             const splitAbsPath = v.files[0].src.abspath ? v.files[0].src.abspath.split("/") : null
             const abspathPrefix = splitAbsPath ? splitAbsPath.slice(0,splitAbsPath.indexOf("modules")).join("/")+"/" : null
@@ -57,7 +54,7 @@ function convertDoxygen(workdir, contentAggregate) {
                     // May be replaced with a function retrieving the content per component-version-combination instead, if not stored in the same repo anyway.
                     process.chdir(converterDirectory)
                     fs.mkdirSync(temporaryDirectory, { recursive: true })
-                    let doxygen_generator = exec(`sh local_build_doxygen.sh ${interfaceVersion} ${documentDate} ${temporaryDirectory} ${targetOutputDirectory}`, {stdio: 'inherit'})
+                    let doxygen_generator = exec(`sh local_build_doxygen.sh ${interfaceVersion} ${documentDate} ${temporaryDirectory} ${targetOutputDirectory} ${sourceRepository} ${sourceFolder}`, {stdio: 'inherit'})
                     console.log("Doxygen build done")
 
                     // ----------------
@@ -66,27 +63,17 @@ function convertDoxygen(workdir, contentAggregate) {
                     // b) delete the obsolete html files and then
                     // c) return the updated content as virtual files
                     // ----------------
-                    // TODO: Integrate the python features directly into this function.
-                    const python = spawnSync('python3', ['doxygen_converter.py', targetOutputDirectory, convertedOutputDirectory, navOutputDirectory,imgDirOffset+imgDirectory, pathInModule])
-                    console.log(python.stdout.toString())
-                    console.log(python.stderr.toString())
+                    let [virtualFiles,navFile] = doxyConvert.htmlToAsciiDoc(targetOutputDirectory,doxygenModulePath+"/pages"+pathInModule,doxygenModulePath,doxygenModulePath+"/"+imgDirectory,pathInModule)
                     console.log("Doxygen conversion done")
 
                     // ----------------
                     // Finally, parse the created files and add them to Antora for this version
                     // ----------------
-                    let newFiles = []
-                    let currentPath = "./"+targetOutputDirectory+"/"+convertedOutputDirectory;
-                    let virtualTargetPath = doxygenModulePath+"/pages"+pathInModule;
-                    newFiles = newFiles.concat(FileCreator.addAllFilesInFolderAsVirtualFiles(currentPath, virtualTargetPath, defaultOrigin, abspathPrefix))
-                    currentPath = "./"+targetOutputDirectory+"/"+convertedOutputDirectory+"/_attachments";
-                    virtualTargetPath = doxygenModulePath+"/"+imgDirectory;
-                    newFiles = newFiles.concat(FileCreator.addAllFilesInFolderAsVirtualFiles(currentPath, virtualTargetPath, defaultOrigin, abspathPrefix))
-                    currentPath = navOutputDirectory;
+                    let newFiles = FileCreator.convertArrayToVirtualFiles(virtualFiles,defaultOrigin,abspathPrefix)
                     let navFiles = v.files.filter(x => x.src.stem.includes("doxynav")  && x.src.path.includes(doxygenModulePath+"/"))
                     // TODO: Add function that creates the nav.adoc file in case it does not exist!
 
-                    navFiles[0].contents = fs.readFileSync(currentPath+"/nav.adoc")
+                    navFiles[0].contents = navFile.content
                     v.files = v.files.concat(newFiles).sort((a,b) =>
                     {
                         return a.path - b.path
@@ -95,6 +82,7 @@ function convertDoxygen(workdir, contentAggregate) {
             } 
             catch(e){
                 console.log(e)
+                // throw "BREAK"
             }
             finally {
                 // ----------------
@@ -108,8 +96,6 @@ function convertDoxygen(workdir, contentAggregate) {
             }
         })
   }
-
-
 
 module.exports = {
     convertDoxygen

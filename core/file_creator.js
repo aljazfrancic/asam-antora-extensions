@@ -195,9 +195,55 @@ function addAllFilesInFolderAsVirtualFiles( inputPath, targetPath, defaultOrigin
   }
 
 
+/**
+ * Converts all entries of an array to virtual files for Antora.
+ * Array entries must be {name:<source name of file>,path:<target output path>,content:<content as buffer>}
+ * @param {Array <Object>} inputArray - The array containing the data for all new virtual files.
+ * @param {Object} defaultOrigin - A default origin required by Antora.
+ * @param {String} abspathPrefix - A prefix for the absolute path.
+ * @returns {Array <Object>} An array of the created virtual files.
+ */
+function convertArrayToVirtualFiles( inputArray, defaultOrigin, abspathPrefix ) {
+    let newFiles = []
+    for(let f of inputArray) {
+        try {
+            const contents = f.content
+            let src = {
+                    "path": f.path+"/"+f.name,
+                    "basename": f.name,
+                    "stem": path.basename(f.name,path.extname(f.name)),
+                    "extname": path.extname(f.name),
+                    "origin": {
+                        "type": "doxygen"
+                }
+            }
+            if (src.extname === "undefined" || !src.extname) {
+                console.log(f.name, f.name.split(".")[0], f.name.split(".")[1])
+            }
+            let file = new File({
+                path: src.path,
+                contents: contents,
+                src: src
+            })
+            file.src.origin = defaultOrigin
+            if (abspathPrefix) {
+                file.src.abspath = abspathPrefix+file.src.path
+            }
+            newFiles.push(file)
+
+        } catch(e){
+            console.log(e)
+        }
+
+    }
+    return(newFiles)
+  }
+
+
 
 module.exports = {
     createNewVirtualFile,
     createVirtualFilesForFolders,
-    addAllFilesInFolderAsVirtualFiles
+    addAllFilesInFolderAsVirtualFiles,
+    convertArrayToVirtualFiles
 }
