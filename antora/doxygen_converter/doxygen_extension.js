@@ -90,7 +90,6 @@ function convertDoxygen(workdir, contentAggregate) {
                 // ----------------
                 fs.rmSync(temporaryDirectory, { recursive: true });
                 fs.rmSync(targetOutputDirectory, { recursive: true });
-                fs.rmSync(navOutputDirectory, { recursive: true });
                 console.log("Temporary output files deleted")
                 process.chdir(startPath)
             }
