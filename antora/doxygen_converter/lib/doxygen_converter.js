@@ -4,6 +4,16 @@ const path = require("path");
 const jsdom = require('jsdom');
 
 
+/**
+ * Main function for converting doxygen output files to virtual content for Antora.
+ * HTML files are converted to AsciiDoc, JS files are analyzed for the navigation. All other files are moved virtually to the images folder.
+ * @param {String} sourcePath - The path to where the doxygen output is located.
+ * @param {String} targetPath - The virtual path of the files after generation.
+ * @param {String} modulePath - The path of the module for the virtual files.
+ * @param {String} imgPath - The path of the virtual image files.
+ * @param {String} moduleContentPath - The path for all files within the defined module.
+ * @returns Array<Array<Object>,Object> - An array with the virtual content files (as a nested array) and the navigation file.
+ */
 function htmlToAsciiDoc(sourcePath = "ASAM_OSI_reference", targetPath = "ASAM_OSI_reference/converted", modulePath = "../_antora/modules/ROOT", imgPath = "../_attachments", moduleContentPath = "") {
     let virtualFiles = [],
         navFile = {name:"nav.adoc",path:modulePath,content:Buffer.from("","utf-8")}
@@ -19,7 +29,7 @@ function htmlToAsciiDoc(sourcePath = "ASAM_OSI_reference", targetPath = "ASAM_OS
                 parseFileAndCreateAdoc(currentPath, filename, targetPath, imgRef, virtualFiles);
                 break;
             case ".js":
-                getNavigationStructure(currentPath, filename, moduleContentPath, modulePath, navFile);
+                getNavigationStructure(currentPath, filename, moduleContentPath, navFile);
                 break;
             default:
                 const imagePath = path.relative(sourcePath,currentPath) === "" ? imgPath : imgPath+"/"+path.relative(sourcePath,currentPath);
@@ -29,6 +39,11 @@ function htmlToAsciiDoc(sourcePath = "ASAM_OSI_reference", targetPath = "ASAM_OS
     return [virtualFiles,navFile]
 }
 
+/**
+ * Helper function for walking through a folder and its sub-folders.
+ * @param {String} dir - The directory to traverse.
+ * @param {Function} callback - A callback function to execute on found files.
+ */
 function walkDir(dir, callback) {
     fs.readdirSync(dir).forEach( f => {
       let dirPath = path.join(dir, f);
@@ -38,7 +53,14 @@ function walkDir(dir, callback) {
     });
   };
 
-
+/**
+ * Extracts a variable and all nested variables from a given file.
+ * @param {String} sourcePath - The path to the file's directory.
+ * @param {String} filename - The filename, including extension.
+ * @param {String} varName - The variable to parse.
+ * @param {Array<String>} parsedContent - The already parsed content.
+ * @param {Integer} currentLevel - The current navigation list level.
+ */
 function parseJsVar(sourcePath, filename, varName, parsedContent, currentLevel = 1) {
     let sourceContent = fs.readFileSync(sourcePath+"/"+filename, "utf-8")
     const regex = new RegExp(varName+"\\s*=(([^;])*)","m")
@@ -49,6 +71,15 @@ function parseJsVar(sourcePath, filename, varName, parsedContent, currentLevel =
     }
 }
 
+/**
+ * Loop function for recursive parsing of a JS variable from a text file.
+ * @param {String} sourcePath - The path to the file's directory.
+ * @param {String} filename - The filename, including extension.
+ * @param {String} varName - The variable to parse.
+ * @param {String} varValue - The string containing the unparsed value of the variable.
+ * @param {Integer} currentLevel - The current navigation list level.
+ * @param {Array<String>} parsedContent - The already parsed content.
+ */
 function parsingLoop(sourcePath, filename, varName, varValue, currentLevel, parsedContent) {
     varValue.forEach((entry) => {
         const label = entry[0]
@@ -66,7 +97,14 @@ function parsingLoop(sourcePath, filename, varName, varValue, currentLevel, pars
     })
 }
 
-function getNavigationStructure(sourcePath, filename, targetPath, modulePath, navFile) {
+/**
+ * Creates the nav.adoc file's content from the provided doxygen navigation file(s).
+ * @param {String} sourcePath - The path to the file's directory.
+ * @param {String} filename - The filename, including extension.
+ * @param {String} targetPath - The path for the virtual files.
+ * @param {Object} navFile - The prefilled navigation file.
+ */
+function getNavigationStructure(sourcePath, filename, targetPath, navFile) {
     if (filename === "navtreedata.js") {
         let path = targetPath ? targetPath+"/" : ""
         let content = ""
@@ -85,6 +123,14 @@ function getNavigationStructure(sourcePath, filename, targetPath, modulePath, na
     }
 }
 
+/**
+ * Creates a virtual file from a given doxygen html file.
+ * @param {String} sourcePath - The path to the file's directory.
+ * @param {String} filename - The filename, including extension.
+ * @param {String} targetPath - The path for the virtual files.
+ * @param {String} imgPath - The path for all images.
+ * @param {Array<Object>} virtualFiles - The array of created virtual files.
+ */
 function parseFileAndCreateAdoc(sourcePath, filename, targetPath, imgPath, virtualFiles) {
     var content="",
         title="",

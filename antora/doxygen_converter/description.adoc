@@ -37,15 +37,17 @@ At least one of the following attributes has to be defined:
 
 [source, YAML]
 ----
-doxygen_interface_version: "v3.2.0"  # The interface version that needs to be retrieved
-doxygen_document_date: "01.01.2000"  # The date associated with the document (optional)
-doxygen_module: "ROOT"               # The module in which the output is stored
-doxygen_module_path: "doxy"          # Path within module
+doxygen_interface_version: "v3.2.0"                         # The interface version that needs to be retrieved
+doxygen_document_date: "01.01.2000"                         # The date associated with the document (optional)
+doxygen_module: "ROOT"                                      # The module in which the output is stored
+doxygen_module_path: "doxy"                                 # Path within module
+doxygen_source_repo: "https://example.com/source-repo.git"  # Repository from which to fetch the doxygen input files
+doxygen_source_folder: source-repo                          # Folder name into which the repo is cloned. Can be left empty if repo name and folder are identical.
 ----
 
 NOTE: The default values are: doxygen_interface_version = null, doxygen_document_date = null, doxygen_module = "ROOT", doxygen_module_path = "".
 
-.Component configuration if the target module is "Home", the version "v3.3.1" is required, and the documented date is "01.06.2022"
+.Component configuration if the target module is "Home", the version "v3.3.1" is required, and the documented date is "01.06.2022". The doxygen source repo is set to https://github.com/OpenSimulationInterface/open-simulation-interface.git
 ====
 [source,YAML]
 ----
@@ -54,19 +56,19 @@ asciidoc:
     doxygen_module: "Home"
     doxygen_interface_version: "v3.3.1"
     doxygen_document_date: "01.06.2022"
+    doxygen_source_repo: "https://github.com/OpenSimulationInterface/open-simulation-interface.git"
 ----
 ====
 
 == How it works
-The extensions consists of three parts:
+The extensions consists of two parts:
 
-* The Antora extension written in JavaScript
+* The Antora extension written in JavaScript.
+It controls the overall operation and converts the doxygen output into Antora-compatible files as well as transfers the output as virtual files to the Antora pipeline.
 * A shell script responsible for the Doxygen operations (retrieving the repo, the builder, and creating the initial output)
-* A python script that converts the generated Doxygen output to Antora files
 
-NOTE: The features of the python script should eventually be merged into the Antora extension.
-Also, the shell script may become obsolete ones the different OSI repositories have been merged, if the Doxygen output is kept and does not have to be created for each version over and over again.
+NOTE: The shell script may become obsolete once the different OSI repositories have been merged, if the Doxygen output is kept and does not have to be created for each version over and over again.
 
 The Antora extension runs for each component-version-configuration in Antora and checks if this version requests a Doxygen conversion.
-If so, it determines all required variables and first triggers the Shell script, then the Python script.
-After the adoc files have been created, it then integrates them as virtual files into the Antora content aggregate and deletes the temporarily created files.
+If so, it determines all required variables and first triggers the Shell script, then converts the content.
+After the adoc content has been created virtually, it then integrates them into the Antora content aggregate and deletes the temporarily created doxygen files.
