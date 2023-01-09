@@ -105,7 +105,7 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
  * @returns {Map <String,Object>} A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
 function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, navFiles, inheritedAttributes = {}, tags = [], lineOffset = {line:0}) {
-    const re = /\[\[{1,2}([^\],]+)(,([^\]]*))?\]\]|\[#([^\]]*)(,([^\]]*))?\]|anchor:([^\[]+)(,([^\]]*))?\[/
+    const re = /(?<!(`|\/\/.*))\[\[{1,2}([^\],]+)(,([^\]]*))?\]\]|(?<!(`|\/\/.*))\[#([^\]]*)(,([^\]]*))?\]|(?<!(`|\/\/.*))anchor:([^\[]+)(,([^\]]*))?\[/
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[(.+)?\]/m;
     const reTags = /.*,?tags?=([^,]+)/m;
     const reTaggedStart = /\/\/\s*tag::(.+)\[\]/m
@@ -214,9 +214,9 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
     //-------------
     if (results) {
         for (let entry of results) {
-            const e1 = entry[1]
-            const e2 = entry[4]
-            const e3 = entry[5]
+            const e1 = entry[2]
+            const e2 = entry[6]
+            const e3 = entry[8]
             const line = entry.line
 
             const resultValue = e1 ? e1 : e2 ? e2 : e3

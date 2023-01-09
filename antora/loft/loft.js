@@ -25,6 +25,7 @@ const FileCreator = require('../../core/file_creator.js')
  * @param {String} version - The current version.
  */
 function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles, catalog, component, version) {
+    if (!anchorPageMap || anchorPageMap.length === 0){console.log("anchorPageMap is empty -- cannot create LOFT"); return}
     let mergedNavContents = []
     navFiles.sort((a,b) => {
         return a.nav.index - b.nav.index
