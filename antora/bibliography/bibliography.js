@@ -104,13 +104,22 @@ function convertBibliographyEntry(key, e) {
     let end = []
     switch (e.type) {
         case 'book':
+            // if (e.getField("AUTHOR")) {string.push(`${normalizeFieldValue(e.getField("AUTHOR"))}`)};
+            // if (e.getField("CHAPTER")) {string.push(`"${normalizeFieldValue(e.getField("CHAPTER"))}" in`)};
             if (e.getField("TITLE")) {string.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)};
             if (e.getField("VOLUME")) {string.push(`${normalizeFieldValue(e.getField("VOLUME"))}`)};
             if (e.getField("NUMBER")) {string.push(`${normalizeFieldValue(e.getField("NUMBER"))}`)};
             if (e.getField("PUBLISHER")) {end.push(`${normalizeFieldValue(e.getField("PUBLISHER"))}`)};
             if (e.getField("YEAR")) {end.push(`${normalizeFieldValue(e.getField("YEAR"))}`)};
-            if (e.getField("PAGES")) {end.push(`${normalizeFieldValue(e.getField("PAGES"))}`)};
+            if (e.getField("PAGES")) {end.push(`pp. ${normalizeFieldValue(e.getField("PAGES"))}`)};
             break;
+        case 'proceedings':
+            if (e.getField("EDITOR")) {string.push(`${normalizeFieldValue(e.getField("EDITOR"))}, Ed.`)};    
+            if (e.getField("TITLE")) {string.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)};
+            if (e.getField("ORGANIZATION")) {end.push(`${normalizeFieldValue(e.getField("ORGANIZATION"))}`)};
+            if (e.getField("YEAR")) {end.push(`${normalizeFieldValue(e.getField("YEAR"))}`)};
+            if (e.getField("PAGES")) {end.push(`pp. ${normalizeFieldValue(e.getField("PAGES"))}`)};
+
     }
     string = `${start} ${string.join(", ")}. ${end.join(", ")}.`
     const index  = e.index
@@ -122,15 +131,3 @@ module.exports = {
     applyBibliography,
     getBibliographyFiles
 }
-
-// @book{Clinger_1990,
-//     autor     = {William D. Clinger},
-//     title     = {https://dl.acm.org/doi/abs/10.1145/93548.93557[How to read floating point numbers accurately]},
-//     publisher = {ACM SIGPLAN Notices},
-//     volume    = {25},
-//     number    = {6},
-//     year      = {1990},
-//     month     = {June},
-//     pages     = {92–101}
-// }
-// --> [14] How to read floating point numbers accurately, vol. 25, no. 6. ACM SIGPLAN Notices, 1990, pp. 92–101.
