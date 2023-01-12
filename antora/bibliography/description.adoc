@@ -1,0 +1,7 @@
+= ASAM Bibliography
+
+TODO
+
+== Configuration
+This extension does not require any configuration.
+

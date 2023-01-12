@@ -31,6 +31,7 @@ const Orphans = require('./antora/orphan_pages/orphan_pages.js');
 const LostAndFound = require('./antora/orphan_pages/orphan_files.js')
 const Loft = require("./antora/loft/loft.js");
 const RefStyle = require("./antora/reference_style_mixing/reference_style_mixing.js")
+const Bibliography = require("./antora/bibliography/bibliography.js")
 //-------------
 //-------------
 // Register this module in antora so it is used by the Antora pipeline.
@@ -41,6 +42,7 @@ module.exports.register = function ({ config }) {
     const logger = this.require('@antora/logger').get('unlisted-pages-extension')
     // Parse the config file and return the values as the parsedConfig object
     let parsedConfig = ConfigParser.parse(config)
+    let bibliographyFiles = []
 
     this
       .on('contentAggregated', ({contentAggregate}) => {
@@ -49,6 +51,9 @@ module.exports.register = function ({ config }) {
           }
           if (config.doxygen) {
               Doxygen.convertDoxygen(parsedConfig.workdir,contentAggregate)
+          }
+          if (parsedConfig.asamBibliography) {
+            bibliographyFiles = Bibliography.getBibliographyFiles(contentAggregate)
           }
       })
 
@@ -76,7 +81,7 @@ module.exports.register = function ({ config }) {
                 AsciiNav.createAntoraNavigationFromIndex(pages, navFiles)
                 navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
                 let catalog =  contentCatalog.findBy({ component, version})
-                const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].asciidoc.attributes
+                const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].versions.filter(x => x.version === version)[0].asciidoc.attributes
                 //-------------
                 // Analyze the pages and create maps for the addons.
                 //-------------
@@ -86,7 +91,14 @@ module.exports.register = function ({ config }) {
                     useKeywords: parsedConfig.useKeywords,
                     pages: pages,
                     navFiles: navFiles,
-                    componentAttributes: componentAttributes
+                    componentAttributes: componentAttributes,
+                    fullContentCatalog: contentCatalog,
+                    component: component,
+                    version: version
+                }
+                if (parsedConfig.asamBibliography) {
+                    console.log("Creating bibliography and reference links...")
+                    Bibliography.applyBibliography(mapInput, bibliographyFiles)
                 }
                 console.log("Generating content overview maps...")
                 let { keywordPageMap, rolePageMap, anchorPageMap } = ContentAnalyzer.generateMapsForPages( mapInput )

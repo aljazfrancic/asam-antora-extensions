@@ -34,7 +34,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
         }
         references.forEach(ref => {
             let debug = false
-            if(ref[1] === "fig-60c22aa8-d229-456a-b39d-645b894d4cad") {console.log("fig-60c22aa8-d229-456a-b39d-645b894d4cad"); debug = true}
+            // if(ref[1] === "top-normative_and_non_normative_statements") {console.log("top-normative_and_non_normative_statements"); debug = true}
             if (anchorMap.get(ref[1])) {
                 const val = anchorMap.get(ref[1])
                 let referencePage
@@ -58,6 +58,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                     const anchorLink = ref[1]
                     const replacementXref = "xref:"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+anchorLink+"["+altText+"]"
                     content = content.replace(ref[0],replacementXref)
+                    // if (debug) {console.log(replacementXref); console.log(content); throw "WAIT WAT=?"}
                 }
             }
         })
