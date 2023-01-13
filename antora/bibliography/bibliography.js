@@ -92,9 +92,7 @@ function createBibliography(antoraBibliography, bibEntries) {
     const replacementContent = "\n"+bibContent.map(x => x[1]).join("\n\n")
     let content = antoraBibliography.contents.toString()
     const newContent = content.replace("bibliography::[]",replacementContent)
-    // console.log(newContent)
     antoraBibliography.contents = Buffer.from(newContent)
-    console.log(antoraBibliography.contents.toString())
 }
 
 
