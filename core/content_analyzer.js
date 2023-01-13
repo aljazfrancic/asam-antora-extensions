@@ -573,6 +573,8 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 prefix = relativeSectionNumber.length > 1 && pageNumber !== "" ? prefix + relativeSectionNumber.join(".") : prefix;
                 title = result[2].trim();
                 break;
+            case "bib":
+                break;
             default:
                 if (!nonStandardAnchors.includes(anchor)) {
                     console.warn("non-standard anchor type detected: ", anchor);
