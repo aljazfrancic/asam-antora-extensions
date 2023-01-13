@@ -110,13 +110,11 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
     const reTags = /.*,?tags?=([^,]+)/m;
     const reTaggedStart = /\/\/\s*tag::(.+)\[\]/m
     const reTaggedEnd = /\/\/\s*end::(.+)\[\]/m
-    const reIgnoreToggle = /-{4}|^`{3}\s*$|\/{4}|^={4}\s*$/m
-    const reIgnoreLine = /\/{2}/m
-    // verbose = verbose ? verbose : thisFile.src.stem === "entity"
+    const reIgnoreToggle = /-{4}|^`{3}\s*$|\/{4}|^={4}\s*$/m    // verbose = verbose ? verbose : thisFile.src.stem === "entity"
     let resultMap = new Map
     let results = []
     let ignoreLine = false,
-        ignoreBlock = false;
+        ignoreBlock = {sourceBlock: false, exampleBlock: false, inlineSource: false, commentBlock: false};
     const splitContent = thisFile.contents.toString().split("\n")
     // let lineOffset = 0
     let allowInclude = (tags.length > 0) ? false : true
@@ -162,11 +160,25 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
             ignoreLine = false
         }
         
-        if (line.match(reIgnoreToggle)) {
-            ignoreBlock = !ignoreBlock
-            // console.log("ignoreBlock:",ignoreBlock,"currentLineIndex:",currentLineIndex,"line",line)
+        const matchIgnoreToggle = line.match(reIgnoreToggle)
+        if (matchIgnoreToggle) {
+            switch (matchIgnoreToggle[0]) {
+                // /-{4}|^`{3}\s*$|\/{4}|^={4}\s*$/
+                case String(matchIgnoreToggle[0].match(/-{4}/)):
+                    ignoreBlock.sourceBlock = !ignoreBlock.sourceBlock;
+                    break;
+                case String(matchIgnoreToggle[0].match(/^={4}\s*/)):
+                    ignoreBlock.exampleBlock = !ignoreBlock.exampleBlock;
+                    break;
+                case String(matchIgnoreToggle[0].match(/^`{3}\s*$/)):
+                    ignoreBlock.inlineSource = !ignoreBlock.inlineSource;
+                    break;
+                case String(matchIgnoreToggle[0].match(/\/{4}/)):
+                    ignoreBlock.commentBlock = !ignoreBlock.commentBlock;
+                    break;
+            }            
         }
-        if (ignoreLine || ignoreBlock) { continue; }
+        if (ignoreLine || Object.values(ignoreBlock).some(e => e)) { continue; }
         //-------------
         // Get all attributes from this line and parse its content. If a file is included, check it. Otherwise, check if any anchor is found and, if so, add it to the list.
         //-------------
@@ -573,8 +585,6 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 prefix = relativeSectionNumber.length > 1 && pageNumber !== "" ? prefix + relativeSectionNumber.join(".") : prefix;
                 title = result[2].trim();
                 break;
-            case "bib":
-                break;
             default:
                 if (!nonStandardAnchors.includes(anchor)) {
                     console.warn("non-standard anchor type detected: ", anchor);
@@ -923,19 +933,6 @@ function mergeAnchorMapEntries(anchorMap, updateMap, navFiles, overridePage = nu
     return anchorMap
 }
 
-
-// TODO NEW
-function createdSortedNavFileContent(mapInput) {
-    let mergedNavContents = []
-    for (let nav of mapInput.navFiles.sort((a,b) => {
-        return a.nav.index - b.nav.index
-    })) {
-        const newNavContent = nav.contents.toString().split("\n")
-        mergedNavContents = mergedNavContents.concat(newNavContent)
-    }
-    return mergedNavContents.join("\n")
-}
-
 /**
  * Generator for all relevant maps.
  * This function generates maps for keywords, roles, and anchors.
@@ -946,7 +943,14 @@ function generateMapsForPages(mapInput) {
     let keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords, mapInput.pages)
     const rolePageMap = getRolePageMapForPages(mapInput.pages)
     let anchorPageMap = getAnchorPageMapForPages(mapInput.contentCatalog, mapInput.pages, mapInput.navFiles, mapInput.componentAttributes)
-    let mergedNavContents = createdSortedNavFileContent(mapInput)
+    let mergedNavContents = []
+    for (let nav of mapInput.navFiles.sort((a,b) => {
+        return a.nav.index - b.nav.index
+    })) {
+        const newNavContent = nav.contents.toString().split("\n")
+        mergedNavContents = mergedNavContents.concat(newNavContent)
+    }
+    mergedNavContents = mergedNavContents.join("\n")
     anchorPageMap = new Map(([...anchorPageMap]).sort((a, b) => {
         let indexA = mergedNavContents.indexOf(a[1].usedIn ? a[1].usedIn.at(-1).src.relative : a[1].source.src.relative)
         let indexB = mergedNavContents.indexOf(b[1].usedIn ? b[1].usedIn.at(-1).src.relative : b[1].source.src.relative)
@@ -1150,6 +1154,5 @@ module.exports = {
     getSrcPathFromFileId,
     getAttributeFromContent,
     isExampleBlock,
-    isListingBlock,
-    createdSortedNavFileContent
+    isListingBlock
 }
