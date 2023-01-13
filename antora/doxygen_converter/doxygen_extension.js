@@ -1,6 +1,6 @@
 'use strict'
 // var spawnSync = require("child_process").spawnSync;
-var exec = require("child_process").execSync, child;
+const exec = require("child_process").execSync;
 const fs = require("fs");
 const doxyConvert = require("./lib/doxygen_converter.js")
 
@@ -27,12 +27,12 @@ function convertDoxygen(workdir, contentAggregate) {
         // ----------------
         contentAggregate.filter(v => v.asciidoc && v.asciidoc.attributes).forEach(v => {
             console.log("Doxygen conversion for",v.version)
-            let interfaceVersion = v.asciidoc.attributes.doxygen_interface_version ? v.asciidoc.attributes.doxygen_interface_version : null
             let documentDate = v.asciidoc.attributes.doxygen_document_date ? v.asciidoc.attributes.doxygen_document_date : null
             let doxygenModulePath = v.asciidoc.attributes.doxygen_module ? "modules/"+v.asciidoc.attributes.doxygen_module : "modules/ROOT"
             let pathInModule = v.asciidoc.attributes.doxygen_module_path ? "/"+v.asciidoc.attributes.doxygen_module_path : ""
             let imgDirectory = v.asciidoc.attributes.doxygen_module_path ? "images" + pathInModule : "images"
             let sourceRepository = v.asciidoc.attributes.doxygen_source_repo ? v.asciidoc.attributes.doxygen_source_repo : "https://github.com/OpenSimulationInterface/open-simulation-interface.git"
+            let interfaceVersion = v.asciidoc.attributes.doxygen_interface_version ? v.asciidoc.attributes.doxygen_interface_version : v.origins.find(x => x.url === sourceRepository) ? v.origins.find(x => x.url === sourceRepository).refname : null
             let sourceFolder = v.asciidoc.attributes.doxygen_source_folder ? v.asciidoc.attributes.doxygen_source_folder : sourceRepository.split("/").at(-1).split(".git")[0]
             const defaultOrigin = v.files[0].src.origin
             const splitAbsPath = v.files[0].src.abspath ? v.files[0].src.abspath.split("/") : null
