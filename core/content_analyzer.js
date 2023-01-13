@@ -933,6 +933,19 @@ function mergeAnchorMapEntries(anchorMap, updateMap, navFiles, overridePage = nu
     return anchorMap
 }
 
+
+// TODO NEW
+function createdSortedNavFileContent(mapInput) {
+    let mergedNavContents = []
+    for (let nav of mapInput.navFiles.sort((a,b) => {
+        return a.nav.index - b.nav.index
+    })) {
+        const newNavContent = nav.contents.toString().split("\n")
+        mergedNavContents = mergedNavContents.concat(newNavContent)
+    }
+    return mergedNavContents.join("\n")
+}
+
 /**
  * Generator for all relevant maps.
  * This function generates maps for keywords, roles, and anchors.
@@ -943,14 +956,7 @@ function generateMapsForPages(mapInput) {
     let keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords, mapInput.pages)
     const rolePageMap = getRolePageMapForPages(mapInput.pages)
     let anchorPageMap = getAnchorPageMapForPages(mapInput.contentCatalog, mapInput.pages, mapInput.navFiles, mapInput.componentAttributes)
-    let mergedNavContents = []
-    for (let nav of mapInput.navFiles.sort((a,b) => {
-        return a.nav.index - b.nav.index
-    })) {
-        const newNavContent = nav.contents.toString().split("\n")
-        mergedNavContents = mergedNavContents.concat(newNavContent)
-    }
-    mergedNavContents = mergedNavContents.join("\n")
+    let mergedNavContents = createdSortedNavFileContent(mapInput)
     anchorPageMap = new Map(([...anchorPageMap]).sort((a, b) => {
         let indexA = mergedNavContents.indexOf(a[1].usedIn ? a[1].usedIn.at(-1).src.relative : a[1].source.src.relative)
         let indexB = mergedNavContents.indexOf(b[1].usedIn ? b[1].usedIn.at(-1).src.relative : b[1].source.src.relative)
@@ -1154,5 +1160,6 @@ module.exports = {
     getSrcPathFromFileId,
     getAttributeFromContent,
     isExampleBlock,
-    isListingBlock
+    isListingBlock,
+    createdSortedNavFileContent
 }
