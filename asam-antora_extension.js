@@ -96,6 +96,10 @@ module.exports.register = function ({ config }) {
                     component: component,
                     version: version
                 }
+                //-------------
+                // Addon Bibliography: Works similar to the original Asciidoctor bibtex extension, but for Antora.
+                // Required setting: keywords: bibliography: true (site.yml); asamBibliography: 'path/to/file.bib' (antora.yml)
+                //-------------
                 if (parsedConfig.asamBibliography) {
                     console.log("Creating bibliography and reference links...")
                     Bibliography.applyBibliography(mapInput, bibliographyFiles)
@@ -113,7 +117,7 @@ module.exports.register = function ({ config }) {
                     keywordPageMap = ContentAnalyzer.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
                 }
                 //-------------
-                // Addon Macros: Replace all custom macros. NOTE: This requires the keywords extension!
+                // Addon Macros: Replace all custom macros. NOTE: This REQUIRES the keywords extension!
                 //-------------
                 console.log("Replacing custom macros...")
                 pages = Macros.findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywordPageMap, rolePageMap, CON.macrosRegEx, CON.macrosHeadings, logger, component, version )

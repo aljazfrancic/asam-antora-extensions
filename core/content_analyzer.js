@@ -934,7 +934,11 @@ function mergeAnchorMapEntries(anchorMap, updateMap, navFiles, overridePage = nu
 }
 
 
-// TODO NEW
+/**
+ * Creates a sorted and merged file with all navigation files' content.
+ * @param {Object} mapInput - A set of configuration parameters. Must contain 'navFiles'.
+ * @returns {String} The sorted and merged navigation files content
+ */
 function createdSortedNavFileContent(mapInput) {
     let mergedNavContents = []
     for (let nav of mapInput.navFiles.sort((a,b) => {
