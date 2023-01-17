@@ -97,6 +97,14 @@ a| * editor
 * pages
 * annote
 
+|techreport
+a| * title
+* number
+* institution
+* address
+* month
+* year
+* url
 |===
 
 == How it works

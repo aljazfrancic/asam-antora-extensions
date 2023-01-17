@@ -142,6 +142,8 @@ function convertBibliographyEntry(key, e) {
     let entryIndex = `[[bib-${key}]][${e.index}]`;
     let body = []
     let suffix = []
+    // Create an entry based on its type. Each entry consists of an index ([[anchor]] [index]), a body (where all parts are joined by commas), and a suffix (separated by a dot from the body, then joined by commas). 
+    // Typically, the entry is terminated with a dot, unless the last entry is the URL field.
     switch (e.type) {
         case 'book':
             if (e.getField("AUTHOR")) {console.log(getAuthors(normalizeFieldValue((e.getField("AUTHOR")))));body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)}
@@ -158,7 +160,7 @@ function convertBibliographyEntry(key, e) {
             else if (e.getField("YEAR")) {suffix.push(`${normalizeFieldValue(e.getField("YEAR"))}`)};
             if (e.getField("PAGES")) {suffix.push(`pp. ${normalizeFieldValue(e.getField("PAGES"))}`)};
             // if (e.getField("NOTE")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
-            if (e.getField("URL")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
+            if (e.getField("URL")) {suffix.push(`Available: ${normalizeFieldValue(e.getField("URL"))}`)};
             break;
         case 'proceedings':
             if (e.getField("EDITOR")) {body.push(`${getEditors(normalizeFieldValue(e.getField("EDITOR")))}`)};
@@ -175,7 +177,7 @@ function convertBibliographyEntry(key, e) {
             else if (e.getField("YEAR")) {suffix.push(`${normalizeFieldValue(e.getField("YEAR"))}`)};
             if (e.getField("PAGES")) {suffix.push(`pp. ${normalizeFieldValue(e.getField("PAGES"))}`)};
             // if (e.getField("NOTE")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
-            if (e.getField("ANNOTE")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
+            if (e.getField("ANNOTE")) {suffix.push(`${normalizeFieldValue(e.getField("ANNOTE"))}`)};
             break;
         case 'inbook':
             if (e.getField("AUTHOR")) {console.log(getAuthors(normalizeFieldValue((e.getField("AUTHOR")))));body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
@@ -192,11 +194,22 @@ function convertBibliographyEntry(key, e) {
             if (e.getField("PAGES")) {suffix.push(`pp. ${normalizeFieldValue(e.getField("PAGES"))}`)};
             // if (e.getField("NOTE")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
             // if (e.getField("TYPE")) {suffix.push(`${normalizeFieldValue(e.getField("TYPE"))}`)};
-            if (e.getField("URL")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
+            if (e.getField("URL")) {suffix.push(`Available: ${normalizeFieldValue(e.getField("URL"))}`)};
+            break;
+        case 'techreport':
+            // if (e.getField("AUTHOR")) {console.log(getAuthors(normalizeFieldValue((e.getField("AUTHOR")))));body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
+            if (e.getField("TITLE")) {body.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)};
+            if (e.getField("NUMBER")) {body.push(`no. ${normalizeFieldValue(e.getField("NUMBER"))}`)};
+            if (e.getField("INSTITUTION")) {body.push(`${normalizeFieldValue(e.getField("INSTITUTION"))}`)};
+            if (e.getField("ADDRESS")) {body.push(`${normalizeFieldValue(e.getField("ADDRESS"))}:`)};
+            if (e.getField("MONTH") && e.getField("YEAR")) {body.push(`${normalizeFieldValue(e.getField("MONTH"))} ${normalizeFieldValue(e.getField("YEAR"))}`)}
+            else if (e.getField("YEAR")) {body.push(`${normalizeFieldValue(e.getField("YEAR"))}`)};
+            // if (e.getField("TYPE")) {suffix.push(`[${normalizeFieldValue(e.getField("TYPE"))}]`)};
+            if (e.getField("URL")) {suffix.push(`[Online]. Available: ${normalizeFieldValue(e.getField("URL"))}`)};
             break;
     }
     body = body.join(", ").endsWith(".") ? `${entryIndex} ${body.join(", ")} ${suffix.join(", ")}.` : `${entryIndex} ${body.join(", ")}. ${suffix.join(", ")}.`
-    if (e.getField("URL")) {body = body.substring(0, body.length-1)}
+    if (e.getField("URL") && !e.getField("DOI")) {body = body.substring(0, body.length-1)}
     const index  = e.index
     return [index,body]
 }
