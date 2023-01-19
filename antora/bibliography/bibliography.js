@@ -217,7 +217,11 @@ function convertBibliographyEntry(key, e) {
             // if (e.getField("ANNOTE")) {suffix.push(`${normalizeFieldValue(e.getField("ANNOTE"))}`)};
             break;
     }
-    body = body.join(", ").endsWith(".") ? `${entryIndex} ${body.join(", ")} ${suffix.join(", ")}.` : `${entryIndex} ${body.join(", ")}. ${suffix.join(", ")}.`
+    if (suffix && suffix.length > 0) {
+        body = body.join(", ").endsWith(".") ? `${entryIndex} ${body.join(", ")} ${suffix.join(", ")}.` : `${entryIndex} ${body.join(", ")}. ${suffix.join(", ")}.`
+    } else {
+        body = body.join(", ").endsWith(".") ? `${entryIndex} ${body.join(", ")}` : `${entryIndex} ${body.join(", ")}.`
+    }
     if (e.getField("URL") && !e.getField("DOI")) {body = body.substring(0, body.length-1)}
     const index  = e.index
     return [index,body]
