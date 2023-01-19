@@ -207,6 +207,15 @@ function convertBibliographyEntry(key, e) {
             // if (e.getField("TYPE")) {suffix.push(`[${normalizeFieldValue(e.getField("TYPE"))}]`)};
             if (e.getField("URL")) {suffix.push(`[Online]. Available: ${normalizeFieldValue(e.getField("URL"))}`)};
             break;
+        case 'misc':
+            if (e.getField("AUTHOR")) {console.log(getAuthors(normalizeFieldValue((e.getField("AUTHOR")))));body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
+            if (e.getField("TITLE")) {body.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)};
+            if (e.getField("HOWPUBLISHED")) {body.push(`${normalizeFieldValue(e.getField("HOWPUBLISHED"))}`)};
+            if (e.getField("MONTH") && e.getField("YEAR")) {body.push(`${normalizeFieldValue(e.getField("MONTH"))} ${normalizeFieldValue(e.getField("YEAR"))}`)}
+            else if (e.getField("YEAR")) {body.push(`${normalizeFieldValue(e.getField("YEAR"))}`)};
+            // if (e.getField("NOTE")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
+            // if (e.getField("ANNOTE")) {suffix.push(`${normalizeFieldValue(e.getField("ANNOTE"))}`)};
+            break;
     }
     body = body.join(", ").endsWith(".") ? `${entryIndex} ${body.join(", ")} ${suffix.join(", ")}.` : `${entryIndex} ${body.join(", ")}. ${suffix.join(", ")}.`
     if (e.getField("URL") && !e.getField("DOI")) {body = body.substring(0, body.length-1)}
