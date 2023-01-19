@@ -58,7 +58,7 @@ function convertDoxygen(workdir, contentAggregate) {
                     console.log("Doxygen build done")
 
                     // ----------------
-                    // Run the python script on the generated files to
+                    // Run doxyConvert to
                     // a) convert the html and js content to asciidoc,
                     // b) delete the obsolete html files and then
                     // c) return the updated content as virtual files
