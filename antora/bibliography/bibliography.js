@@ -27,6 +27,8 @@ function applyBibliography(mapInput, bibliographyFiles) {
     // Find relevant bibliography file and bibliography page
     const antoraBibliography = mapInput.contentCatalog.find(x => x.contents.toString().replaceAll(reException,``).match(reBibliography))
     const bibFile = bibliographyFiles.find(x => x.component === mapInput.component && x.version === mapInput.version)
+    if (!bibFile) {throw "No .bib file found!"}
+    if (!antoraBibliography) {throw "Found .bib file but no page with 'bibliography::[]'!"}
     // Remove @Comment lines since they do not work with this lib
     let bibFileContents = bibFile.file.contents.toString().replaceAll(/^ *@Comment\{.+$/gm,'')
     let bibEntries = parseBibFile(bibFileContents)
