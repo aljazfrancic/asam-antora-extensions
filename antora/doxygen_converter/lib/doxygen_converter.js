@@ -138,7 +138,7 @@ function parseFileAndCreateAdoc(sourcePath, filename, targetPath, imgPath, virtu
 
     content = fs.readFileSync(sourcePath+"/"+filename, 'utf8')
     content = content.replaceAll(/<img ([^\n]*)src=\"(?!http)/ig, `<img $1src="${imgPath}/`)
-    content = content.replaceAll(/<object type=\"image\/(.*)\" data=\"(?!http)/ig, `<object type="image/$1" data="${imgPath}/"`)
+    content = content.replaceAll(/<object type=\"image\/(.*)\" data=\"(?!http)/ig, `<object type="image/$1" data="${imgPath}/`)
     content = content.replaceAll(/<h2 class="memtitle">(.*)<\/h2>/ig, `<h3 id="sec_nn" class="memtitle">$1</h3>`)
     var contentSplit = content.split("\n")
     let i = 0
