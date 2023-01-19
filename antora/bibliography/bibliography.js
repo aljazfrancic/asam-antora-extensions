@@ -201,7 +201,7 @@ function convertBibliographyEntry(key, e) {
         case 'techreport':
             // if (e.getField("AUTHOR")) {console.log(getAuthors(normalizeFieldValue((e.getField("AUTHOR")))));body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
             if (e.getField("TITLE")) {body.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)};
-            if (e.getField("NUMBER")) {body.push(`no. ${normalizeFieldValue(e.getField("NUMBER"))}`)};
+            if (e.getField("NUMBER")) {body.push(`${normalizeFieldValue(e.getField("NUMBER"))}`)};
             if (e.getField("INSTITUTION")) {body.push(`${normalizeFieldValue(e.getField("INSTITUTION"))}`)};
             if (e.getField("ADDRESS")) {body.push(`${normalizeFieldValue(e.getField("ADDRESS"))}:`)};
             if (e.getField("MONTH") && e.getField("YEAR")) {body.push(`${normalizeFieldValue(e.getField("MONTH"))} ${normalizeFieldValue(e.getField("YEAR"))}`)}
