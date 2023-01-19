@@ -84,6 +84,12 @@ a| * autonav: Automatic navigation file creation based on folder structure
 * pages: Creates a list of all pages in a given folder.
 May be configured to include also all pages in all subfolders, or start in a specific subfolder.
 
+|Support for the <<ASAM Bibliography>>
+|link:antora/bibliography/bibliography.js[bibliography.js]
+|None
+|no
+a|Supports a limited set of bibtex fields and types.
+
 |Identifying and (optionally) listing <<Orphan pages>>
 |link:antora/orphan_pages/orphan_pages.js[orphan_pages.js]
 |None
@@ -200,6 +206,10 @@ Only relevant in combination with `id`.
 
 == Extensions in detail
 include::antora/asam_macros/description.adoc[leveloffset=+2]
+
+---
+
+include::antora/bibliography/description.adoc[leveloffset=+2]
 
 ---
 

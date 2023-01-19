@@ -105,6 +105,14 @@ a| * title
 * month
 * year
 * url
+
+|misc
+a|* author
+* title
+* howpublished
+* month
+* year
+
 |===
 
 == How it works
