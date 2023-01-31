@@ -148,7 +148,7 @@ function convertBibliographyEntry(key, e) {
     // Typically, the entry is terminated with a dot, unless the last entry is the URL field.
     switch (e.type) {
         case 'book':
-            if (e.getField("AUTHOR")) {console.log(getAuthors(normalizeFieldValue((e.getField("AUTHOR")))));body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)}
+            if (e.getField("AUTHOR")) {body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)}
             else if (e.getField("EDITOR")) {body.push(`${getEditors(normalizeFieldValue(e.getField("EDITOR")))}`)};
             if (e.getField("TITLE")) {body.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)};
             if (e.getField("VOLUME")) {body.push(`vol. ${normalizeFieldValue(e.getField("VOLUME"))}`)};
@@ -182,7 +182,7 @@ function convertBibliographyEntry(key, e) {
             if (e.getField("ANNOTE")) {suffix.push(`${normalizeFieldValue(e.getField("ANNOTE"))}`)};
             break;
         case 'inbook':
-            if (e.getField("AUTHOR")) {console.log(getAuthors(normalizeFieldValue((e.getField("AUTHOR")))));body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
+            if (e.getField("AUTHOR")) {body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
             if (e.getField("CHAPTER") && e.getField("TITLE")) {body.push(`"${normalizeFieldValue(e.getField("CHAPTER"))}" in __${normalizeFieldValue(e.getField("TITLE"))}__`)}
             else if (e.getField("TITLE")) {body.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)};
             if (e.getField("VOLUME")) {body.push(`vol. ${normalizeFieldValue(e.getField("VOLUME"))}`)};
@@ -199,7 +199,7 @@ function convertBibliographyEntry(key, e) {
             if (e.getField("URL")) {suffix.push(`Available: ${normalizeFieldValue(e.getField("URL"))}`)};
             break;
         case 'techreport':
-            // if (e.getField("AUTHOR")) {console.log(getAuthors(normalizeFieldValue((e.getField("AUTHOR")))));body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
+            // if (e.getField("AUTHOR")) {body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
             if (e.getField("TITLE")) {body.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)};
             if (e.getField("NUMBER")) {body.push(`${normalizeFieldValue(e.getField("NUMBER"))}`)};
             if (e.getField("INSTITUTION")) {body.push(`${normalizeFieldValue(e.getField("INSTITUTION"))}`)};
@@ -210,7 +210,7 @@ function convertBibliographyEntry(key, e) {
             if (e.getField("URL")) {suffix.push(`[Online]. Available: ${normalizeFieldValue(e.getField("URL"))}`)};
             break;
         case 'misc':
-            if (e.getField("AUTHOR")) {console.log(getAuthors(normalizeFieldValue((e.getField("AUTHOR")))));body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
+            if (e.getField("AUTHOR")) {body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
             if (e.getField("TITLE")) {body.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)};
             if (e.getField("HOWPUBLISHED")) {body.push(`${normalizeFieldValue(e.getField("HOWPUBLISHED"))}`)};
             if (e.getField("MONTH") && e.getField("YEAR")) {body.push(`${normalizeFieldValue(e.getField("MONTH"))} ${normalizeFieldValue(e.getField("YEAR"))}`)}
