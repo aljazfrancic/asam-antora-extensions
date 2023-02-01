@@ -547,7 +547,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
             case "code":
                 result = lineBreakLimitBreached ? null : resultNextCaption;
                 const codeMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("code-")))
-                let codeIndex = Array.from(codeMap.keys()).indexOf(anchor)
+                let codeIndex = Array.from(codeMap.keys()).indexOf(anchor) + 1
                 if (result) {
                     title = result[1];
                     prefix = codeCaption.length > 0 ? codeCaption + ' ' + codeIndex : null;

@@ -82,7 +82,6 @@ function generateConsistentNumbersBasedOnNavigation(catalog, pages, componentAtt
             //workaround!!! TODO: replace
             //
             indices.exampleIndex = 0
-            indices.codeIndex = 0
             //-------------
             // Check if the line contains a role or the sectnums attribute
             //-------------

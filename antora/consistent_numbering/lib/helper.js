@@ -238,7 +238,7 @@ function getIncludedPagesContentForExtensionFeatures( fullCatalog, catalog, page
     numberOfImages = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("fig-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
     numberOfTables = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("tab-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
     numberOfCodes = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("code-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "" && ContentAnalyzer.isListingBlock(v.source, k))).length
-    numberOfExamples = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("code-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "" && ContentAnalyzer.isExampleBlock(v.source, k))).length
+    numberOfExamples = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("exa-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "" && ContentAnalyzer.isExampleBlock(v.source, k))).length
 
     return [numberOfLevelTwoSections, numberOfImages, numberOfTables, numberOfCodes, numberOfExamples]
 }
