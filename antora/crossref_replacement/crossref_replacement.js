@@ -38,7 +38,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
         const ignoreLines = [...content.matchAll(reIgnoreLine)]
         references.forEach(ref => {
             let debug = false
-            if(ref[1] === "code-dd577de0-dfab-4044-bf67-1ecce6c35597") {console.log("code-dd577de0-dfab-4044-bf67-1ecce6c35597"); debug = true}
+            // if(ref[1] === "code-dd577de0-dfab-4044-bf67-1ecce6c35597") {console.log("code-dd577de0-dfab-4044-bf67-1ecce6c35597"); debug = true}
             const indexOfPreviousLineBreak = ref.input.slice(0,ref.index).lastIndexOf("\n") + 1
             if (!ignoreLines.filter(x => x[1] === ref[0] || x[2] === ref[0] ).map(x => x.index).includes(indexOfPreviousLineBreak) && exceptions.filter(x => x.index < ref.index).length % 2 != 1 && anchorMap.get(ref[1])) {
                 const val = anchorMap.get(ref[1])
