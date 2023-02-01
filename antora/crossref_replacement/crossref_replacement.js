@@ -22,8 +22,10 @@ const ContentAnalyzer = require("../../core/content_analyzer.js")
  */
 function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorMap, pages, alternateXrefStyle=null ) {
     if (anchorMap.size === 0) {return pages}
-    const re = /<<([^>,]+)(,\s*([^>]+))?>>/g
+    const re = /<<([^>,]+)(,\s*([^>]+))?>>/gm
     const reAlt = /xref:{1,2}#([^\[]+)\[(([^\]]*))\]/gm
+    const reExceptions = /^-{4}$|^={4}$|^\/{4}$|^\+{4}$|^\.{4}$|^_{4}$/gm
+    const reIgnoreLine = /^.*\/{2}.*(<<[^>]+>>)|^.*`[^`\n]*(<<[^>]+>>)[^`\n]*`/gm
     pages.forEach(page => {
         let content = page.contents.toString()
         let references = [...content.matchAll(re)]
@@ -32,10 +34,13 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
         else {
             if (referencesAlt.length > 0) {references = references + referencesAlt}
         }
+        const exceptions = [...content.matchAll(reExceptions)]
+        const ignoreLines = [...content.matchAll(reIgnoreLine)]
         references.forEach(ref => {
             let debug = false
-            // if(ref[1] === "top-normative_and_non_normative_statements") {console.log("top-normative_and_non_normative_statements"); debug = true}
-            if (anchorMap.get(ref[1])) {
+            if(ref[1] === "code-dd577de0-dfab-4044-bf67-1ecce6c35597") {console.log("code-dd577de0-dfab-4044-bf67-1ecce6c35597"); debug = true}
+            const indexOfPreviousLineBreak = ref.input.slice(0,ref.index).lastIndexOf("\n") + 1
+            if (!ignoreLines.filter(x => x[1] === ref[0] || x[2] === ref[0] ).map(x => x.index).includes(indexOfPreviousLineBreak) && exceptions.filter(x => x.index < ref.index).length % 2 != 1 && anchorMap.get(ref[1])) {
                 const val = anchorMap.get(ref[1])
                 let referencePage
                 if (val.usedIn && val.usedIn.length > 1) {
@@ -58,7 +63,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                     const anchorLink = ref[1]
                     const replacementXref = "xref:"+referencePage.src.version+"@"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+anchorLink+"["+altText+"]"
                     content = content.replace(ref[0],replacementXref)
-                    // if (debug) {console.log(replacementXref); console.log(content); throw "WAIT WAT=?"}
+                    // if (debug) {throw "WAIT WAT=?"}
                 }
             }
         })
