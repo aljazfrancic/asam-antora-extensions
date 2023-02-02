@@ -53,9 +53,12 @@ function addXrefStyleToSectionAndPageXrefs (catalog, componentAttributes, anchor
 function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, style, appendixCaption, inheritedAttributes = {}) {
     const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?([^\]]*)\]/gm
     const reIncorrectXref = /xref:([^\[]*)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?(.*)\]/gm
+    const reExceptions = /(^-{4}) *|(^={4}) *|(^\/{4}) *|(^\+{4}) *|(^\.{4}) *|(^_{4}) */gm
+    // const reIgnoreLine = /^.*\/{2}.*(xref:[^#\[]+)#.*|^.*`[^`\n]*(xref:[^#\[]+)#[^`\n]*`/gm
     const validStyles = ["full","short","basic"]
-    const debugName = "gustav"
-    let debug = false
+    const debugName = "qweuipoqwueiprüü"
+    let skip = Array(6).fill(false)
+    let debug =false
     if (!file.contents) {
         return
     }
@@ -72,20 +75,32 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
             break;
     }
     if (reftext) {ContentManipulator.updateAttributeWithValueOnPage(file, "reftext", reftext)}
-    let content = file.contents.toString().split("\n")
-    for (let line of content) {
+    const content = file.contents.toString().split("\n")
+    if (debug) {console.log(content.length)}
+    let contentUpdated = content
+    for (const [index,line] of content.entries()) { 
+        if (debug) {console.log(index,line)}
+        const wasTrue = skip.includes(true)
+        const exceptionFound = line.match(reExceptions)
+        if (exceptionFound) {
+            if (exceptionFound[0] === "----") {skip[0] = !skip[0]}
+            else if (exceptionFound[0] === "====") {skip[1] = !skip[1]}
+            else if (exceptionFound[0] === "////") {skip[2] = !skip[2]}
+            else if (exceptionFound[0] === "++++") {skip[3] = !skip[3]}
+            else if (exceptionFound[0] === "....") {skip[4] = !skip[4]}
+            else if (exceptionFound[0] === "____") {skip[5] = !skip[5]}
+        }
+        if (skip.includes(true)) {continue}
         if(line.trim().startsWith("//")) {continue}
-        let index = content.indexOf(line)
         ContentAnalyzer.updatePageAttributes(inheritedAttributes, line)
         let newLine = ContentAnalyzer.replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
-        // if (debugName && newLine.includes(debugName)){debug = true; console.log(newLine); throw "hello"}
         re.lastIndex = 0
         let match
         if (!newLine.match(re) && newLine.match(reIncorrectXref)) {console.warn("incomplete xref link found:", newLine.match(reIncorrectXref)[0])}
-        if (debugName && newLine.includes(debugName)){debug = true; console.log(newLine.match(re))}
+        if (debugName && newLine.includes(debugName)){debug = true}
         else(debug = false)
         while ((match = re.exec(newLine)) !== null) {
-            // if (debug){console.log(match);throw new Error ("test")}
+            // if (debug && newLine.includes(debugName)){console.log(match);console.log(contentUpdated[index-1]);console.log(skip);throw new Error ("test")}
             let anchorSource
             let xrefLabel
             if (match.index === re.lastIndex) {
@@ -137,13 +152,13 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
                     xrefLabel = match[5] ? xrefLabel+", " : xrefLabel
                     newLine = newLine.slice(0,start) + `${xrefLabel}` + newLine.slice(start)
                 }
-                content[index] = newLine
+                contentUpdated[index] = newLine
             }
             else if (match[5]) {}
             else {
                 const start = newLine.indexOf("[",match.index) +1
                 newLine = newLine.slice(0,start) + `xrefstyle=${style}` + newLine.slice(start)
-                content[index] = newLine
+                contentUpdated[index] = newLine
             }
         }
         let targetFile = ContentAnalyzer.checkForIncludedFileFromLine(catalog, file, newLine)
@@ -151,7 +166,7 @@ function applyXrefStyle (catalog, componentAttributes, anchorPageMap, file, styl
             applyXrefStyle(catalog, componentAttributes, anchorPageMap, targetFile, style, appendixCaption, inheritedAttributes)
         }
     }
-    file.contents = Buffer.from(content.join("\n"))
+    file.contents = Buffer.from(contentUpdated.join("\n"))
 }
 
 module.exports = {

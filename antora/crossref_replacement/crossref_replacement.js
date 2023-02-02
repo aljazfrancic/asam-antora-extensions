@@ -23,24 +23,22 @@ const ContentAnalyzer = require("../../core/content_analyzer.js")
 function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorMap, pages, alternateXrefStyle=null ) {
     if (anchorMap.size === 0) {return pages}
     const re = /<<([^>,]+)(,\s*([^>]+))?>>/gm
-    const reAlt = /xref:{1,2}#([^\[]+)\[(([^\]]*))\]/gm
-    const reExceptions = /^-{4}$|^={4}$|^\/{4}$|^\+{4}$|^\.{4}$|^_{4}$/gm
-    const reIgnoreLine = /^.*\/{2}.*(<<[^>]+>>)|^.*`[^`\n]*(<<[^>]+>>)[^`\n]*`/gm
+    const reAlt = /xref:([^#\[]+)#([^\[]+)\[(([^\]]*))\]/gm
+    const reExceptions = /^-{4} *$|^={4} *$|^\/{4} *$|^\+{4} *$|^\.{4} *$|^_{4} *$/gm
+    const reIgnoreLine = /^.*\/{2}.*(<<[^>]+>>)|^.*`[^`\n]*(<<[^>]+>>)[^`\n]*`|^.*\/{2}.*(xref:[^#\[]+)#.*|^.*`[^`\n]*(xref:[^#\[]+)#[^`\n]*`/gm
     pages.forEach(page => {
         let content = page.contents.toString()
         let references = [...content.matchAll(re)]
         const referencesAlt = [...content.matchAll(reAlt)]
         if (references.length < 1 ) {references = referencesAlt}
-        else {
-            if (referencesAlt.length > 0) {references = references + referencesAlt}
-        }
+        else if (referencesAlt.length > 0) {references = references.concat(referencesAlt)}
         const exceptions = [...content.matchAll(reExceptions)]
         const ignoreLines = [...content.matchAll(reIgnoreLine)]
         references.forEach(ref => {
             let debug = false
-            // if(ref[1] === "code-dd577de0-dfab-4044-bf67-1ecce6c35597") {console.log("code-dd577de0-dfab-4044-bf67-1ecce6c35597"); debug = true}
+            // if(ref[1] === "sec-ASM-88") {console.log("sec-ASM-88"); debug = true}
             const indexOfPreviousLineBreak = ref.input.slice(0,ref.index).lastIndexOf("\n") + 1
-            if (!ignoreLines.filter(x => x[1] === ref[0] || x[2] === ref[0] ).map(x => x.index).includes(indexOfPreviousLineBreak) && exceptions.filter(x => x.index < ref.index).length % 2 != 1 && anchorMap.get(ref[1])) {
+            if (!ignoreLines.filter(x => x[1] === ref[0] || x[2] === ref[0] || x[3] === ref[1] || x[4] === ref[1] ).map(x => x.index).includes(indexOfPreviousLineBreak) && exceptions.filter(x => x.index < ref.index).length % 2 === 0 && anchorMap.get(ref[1])) {
                 const val = anchorMap.get(ref[1])
                 let referencePage
                 if (val.usedIn && val.usedIn.length > 1) {
@@ -54,16 +52,15 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                     referencePage = val.source
                 }
 
-                // if (page !== referencePage )
-                // if ( ref[1].startsWith("top-") || ref[1].startsWith("sec-") ) {
                 if ( true ) {
                     const tempStyle = componentAttributes.xrefstyle ? componentAttributes.xrefstyle.replace("@","") : ""
                     let autoAltText = ref[1].startsWith("top-") ? "" : ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" ? "" : ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], tempStyle )
                     const altText = ref[3] ? ref[3] : autoAltText
                     const anchorLink = ref[1]
                     const replacementXref = "xref:"+referencePage.src.version+"@"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+anchorLink+"["+altText+"]"
-                    content = content.replace(ref[0],replacementXref)
-                    // if (debug) {throw "WAIT WAT=?"}
+                    const startIndex = content.indexOf(ref.input.slice(ref.index))
+                    content = content.slice(0,startIndex)+content.slice(startIndex).replace(ref[0],replacementXref)
+                    // if (debug) {console.log(ref.input.slice(0,ref.index));console.log(replacementXref);throw "WAIT WAT=?"}
                 }
             }
         })
