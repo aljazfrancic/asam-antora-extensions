@@ -70,7 +70,7 @@ function createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles
 function createSortedArrayFromMap(inputMap, mergedNavContents) {
     let newArray = []
     for (let entry of inputMap.keys()) {
-        if (inputMap.get(entry).usedIn) {
+        if (inputMap.get(entry).usedIn.length > 1) {
             for (let p of inputMap.get(entry).usedIn) {
                 if(p.src.family === "partial") {
                     continue;
@@ -92,7 +92,6 @@ function createSortedArrayFromMap(inputMap, mergedNavContents) {
         if (indexA === indexB) {
             indexA = parseInt(a.line)
             indexB = parseInt(b.line)
-            // if (a[0] === "tab-trafficparticipant-entity-movable_object-basic" || b[0] === "tab-trafficparticipant-entity-movable_object-basic") {console.log(indexA, indexB)}
         }
         return indexA - indexB
     })

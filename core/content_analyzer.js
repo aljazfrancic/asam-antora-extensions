@@ -68,9 +68,9 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
     let m;
     let i = 0
     let debug = false
-    if (debug) {console.log(line)}
+    // if (debug) {console.log(line)}
     while ((m = reAttributeApplied.exec(newLine)) !== null) {
-        if (debug) {console.log(m)}
+        // if (debug) {console.log(m)}
         if (m[1]) { break; }
         if (m.index === reAttributeApplied.lastIndex && i >= 20) {
             reAttributeApplied.lastIndex++;
@@ -241,8 +241,6 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
         }
     }
     lineOffset.line += currentLineIndex
-
-    // if (thisFile.src.abspath.includes("pages/bibliography")) {console.log(resultMap); throw "break"}
     return resultMap
 }
 
@@ -257,31 +255,6 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
 function updateAnchorMapEntry(inputMap, key, addedValue, line, navFiles) {
     let entry = inputMap.get(key)
     if (entry.usedIn) {
-        // const verbose = key == "top-EAID_E5B4C9F4_52A5_4673_9790_6A042A3E3CB0" ? true : false
-        const mergedNavFileContent = navFiles.map(a => a.contents.toString()).join("\n")
-        const newUsedInIndex = mergedNavFileContent.indexOf(addedValue.src.relative)
-        // if (verbose){console.log(newUsedInIndex)}
-        if (newUsedInIndex === -1) {
-            entry.usedIn.push(addedValue)
-            entry.usedInLine.push(line)
-        }
-        else {
-            for (let index in entry.usedIn) {
-                const currentUsedInIndex = entry.usedIn[index]
-                // if (verbose){console.log(index, currentUsedInIndex, anchorMap.get(key).usedIn[index])}
-                if (currentUsedInIndex === -1 || currentUsedInIndex > newUsedInIndex) {
-                    entry.usedIn.splice(index,0,addedValue)
-                    entry.usedInLine.splice(index,0,line)
-                    break;
-                }
-                if (index === entry.usedIn.length -1) {
-                    entry.usedIn.push(addedValue)
-                    entry.usedInLine.push(line)
-                    break;
-                }
-
-            }
-        }
         entry.usedIn.push(addedValue)
         entry.usedInLine.push(line)
     }
@@ -289,7 +262,7 @@ function updateAnchorMapEntry(inputMap, key, addedValue, line, navFiles) {
         entry.usedIn = [addedValue]
         entry.usedInLine = [line]
     }
-    entry.line = line
+    // entry.line = line
 }
 
 /**
@@ -435,10 +408,8 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
         contentSplit[index] = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
     }
     content = contentSplit.join("\n")
-    // if(anchor === "ocr") {console.log(content); console.log(inheritedAttributes); throw ""}
 
     const resultAnchorType = anchor.match(reAnchorType)
-    // const indexOfAnchor = content.indexOf(anchor)
     if(!content.match(reAnchor) && content.match(reAltAnchor)) {console.warn(`${anchor} could not be found in file ${page.src.abspath}, but found similar match instead! Please check file`); return null}
     else if (!content.match(reAnchor)) {console.warn(`${anchor} could not be found in file ${page.src.abspath}`); return null}
     const indexOfAnchor = content.match(reAnchor).index | null
@@ -523,11 +494,12 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 }
                 break;
         }
+        const entryIndex = anchorPageMap.get(anchor).index
+        if (anchorPageMap.get(anchor) && !entryIndex) return "No Index"
         switch (resultAnchorType[1]) {
             case "fig":
                 result = lineBreakLimitBreached ? null : resultNextCaption;
-                const figureMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("fig-")))
-                let figureIndex = Array.from(figureMap.keys()).indexOf(anchor) + 1
+                const figureIndex = getAnchorPageMapEntryValue(anchorPageMap, entryIndex, "fig-")
                 if (result) {
                     title = result[1];
                     prefix = figureCaption + ' ' + figureIndex;
@@ -536,8 +508,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 break;
             case "tab":
                 result = lineBreakLimitBreached ? null : resultNextCaption;
-                const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("tab-")))
-                let tableIndex = Array.from(tableMap.keys()).indexOf(anchor) + 1
+                const tableIndex = getAnchorPageMapEntryValue(anchorPageMap, entryIndex, "tab-")
                 if (result) {
                     title = result[1];
                     prefix = tableCaption + ' ' + tableIndex;
@@ -546,8 +517,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 break;
             case "code":
                 result = lineBreakLimitBreached ? null : resultNextCaption;
-                const codeMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("code-")))
-                let codeIndex = Array.from(codeMap.keys()).indexOf(anchor) + 1
+                const codeIndex = getAnchorPageMapEntryValue(anchorPageMap, entryIndex, "code-")
                 if (result) {
                     title = result[1];
                     prefix = codeCaption.length > 0 ? codeCaption + ' ' + codeIndex : null;
@@ -585,6 +555,8 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 prefix = relativeSectionNumber.length > 1 && pageNumber !== "" ? prefix + relativeSectionNumber.join(".") : prefix;
                 title = result[2].trim();
                 break;
+            case "bib":
+                break;
             default:
                 if (!nonStandardAnchors.includes(anchor)) {
                     console.warn("non-standard anchor type detected: ", anchor);
@@ -618,6 +590,33 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     }
     returnValue = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, returnValue)
     return (returnValue)
+}
+
+/**
+ * Helper function to determine the correct index from the anchorPageMap for an anchor
+ * @param {*} anchorPageMap 
+ * @param {*} entryIndex 
+ * @param {*} filterType 
+ * @returns {Integer} Determiend lenth.
+ */
+function getAnchorPageMapEntryValue(anchorPageMap, entryIndex, filterType) {
+    let newFilteredArray = []
+    const filteredArray = [...anchorPageMap].filter(([k,v]) => {
+        if (!k.startsWith(filterType) || v.index[0] > entryIndex[0] || v.index[0] === entryIndex[0] && v.index[1] > entryIndex[1]) return false
+        return true
+    })
+    filteredArray.forEach(entry => {
+        for (const [i,e] of entry[1].usedIn.entries()) {
+            newFilteredArray.push([entry[0],e,entry[1].allIndices[i]])
+        }
+    })
+    newFilteredArray = newFilteredArray.filter(x => {
+        if (x[2][0] === -1 || x[2][0] > entryIndex[0]) return false
+        if (x[2][0] === entryIndex[0] && x[2][1] > entryIndex[1]) return false
+        return true
+    })
+
+    return newFilteredArray.length
 }
 
 /**
@@ -815,6 +814,7 @@ function getAnchorPageMapForPages(catalog, pages, navFiles, componentAttributes)
                 break;
             }
         }
+        if (!hasPriority) {continue;}
         let updateMap = getAnchorsFromPageOrPartial(catalog, page, componentAttributes, navFiles)
         if (updateMap && updateMap.size > 0) {
             if (hasPriority) {
@@ -886,44 +886,19 @@ function mergeAnchorMapEntries(anchorMap, updateMap, navFiles, overridePage = nu
             }
         }
         if (anchorMap.get(key)) {
-            // anchorMap.get(key).line = anchorMap.get(key).line + updateMap.get(key).line
             if (anchorMap.get(key).usedIn && updateMap.get(key).usedIn) {
-                 updateMap.get(key).usedIn.forEach(function (entry, index) {
-                    if (anchorMap.get(key).usedIn.indexOf(entry) === -1) {
-                        const newUsedInIndex = mergedNavFileContent.indexOf(entry.src.relative)
-                        // if (verbose){console.log(newUsedInIndex, entry.src.relative);console.log(updateMap.get(key),anchorMap.get(key))}
-                        if (newUsedInIndex === -1) {
-                            anchorMap.get(key).usedIn = anchorMap.get(key).usedIn.concat([entry])
-                            anchorMap.get(key).usedInLine = anchorMap.get(key).usedInLine.concat([updateMap.get(key).usedInLine[index]])
-                        }
-                        else {
-                            for (let index in anchorMap.get(key).usedIn) {
-                                const currentUsedInIndex = mergedNavFileContent.indexOf(anchorMap.get(key).usedIn[index])
-                                // if (verbose){console.log(index, currentUsedInIndex, anchorMap.get(key).usedIn[index])}
-                                if (currentUsedInIndex === -1 || currentUsedInIndex > newUsedInIndex) {
-                                    anchorMap.get(key).usedIn.splice(index,0,entry)
-                                    anchorMap.get(key).usedInLine.splice(index,0,updateMap.get(key).usedInLine[index])
-                                    break;
-                                }
-                                if (index === anchorMap.get(key).usedIn.length -1) {
-                                    anchorMap.get(key).usedIn = anchorMap.get(key).usedIn.concat([entry])
-                                    anchorMap.get(key).usedInLine = anchorMap.get(key).usedInLine.concat([updateMap.get(key).usedInLine[index]])
-                                    break;
-                                }
-
-                            }
-                        }
-                    }
-                 })
-
-            }
-            else if (anchorMap.get(key).usedIn) {
-                anchorMap.get(key).usedIn = anchorMap.get(key).usedIn.concat([updateMap.get(key).source])
-                anchorMap.get(key).usedInLine = updateMap.get(key).usedInLine ? anchorMap.get(key).usedInLine.concat(updateMap.get(key).usedInLine) : anchorMap.get(key).usedInLine.concat([updateMap.get(key).line])
+                anchorMap.get(key).usedIn = anchorMap.get(key).usedIn.concat(updateMap.get(key).usedIn)
+                anchorMap.get(key).usedInLine = anchorMap.get(key).usedInLine.concat(updateMap.get(key).usedInLine)
+            } else if (anchorMap.get(key).usedIn) {
+                anchorMap.get(key).usedIn.push(updateMap.get(key).source)
+                anchorMap.get(key).usedInLine.push(updateMap.get(key).line)
+            } else if (updateMap.get(key).usedIn) {
+                anchorMap.get(key).usedIn = [anchorMap.get(key).source].concat(updateMap.get(key).usedIn)
+                anchorMap.get(key).usedInLine = [anchorMap.get(key).line].concat(updateMap.get(key).usedInLine)
             }
             else {
-                anchorMap.get(key).usedIn = updateMap.get(key).usedIn ? updateMap.get(key).usedIn : [updateMap.get(key).source]
-                anchorMap.get(key).usedInLine = updateMap.get(key).usedInLine ? updateMap.get(key).usedInLine : [updateMap.get(key).line]
+                anchorMap.get(key).usedIn = [anchorMap.get(key).source].concat([updateMap.get(key).source])
+                anchorMap.get(key).usedInLine = [anchorMap.get(key).line].concat([updateMap.get(key).line])
             }
         }
         else {
@@ -957,21 +932,61 @@ function createdSortedNavFileContent(mapInput) {
  * @returns {Object} Object containing the determined maps: keywordPageMap, rolePageMap, anchorPageMap.
  */
 function generateMapsForPages(mapInput) {
-    let keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords, mapInput.pages)
+    const keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords, mapInput.pages)
     const rolePageMap = getRolePageMapForPages(mapInput.pages)
     let anchorPageMap = getAnchorPageMapForPages(mapInput.contentCatalog, mapInput.pages, mapInput.navFiles, mapInput.componentAttributes)
-    let mergedNavContents = createdSortedNavFileContent(mapInput)
-    anchorPageMap = new Map(([...anchorPageMap]).sort((a, b) => {
-        let indexA = mergedNavContents.indexOf(a[1].usedIn ? a[1].usedIn.at(-1).src.relative : a[1].source.src.relative)
-        let indexB = mergedNavContents.indexOf(b[1].usedIn ? b[1].usedIn.at(-1).src.relative : b[1].source.src.relative)
-        // if (a[0] === "tab-trafficparticipant-entity-movable_object-basic" || b[0] === "tab-trafficparticipant-entity-movable_object-basic") {console.log(a[0],b[0]); console.log(indexA, indexB)}
-        if (indexA === indexB) {
-            indexA = parseInt(a[1].line)
-            indexB = parseInt(b[1].line)
-            // if (a[0] === "tab-trafficparticipant-entity-movable_object-basic" || b[0] === "tab-trafficparticipant-entity-movable_object-basic") {console.log(indexA, indexB)}
+    const mergedNavContents = createdSortedNavFileContent(mapInput)
+    
+    anchorPageMap.forEach((value, key) => {
+        const debug = key.includes("EAID_898D9CC9_ADA9_4992_9AB8_C13AE98C756A")
+        value.index = [mergedNavContents.indexOf(value.source.src.relative), value.line]
+        value.allIndices = [[mergedNavContents.indexOf(value.source.src.relative), value.line]]
+        if (value.usedIn) {
+            for (const [index, element] of value.usedIn.entries()) {
+                const navIndex = mergedNavContents.indexOf(element.src.relative)
+                value.allIndices.push([navIndex, value.usedInLine[index]])
+                if (value.index[0] === -1 || (navIndex > -1 && navIndex < value.index[0])) {
+                    value.index = [navIndex, value.usedInLine[index]]
+                } else if (navIndex === value.index[0] && value.usedInLine[index] < value.index[1]) {
+                    value.index[1] = value.usedInLine[index]
+                }
+            }
+            value.usedIn = [value.source].concat(value.usedIn)
+            let sortedEntries = value.usedIn.map((v, i) => {return [v, value.allIndices[i]]})
+            sortedEntries.sort((a, b) => {                
+                if (a[1][0] === b[1][0]) {return a[1][1] - b[1][1]}
+                if (a[1][0] === -1) {return 1}
+                if (b[1][0] === -1) {return -1}
+                return a[1][0] - b[1][0]
+            })
+            value.usedIn = sortedEntries.map(v => v[0])
+            value.allIndices = sortedEntries.map(v => v[1])
         }
-        return indexA - indexB
+        else {
+            value.usedIn = [value.source]
+        }
+    })
+
+    anchorPageMap = new Map(([...anchorPageMap]).sort((a, b) => {
+        const indexA = a[1].index[0]
+        const indexB = b[1].index[0]
+        if (indexA === -1 && indexB === -1) {
+            return 0
+        }
+        if (indexA === -1) {
+            return 1
+        }
+        if (indexB === -1) {
+            return -1
+        }
+        if (indexA === indexB) {
+            return Math.sign(a[1].index[1] - b[1].index[1])
+        }
+        return Math.sign(indexA - indexB)
     }))
+
+    // Filter the map entries with an index of -1
+    anchorPageMap = new Map(([...anchorPageMap]).filter(x => x[1].index[0] !== -1))
     return { keywordPageMap, rolePageMap, anchorPageMap }
 }
 

@@ -60,7 +60,6 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                     const replacementXref = "xref:"+referencePage.src.version+"@"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+anchorLink+"["+altText+"]"
                     const startIndex = content.indexOf(ref.input.slice(ref.index))
                     content = content.slice(0,startIndex)+content.slice(startIndex).replace(ref[0],replacementXref)
-                    // if (debug) {console.log(ref.input.slice(0,ref.index));console.log(replacementXref);throw "WAIT WAT=?"}
                 }
             }
         })
