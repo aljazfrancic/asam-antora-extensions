@@ -537,7 +537,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
             case "tab":
                 result = lineBreakLimitBreached ? null : resultNextCaption;
                 const tableMap = new Map([...anchorPageMap].filter(([k,v]) => k.startsWith("tab-")))
-                let tableIndex = Array.from(tableMap.keys()).indexOf(anchor)
+                let tableIndex = Array.from(tableMap.keys()).indexOf(anchor) + 1
                 if (result) {
                     title = result[1];
                     prefix = tableCaption + ' ' + tableIndex;
