@@ -25,7 +25,9 @@ function applyBibliography(mapInput, bibliographyFiles) {
     const reBibliography = /^\s*bibliography::\[\]/gm
 
     // Find relevant bibliography file and bibliography page
-    const antoraBibliography = mapInput.contentCatalog.find(x => x.contents.toString().replaceAll(reException,``).match(reBibliography))
+    const antoraBibliography = mapInput.pages.find(x => x.contents.toString().replaceAll(reException,``).match(reBibliography))
+    console.log(mapInput.version)
+    console.log(antoraBibliography)
     const bibFile = bibliographyFiles.find(x => x.component === mapInput.component && x.version === mapInput.version)
     if (!bibFile) {throw "No .bib file found!"}
     if (!antoraBibliography) {throw "Found .bib file but no page with 'bibliography::[]'!"}
@@ -82,27 +84,32 @@ function getBibliographyFiles(contentAggregate) {
  * @param {String} pathToId - The path to the identified bibliography page.
  * @returns {Integer} - The current index after processing the file.
  */
-function replaceCitationsWithLinks(f, reException, mapInput, bibEntries, currentIndex, pathToId) {
+function replaceCitationsWithLinks(f, reException, mapInput, bibEntries, currentIndex, pathToId, pageAttributes = {}) {
     const reReference = /(?<!\/{2} .*)cite:\[([^\]]+)\]/g
     let fileContentReplaced = f.contents.toString().replaceAll(reException,``).split("\n")
     let fileContent = f.contents.toString()
     for (let line of fileContentReplaced) {
         // Check for included file and apply function to that if found. Update the currentIndex accordingly
+        ContentAnalyzer.updatePageAttributes(pageAttributes,line)
+        line = ContentAnalyzer.replaceAllAttributesInLine(mapInput.componentAttributes, pageAttributes, line)
         const includedFile = ContentAnalyzer.checkForIncludedFileFromLine(mapInput.catalog,f,line)
         if (includedFile) {
-            currentIndex = replaceCitationsWithLinks(includedFile, reException, mapInput, bibEntries, currentIndex, pathToId)
+            currentIndex = replaceCitationsWithLinks(includedFile, reException, mapInput, bibEntries, currentIndex, pathToId, pageAttributes)
         }
         
         let result = line;
         const matches = [...line.matchAll(reReference)]
         for (let m of matches){
-            if (m[1] && bibEntries.getEntry(m[1])) {
+            if (m[1] && bibEntries.getEntry(m[1].toLowerCase())) {
                 if (!bibEntries.entries$[m[1].toLowerCase()].index) {
                     bibEntries.entries$[m[1].toLowerCase()].index = currentIndex
                     currentIndex++
                 }
                 const subst = `[xref:${pathToId}#bib-${m[1].toLowerCase()}[${bibEntries.entries$[m[1].toLowerCase()].index}]]`;
                 result = result.replace(m[0], subst);
+            }
+            else if (m[1]) {
+                console.log("Could not find bibliography entry for",m[1])
             }
         }
         fileContent = fileContent.replace(line,result)
@@ -164,6 +171,23 @@ function convertBibliographyEntry(key, e) {
             // if (e.getField("NOTE")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
             if (e.getField("URL")) {suffix.push(`Available: ${normalizeFieldValue(e.getField("URL"))}`)};
             break;
+        case 'inbook':
+            if (e.getField("AUTHOR")) {body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
+            if (e.getField("CHAPTER") && e.getField("TITLE")) {body.push(`"${normalizeFieldValue(e.getField("CHAPTER"))}" in __${normalizeFieldValue(e.getField("TITLE"))}__`)}
+            else if (e.getField("TITLE")) {body.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)};
+            if (e.getField("VOLUME")) {body.push(`vol. ${normalizeFieldValue(e.getField("VOLUME"))}`)};
+            if (e.getField("NUMBER")) {body.push(`no. ${normalizeFieldValue(e.getField("NUMBER"))}`)};
+            if (e.getField("SERIES")) {body.push(`${normalizeFieldValue(e.getField("SERIES"))}`)};
+            if (e.getField("EDITION")) {body.push(`${normalizeFieldValue(e.getField("EDITION"))} ed.`)};
+            if (e.getField("ADDRESS")) {suffix.push(`${normalizeFieldValue(e.getField("ADDRESS"))}:`)};
+            if (e.getField("PUBLISHER")) {suffix.push(`${normalizeFieldValue(e.getField("PUBLISHER"))}`)};
+            if (e.getField("MONTH") && e.getField("YEAR")) {suffix.push(`${normalizeFieldValue(e.getField("MONTH"))} ${normalizeFieldValue(e.getField("YEAR"))}`)}
+            else if (e.getField("YEAR")) {suffix.push(`${normalizeFieldValue(e.getField("YEAR"))}`)};
+            if (e.getField("PAGES")) {suffix.push(`pp. ${normalizeFieldValue(e.getField("PAGES"))}`)};
+            // if (e.getField("NOTE")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
+            // if (e.getField("TYPE")) {suffix.push(`${normalizeFieldValue(e.getField("TYPE"))}`)};
+            if (e.getField("URL")) {suffix.push(`Available: ${normalizeFieldValue(e.getField("URL"))}`)};
+            break;
         case 'proceedings':
             if (e.getField("EDITOR")) {body.push(`${getEditors(normalizeFieldValue(e.getField("EDITOR")))}`)};
             if (e.getField("TITLE") && e.getField("BOOKTITLE")) {body.push(`"${normalizeFieldValue(e.getField("TITLE"))}" in __${normalizeFieldValue(e.getField("BOOKTITLE"))}__`)}
@@ -180,22 +204,25 @@ function convertBibliographyEntry(key, e) {
             if (e.getField("PAGES")) {suffix.push(`pp. ${normalizeFieldValue(e.getField("PAGES"))}`)};
             // if (e.getField("NOTE")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
             if (e.getField("ANNOTE")) {suffix.push(`${normalizeFieldValue(e.getField("ANNOTE"))}`)};
+            if (e.getField("URL")) {suffix.push(`Available: ${normalizeFieldValue(e.getField("URL"))}`)};
             break;
-        case 'inbook':
+        case 'inproceedings':
             if (e.getField("AUTHOR")) {body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
-            if (e.getField("CHAPTER") && e.getField("TITLE")) {body.push(`"${normalizeFieldValue(e.getField("CHAPTER"))}" in __${normalizeFieldValue(e.getField("TITLE"))}__`)}
-            else if (e.getField("TITLE")) {body.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)};
+            if (e.getField("TITLE") && e.getField("BOOKTITLE")) {body.push(`"${normalizeFieldValue(e.getField("TITLE"))}" in __${normalizeFieldValue(e.getField("BOOKTITLE"))}__`)}
+            else if (e.getField("TITLE")) {body.push(`__${normalizeFieldValue(e.getField("TITLE"))}__`)}
+            else if (e.getField("BOOKTITLE")) {body.push(`__${normalizeFieldValue(e.getField("BOOKTITLE"))}__`)};
             if (e.getField("VOLUME")) {body.push(`vol. ${normalizeFieldValue(e.getField("VOLUME"))}`)};
             if (e.getField("NUMBER")) {body.push(`no. ${normalizeFieldValue(e.getField("NUMBER"))}`)};
             if (e.getField("SERIES")) {body.push(`${normalizeFieldValue(e.getField("SERIES"))}`)};
-            if (e.getField("EDITION")) {body.push(`${normalizeFieldValue(e.getField("EDITION"))} ed.`)};
+            if (e.getField("EDITOR")) {body.push(`${getEditors(normalizeFieldValue(e.getField("EDITOR")))}`)};
             if (e.getField("ADDRESS")) {suffix.push(`${normalizeFieldValue(e.getField("ADDRESS"))}:`)};
             if (e.getField("PUBLISHER")) {suffix.push(`${normalizeFieldValue(e.getField("PUBLISHER"))}`)};
+            if (e.getField("ORGANIZATION")) {suffix.push(`${normalizeFieldValue(e.getField("ORGANIZATION"))}`)};
             if (e.getField("MONTH") && e.getField("YEAR")) {suffix.push(`${normalizeFieldValue(e.getField("MONTH"))} ${normalizeFieldValue(e.getField("YEAR"))}`)}
             else if (e.getField("YEAR")) {suffix.push(`${normalizeFieldValue(e.getField("YEAR"))}`)};
             if (e.getField("PAGES")) {suffix.push(`pp. ${normalizeFieldValue(e.getField("PAGES"))}`)};
             // if (e.getField("NOTE")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
-            // if (e.getField("TYPE")) {suffix.push(`${normalizeFieldValue(e.getField("TYPE"))}`)};
+            if (e.getField("ANNOTE")) {suffix.push(`${normalizeFieldValue(e.getField("ANNOTE"))}`)};
             if (e.getField("URL")) {suffix.push(`Available: ${normalizeFieldValue(e.getField("URL"))}`)};
             break;
         case 'techreport':
@@ -217,7 +244,20 @@ function convertBibliographyEntry(key, e) {
             else if (e.getField("YEAR")) {body.push(`${normalizeFieldValue(e.getField("YEAR"))}`)};
             // if (e.getField("NOTE")) {suffix.push(`${normalizeFieldValue(e.getField("NOTE"))}`)};
             // if (e.getField("ANNOTE")) {suffix.push(`${normalizeFieldValue(e.getField("ANNOTE"))}`)};
+            if (e.getField("URL")) {suffix.push(`[Online]. Available: ${normalizeFieldValue(e.getField("URL"))}`)};
             break;
+        case 'article':
+            if (e.getField("AUTHOR")) {body.push(`${getAuthors(normalizeFieldValue((e.getField("AUTHOR"))))}`)};
+            if (e.getField("TITLE")) {body.push(`"${normalizeFieldValue(e.getField("TITLE"))}"`)};
+            if (e.getField("JOURNAL")) {body.push(`__${normalizeFieldValue(e.getField("JOURNAL"))}__`)};
+            if (e.getField("VOLUME")) {body.push(`vol. ${normalizeFieldValue(e.getField("VOLUME"))}`)};
+            if (e.getField("NUMBER")) {body.push(`no. ${normalizeFieldValue(e.getField("NUMBER"))}`)};
+            if (e.getField("PAGES")) {suffix.push(`pp. ${normalizeFieldValue(e.getField("PAGES"))}`)};
+            if (e.getField("MONTH") && e.getField("YEAR")) {body.push(`${normalizeFieldValue(e.getField("MONTH"))} ${normalizeFieldValue(e.getField("YEAR"))}`)}
+            else if (e.getField("YEAR")) {body.push(`${normalizeFieldValue(e.getField("YEAR"))}`)};
+            if (e.getField("URL")) {suffix.push(`[Online]. Available: ${normalizeFieldValue(e.getField("URL"))}`)};
+            break;
+
     }
     if (suffix && suffix.length > 0) {
         body = body.join(", ").endsWith(".") ? `${entryIndex} ${body.join(", ")} ${suffix.join(", ")}.` : `${entryIndex} ${body.join(", ")}. ${suffix.join(", ")}.`
