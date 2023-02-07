@@ -26,8 +26,6 @@ function applyBibliography(mapInput, bibliographyFiles) {
 
     // Find relevant bibliography file and bibliography page
     const antoraBibliography = mapInput.pages.find(x => x.contents.toString().replaceAll(reException,``).match(reBibliography))
-    console.log(mapInput.version)
-    console.log(antoraBibliography)
     const bibFile = bibliographyFiles.find(x => x.component === mapInput.component && x.version === mapInput.version)
     if (!bibFile) {throw "No .bib file found!"}
     if (!antoraBibliography) {throw "Found .bib file but no page with 'bibliography::[]'!"}
@@ -91,12 +89,11 @@ function replaceCitationsWithLinks(f, reException, mapInput, bibEntries, current
     for (let line of fileContentReplaced) {
         // Check for included file and apply function to that if found. Update the currentIndex accordingly
         ContentAnalyzer.updatePageAttributes(pageAttributes,line)
-        line = ContentAnalyzer.replaceAllAttributesInLine(mapInput.componentAttributes, pageAttributes, line)
-        const includedFile = ContentAnalyzer.checkForIncludedFileFromLine(mapInput.catalog,f,line)
+        const lineWithoutAttributes = ContentAnalyzer.replaceAllAttributesInLine(mapInput.componentAttributes, pageAttributes, line)
+        const includedFile = ContentAnalyzer.checkForIncludedFileFromLine(mapInput.catalog,f,lineWithoutAttributes)
         if (includedFile) {
             currentIndex = replaceCitationsWithLinks(includedFile, reException, mapInput, bibEntries, currentIndex, pathToId, pageAttributes)
         }
-        
         let result = line;
         const matches = [...line.matchAll(reReference)]
         for (let m of matches){
