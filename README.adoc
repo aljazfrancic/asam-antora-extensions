@@ -84,6 +84,12 @@ a| * autonav: Automatic navigation file creation based on folder structure
 * pages: Creates a list of all pages in a given folder.
 May be configured to include also all pages in all subfolders, or start in a specific subfolder.
 
+|Creating zipped attachments
+|link:antora/attachments_generator/attachments_generator.js[attachments_generator.js]
+|None
+|yes
+a|Zips files and folders.
+
 |Support for the <<ASAM Bibliography>>
 |link:antora/bibliography/bibliography.js[bibliography.js]
 |None
