@@ -34,10 +34,10 @@ function addAttributeWithValueToPage( page, pageContent, indexOfTitle, attribute
 function updateAttributeWithValueOnPage( page, attribute, value) {
     let content = page.contents.toString().split("\n")
     let foundMatch = false
-    for (let line of content) {
+    for (let [index, line] of content.entries()) {
         let m
         if (m = line.match(new RegExp(`^\s*:${attribute}:(.*)`))) {
-            const index = content.indexOf(line)
+            // const index = content.indexOf(line)
             line = line.replace(m[1], ` ${value}`)
             content[index] = line
             page.contents = Buffer.from(content.join("\n"))

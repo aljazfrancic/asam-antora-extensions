@@ -77,11 +77,12 @@ module.exports.register = function ({ config }) {
                 //-------------
                 // Addon AsciiNav: Parse files and create navigation if attribute "antora_mapping" is used.
                 //-------------
-                console.log("Check if Asciidoctor mapping page needs to be converted to Antora navigation file...")
+                console.log("Check if Asciidoctor mapping page needs to be converted to Antora navigation file...\n"+"-".repeat(50))
                 AsciiNav.createAntoraNavigationFromIndex(pages, navFiles)
                 navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
                 let catalog =  contentCatalog.findBy({ component, version})
                 const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].versions.filter(x => x.version === version)[0].asciidoc.attributes
+                console.log("-".repeat(50)+"\n")
                 //-------------
                 // Analyze the pages and create maps for the addons.
                 //-------------
@@ -101,33 +102,38 @@ module.exports.register = function ({ config }) {
                 // Required setting: keywords: bibliography: true (site.yml); asamBibliography: 'path/to/file.bib' (antora.yml)
                 //-------------
                 if (parsedConfig.asamBibliography) {
-                    console.log("Creating bibliography and reference links...")
+                    console.log("Creating bibliography and reference links...\n"+"-".repeat(50))
                     Bibliography.applyBibliography(mapInput, bibliographyFiles)
+                    console.log("-".repeat(50)+"\n")
                 }
-                console.log("Generating content overview maps...")
+                console.log("Generating content overview maps...\n"+"-".repeat(50))
                 let { keywordPageMap, rolePageMap, anchorPageMap } = ContentAnalyzer.generateMapsForPages( mapInput )
+                console.log("-".repeat(50)+"\n")
                 //-------------
                 // Addon Keywords: Create initial keywords overview page.
                 // Required setting: keywords: create_overview: true
                 // Optional settings: keywords: path: ""; keywords: module: "ROOT"; keywords: filename: "0_used-keywords.adoc"
                 //-------------
                 if (parsedConfig.keywordOverviewPageRequested){
-                    console.log("Creating a keyword overview page...")
+                    console.log("Creating a keyword overview page...\n"+"-".repeat(50))
                     pages = Keywords.createKeywordsOverviewPage(parsedConfig.keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, parsedConfig.targetPath, parsedConfig.targetName, parsedConfig.targetModule, component, version)
                     keywordPageMap = ContentAnalyzer.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
+                    console.log("-".repeat(50)+"\n")
                 }
                 //-------------
                 // Addon Macros: Replace all custom macros. NOTE: This REQUIRES the keywords extension!
                 //-------------
-                console.log("Replacing custom macros...")
+                console.log("Replacing custom macros...\n"+"-".repeat(50))
                 pages = Macros.findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywordPageMap, rolePageMap, CON.macrosRegEx, CON.macrosHeadings, logger, component, version )
                 keywordPageMap = ContentAnalyzer.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
+                console.log("-".repeat(50)+"\n")
                 //-------------
                 // Addon Keywords: Create final keywords overview page.
                 //-------------
                 if (parsedConfig.keywordOverviewPageRequested){
-                    console.log("Updating the keyword overview page again...")
+                    console.log("Updating the keyword overview page again...\n"+"-".repeat(50))
                     pages = Keywords.createKeywordsOverviewPage(parsedConfig.keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, parsedConfig.targetPath, parsedConfig.targetName, parsedConfig.targetModule, component, version)
+                    console.log("-".repeat(50)+"\n")
                 }
                 //-------------
                 // Get updated nav files. This is important because one of the macros may have added an additional navigation file or changed an existing one.
@@ -137,9 +143,10 @@ module.exports.register = function ({ config }) {
                 // Addon Loft: Creates a List Of Figures and Tables
                 //-------------
                 if (parsedConfig.loft) {
-                    console.log("Creating list of figures and tables...")
+                    console.log("Creating list of figures and tables...\n"+"-".repeat(50))
                     catalog =  contentCatalog.findBy({ component, version})
                     Loft.createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles, catalog, component, version)
+                    console.log("-".repeat(50)+"\n")
                 }
                 //-------------
                 // Addon ConsistentNumbering: Generate and apply consistent numbers for sections, titles, and (if activated) figures and tables
@@ -147,9 +154,10 @@ module.exports.register = function ({ config }) {
                 // Optional setting: section_number_style: "iso"
                 //-------------
                 if (parsedConfig.numberedTitles) {
-                    console.log("Create sequential section numbers, titles, and captions...")
+                    console.log("Create sequential section numbers, titles, and captions...\n"+"-".repeat(50))
                     catalog =  contentCatalog.findBy({ component, version})
-                    ConsistentNumbering.applySectionAndTitleNumbers(mapInput.contentCatalog, pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component)
+                    ConsistentNumbering.applySectionAndTitleNumbers(mapInput, mapInput.contentCatalog, pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component)
+                    console.log("-".repeat(50)+"\n")
                 }
                 //-------------
                 // Addon CrossrefReplacement: Replace Asciidoctor local references ("<<ref>>") where the anchor is now located on a different page.
@@ -157,8 +165,9 @@ module.exports.register = function ({ config }) {
                 // Required setting: local_to_global_references: true
                 //-------------
                 if (anchorPageMap.size > 0 && parsedConfig.localToGlobalReferences) {
-                    console.log("Replace local references to global anchors with xref macro...")
+                    console.log("Replace local references to global anchors with xref macro...\n"+"-".repeat(50))
                     pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorPageMap, pages, parsedConfig.alternateXrefStyle )
+                    console.log("-".repeat(50)+"\n")
                 }
                 //-------------
                 // Addon CrossrefReplacement: Replace Asciidoctor local references ("<<ref>>") where the anchor is now located on a different page.
@@ -168,7 +177,8 @@ module.exports.register = function ({ config }) {
                 if (parsedConfig.alternateXrefStyle && parsedConfig.alternateXrefStyle !== "") {
                     console.log(`Applying explicit xref style ${parsedConfig.alternateXrefStyle} for xrefs...`)
                     catalog =  contentCatalog.findBy({ component, version})
-                    RefStyle.addXrefStyleToSectionAndPageXrefs(catalog, componentAttributes, anchorPageMap, parsedConfig.alternateXrefStyle)
+                    RefStyle.addXrefStyleToSectionAndPageXrefs(mapInput, catalog, componentAttributes, anchorPageMap, parsedConfig.alternateXrefStyle)
+                    console.log("-".repeat(50)+"\n")
                 }
                 //-------------
                 // Addon LostAndFound: Lists content that is not used.
@@ -176,8 +186,9 @@ module.exports.register = function ({ config }) {
                 // Since some features may require adoc content in non-adoc files, this is not conclusive whether a partial is actually used or not!
                 //-------------
                 if (parsedConfig.listUnusedPartials){
-                    console.log("List unused partials and draft pages...")
+                    console.log("List unused partials and draft pages...\n"+"-".repeat(50))
                     LostAndFound.listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, logger)
+                    console.log("-".repeat(50)+"\n")
                 }
             })
         })
@@ -192,7 +203,8 @@ module.exports.register = function ({ config }) {
         //-------------
         // Execute all features for each component-version-combination
         //-------------
-        console.log("List orphan pages...")
+        console.log("List orphan pages...\n"+"-".repeat(50))
         Orphans.find_orphan_pages(contentCatalog,parsedConfig.addToNavigation, parsedConfig.unlistedPagesHeading, logger)
+        console.log("-".repeat(50)+"\n")
       })
   }

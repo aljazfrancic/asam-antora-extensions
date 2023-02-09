@@ -146,7 +146,7 @@ function checkForRoleInLine( content, line, currentRole ) {
  * Determines the number of images and tables that follow ASAM's anchor conventions as well as level 2 sections.
  * Also traverses through included files.
  * TODO: Join with features of getRelativeSectionNumberWithIncludes from content_analyzer.js (core).
- * @param {Array <Object>} fullCatalog - - An array of pages and partials from all modules/components.
+ * @param {Object} mapInput - A set of configuration parameters. Must contain 'fullContentCatalog'.
  * @param {Array <Object>} catalog - - An array of pages and partials.
  * @param {Object} pagePartial - The current page or partial.
  * @param {Object} componentAttributes - The list of inherited component attributes.
@@ -155,7 +155,8 @@ function checkForRoleInLine( content, line, currentRole ) {
  * @param {Object} inheritedAttributes - Optional: An object containing all inherited attributes from the parent page.
  * @returns {Array <any>} [Number of relevant sections, number of images, number of tables]
  */
-function getIncludedPagesContentForExtensionFeatures( fullCatalog, catalog, pagePartial, componentAttributes, navFiles, leveloffset=0, inheritedAttributes = {} ) {
+function getIncludedPagesContentForExtensionFeatures( mapInput, catalog, pagePartial, componentAttributes, navFiles, leveloffset=0, inheritedAttributes = {} ) {
+    const fullCatalog = mapInput.contentCatalog
     const contentSum = pagePartial.contents.toString()
     let newContent = contentSum.split("\n")
     let numberOfLevelTwoSections = 0
@@ -221,7 +222,7 @@ function getIncludedPagesContentForExtensionFeatures( fullCatalog, catalog, page
                 let filteredPagesList = catalog.filter(file => file.src && file.src.path === targetPath)
                 if (filteredPagesList.length > 0) {
                     let includedPage = filteredPagesList[0]
-                    let [numberOfLevelTwoSectionsIncluded, numberOfImagesIncluded, numberOfTablesIncluded, numberOfCodesIncluded, numberOfExamplesIncluded] = getIncludedPagesContentForExtensionFeatures(fullCatalog, catalog, includedPage, componentAttributes, navFiles, includeLeveloffset)
+                    let [numberOfLevelTwoSectionsIncluded, numberOfImagesIncluded, numberOfTablesIncluded, numberOfCodesIncluded, numberOfExamplesIncluded] = getIncludedPagesContentForExtensionFeatures(mapInput, catalog, includedPage, componentAttributes, navFiles, includeLeveloffset)
                     numberOfLevelTwoSections += numberOfLevelTwoSectionsIncluded
                     numberOfImages += numberOfImagesIncluded
                     numberOfTables += numberOfTablesIncluded
@@ -234,7 +235,7 @@ function getIncludedPagesContentForExtensionFeatures( fullCatalog, catalog, page
     //-------------
     // Find all valid blocks (images, tables, examples, source/listing).
     //-------------
-    const pageAnchorMap = ContentAnalyzer.getAnchorsFromPageOrPartial(fullCatalog, pagePartial, componentAttributes, navFiles)
+    const pageAnchorMap = ContentAnalyzer.getAnchorsFromPageOrPartial(mapInput, fullCatalog, pagePartial, componentAttributes, navFiles)
     numberOfImages = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("fig-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
     numberOfTables = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("tab-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "")).length
     numberOfCodes = [...pageAnchorMap].filter(([k,v]) => (k.startsWith("code-") && ContentAnalyzer.getReferenceNameFromSource(componentAttributes, pageAnchorMap, catalog, v.source, k)!== "" && ContentAnalyzer.isListingBlock(v.source, k))).length

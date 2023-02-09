@@ -21,6 +21,7 @@ const ContentManipulator = require("../../../core/content_manipulator.js")
 // Note: This addon requires the Asciidoctor extension "sectnumoffset_antora" to work!
 /**
  * Updates a page's index attribute for images and tables.
+ * @param {Object} mapInput - A set of configuration parameters. Must contain 'fullContentCatalog'.
  * @param {Array <Object>} catalog - An array of pages and partials.
  * @param {Object} page - The current page.
  * @param {Object} componentAttributes - The list of inherited component attributes.
@@ -28,7 +29,7 @@ const ContentManipulator = require("../../../core/content_manipulator.js")
  * @param {Object} indices - The current indices
  * @returns {Array <any>} [Updated image index, updated table index, updated code index, updated examples index, number of level 2 sections ]
  */
-function updateImageAndTableIndex(catalog, page, componentAttributes, navFiles, indices){
+function updateImageAndTableIndex(mapInput, catalog, page, componentAttributes, navFiles, indices){
     let newImageIndex = indices.imageIndex
     let newTableIndex = indices.tableIndex
     let newCodeIndex = indices.codeIndex
@@ -37,7 +38,7 @@ function updateImageAndTableIndex(catalog, page, componentAttributes, navFiles, 
     addTableOffsetAttributeToPage(page, newTableIndex)
     addCodeOffsetAttributeToPage(page, newCodeIndex)
     addExampleOffsetAttributeToPage(page, newExampleIndex)
-    let [numberOfLevelTwoSections, numberOfImages, numberOfTables, numberOfCode, numberOfExamples] = Helper.getIncludedPagesContentForExtensionFeatures(catalog, catalog.filter(x => x.src.component === page.src.component && x.src.version === page.src.version), page, componentAttributes, navFiles)
+    let [numberOfLevelTwoSections, numberOfImages, numberOfTables, numberOfCode, numberOfExamples] = Helper.getIncludedPagesContentForExtensionFeatures(mapInput, catalog.filter(x => x.src.component === page.src.component && x.src.version === page.src.version), page, componentAttributes, navFiles)
     // if (page.src.stem === "entity") {console.log(numberOfImages, numberOfTables, numberOfLevelTwoSections); throw ""}
     newImageIndex += parseInt(numberOfImages)
     newTableIndex += parseInt(numberOfTables)
