@@ -82,6 +82,7 @@ module.exports.register = function ({ config }) {
                 navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
                 let catalog =  contentCatalog.findBy({ component, version})
                 const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].versions.filter(x => x.version === version)[0].asciidoc.attributes
+                console.log("\n\n")
                 //-------------
                 // Analyze the pages and create maps for the addons.
                 //-------------
@@ -103,9 +104,11 @@ module.exports.register = function ({ config }) {
                 if (parsedConfig.asamBibliography) {
                     console.log("Creating bibliography and reference links...")
                     Bibliography.applyBibliography(mapInput, bibliographyFiles)
+                    console.log("\n\n")
                 }
                 console.log("Generating content overview maps...")
                 let { keywordPageMap, rolePageMap, anchorPageMap } = ContentAnalyzer.generateMapsForPages( mapInput )
+                console.log("\n\n")
                 //-------------
                 // Addon Keywords: Create initial keywords overview page.
                 // Required setting: keywords: create_overview: true
@@ -115,6 +118,7 @@ module.exports.register = function ({ config }) {
                     console.log("Creating a keyword overview page...")
                     pages = Keywords.createKeywordsOverviewPage(parsedConfig.keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, parsedConfig.targetPath, parsedConfig.targetName, parsedConfig.targetModule, component, version)
                     keywordPageMap = ContentAnalyzer.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
+                    console.log("\n\n")
                 }
                 //-------------
                 // Addon Macros: Replace all custom macros. NOTE: This REQUIRES the keywords extension!
@@ -122,12 +126,14 @@ module.exports.register = function ({ config }) {
                 console.log("Replacing custom macros...")
                 pages = Macros.findAndReplaceCustomASAMMacros( contentCatalog, pages, navFiles, keywordPageMap, rolePageMap, CON.macrosRegEx, CON.macrosHeadings, logger, component, version )
                 keywordPageMap = ContentAnalyzer.getKeywordPageMapForPages(parsedConfig.useKeywords,pages)
+                console.log("\n\n")
                 //-------------
                 // Addon Keywords: Create final keywords overview page.
                 //-------------
                 if (parsedConfig.keywordOverviewPageRequested){
                     console.log("Updating the keyword overview page again...")
                     pages = Keywords.createKeywordsOverviewPage(parsedConfig.keywordOverviewPageRequested, contentCatalog, pages, keywordPageMap, parsedConfig.targetPath, parsedConfig.targetName, parsedConfig.targetModule, component, version)
+                    console.log("\n\n")
                 }
                 //-------------
                 // Get updated nav files. This is important because one of the macros may have added an additional navigation file or changed an existing one.
@@ -140,6 +146,7 @@ module.exports.register = function ({ config }) {
                     console.log("Creating list of figures and tables...")
                     catalog =  contentCatalog.findBy({ component, version})
                     Loft.createLoft(componentAttributes, contentCatalog, anchorPageMap, navFiles, catalog, component, version)
+                    console.log("\n\n")
                 }
                 //-------------
                 // Addon ConsistentNumbering: Generate and apply consistent numbers for sections, titles, and (if activated) figures and tables
@@ -149,7 +156,8 @@ module.exports.register = function ({ config }) {
                 if (parsedConfig.numberedTitles) {
                     console.log("Create sequential section numbers, titles, and captions...")
                     catalog =  contentCatalog.findBy({ component, version})
-                    ConsistentNumbering.applySectionAndTitleNumbers(mapInput.contentCatalog, pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component)
+                    ConsistentNumbering.applySectionAndTitleNumbers(mapInput, mapInput.contentCatalog, pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component)
+                    console.log("\n\n")
                 }
                 //-------------
                 // Addon CrossrefReplacement: Replace Asciidoctor local references ("<<ref>>") where the anchor is now located on a different page.
@@ -159,6 +167,7 @@ module.exports.register = function ({ config }) {
                 if (anchorPageMap.size > 0 && parsedConfig.localToGlobalReferences) {
                     console.log("Replace local references to global anchors with xref macro...")
                     pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorPageMap, pages, parsedConfig.alternateXrefStyle )
+                    console.log("\n\n")
                 }
                 //-------------
                 // Addon CrossrefReplacement: Replace Asciidoctor local references ("<<ref>>") where the anchor is now located on a different page.
@@ -168,7 +177,8 @@ module.exports.register = function ({ config }) {
                 if (parsedConfig.alternateXrefStyle && parsedConfig.alternateXrefStyle !== "") {
                     console.log(`Applying explicit xref style ${parsedConfig.alternateXrefStyle} for xrefs...`)
                     catalog =  contentCatalog.findBy({ component, version})
-                    RefStyle.addXrefStyleToSectionAndPageXrefs(catalog, componentAttributes, anchorPageMap, parsedConfig.alternateXrefStyle)
+                    RefStyle.addXrefStyleToSectionAndPageXrefs(mapInput, catalog, componentAttributes, anchorPageMap, parsedConfig.alternateXrefStyle)
+                    console.log("\n\n")
                 }
                 //-------------
                 // Addon LostAndFound: Lists content that is not used.
@@ -178,6 +188,7 @@ module.exports.register = function ({ config }) {
                 if (parsedConfig.listUnusedPartials){
                     console.log("List unused partials and draft pages...")
                     LostAndFound.listAllUnusedPartialsAndDraftPages(contentCatalog, component, version, logger)
+                    console.log("\n\n")
                 }
             })
         })
@@ -194,5 +205,6 @@ module.exports.register = function ({ config }) {
         //-------------
         console.log("List orphan pages...")
         Orphans.find_orphan_pages(contentCatalog,parsedConfig.addToNavigation, parsedConfig.unlistedPagesHeading, logger)
+        console.log("\n\n")
       })
   }
