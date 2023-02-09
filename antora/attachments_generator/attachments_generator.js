@@ -22,7 +22,6 @@ const File = require('../../core/file.js');
 function generateAttachments(contentAggregate) {
     console.log("Checking for generated attachments...")
     contentAggregate.forEach(v => {
-        const zip = new AdmZip()
         if (!(v.asciidoc && v.asciidoc.attributes)){
             return
         }
@@ -30,6 +29,7 @@ function generateAttachments(contentAggregate) {
             console.log(`Generating attachments for ${v.name}: ${v.version}`)
             const inputAttachmentArray = v.asciidoc.attributes['generate-attachments']
             inputAttachmentArray.forEach(entry => {
+                const zip = new AdmZip()
                 const inputPath = ContentAnalyzer.getSrcPathFromFileId(entry[0])
                 const name = ContentAnalyzer.replaceAllAttributesInLine(v.asciidoc.attributes, {}, entry[1]).replaceAll("{page-component-version}",v.version.replace(" ","_"))
                 const files = v.files.filter(x => x.src.path && x.src.path.includes(inputPath.relative))
