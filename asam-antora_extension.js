@@ -32,6 +32,7 @@ const LostAndFound = require('./antora/orphan_pages/orphan_files.js')
 const Loft = require("./antora/loft/loft.js");
 const RefStyle = require("./antora/reference_style_mixing/reference_style_mixing.js")
 const Bibliography = require("./antora/bibliography/bibliography.js")
+const AttachmentsGenerator = require("./antora/attachments_generator/attachments_generator.js")
 //-------------
 //-------------
 // Register this module in antora so it is used by the Antora pipeline.
@@ -55,6 +56,7 @@ module.exports.register = function ({ config }) {
           if (parsedConfig.asamBibliography) {
             bibliographyFiles = Bibliography.getBibliographyFiles(contentAggregate)
           }
+          AttachmentsGenerator.generateAttachments(contentAggregate)
       })
 
       //-------------
