@@ -77,17 +77,14 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
             i = 0;
         }
         else if (m.index === reAttributeApplied.lastIndex) { i++; }
-        const replacement = componentAttributes[`'${m[2]}'`] ? componentAttributes[`'${m[2]}'`].trim() :componentAttributes[m[2]] ? componentAttributes[m[2]].trim() : (pageAttributes[m[2]] ? pageAttributes[m[2]].trim() : undefined)
+        const replacement = componentAttributes[`'${m[2]}'`] ? componentAttributes[`'${m[2]}'`].trim() : componentAttributes[m[2]] ? componentAttributes[m[2]].trim() : (pageAttributes[m[2]] ? pageAttributes[m[2]].trim() : undefined)
         if (replacement) {
             newLine = newLine.replace(m[0], replacement)
             reAttributeApplied.lastIndex = 0
         }
         else if (m[2] === "nbsp") {
-
         }
-        // else {
-        //     console.warn(`Could not replace "${m[2]}" in line: ${newLine}`)
-        // }
+
     }
     return newLine
 }
@@ -95,6 +92,7 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
 /**
  *
  * Extracts all manually defined anchors from an AsciiDoc file. Also traverses through included files.
+ * @param {Object} mapInput - A set of configuration parameters. Must contain 'fullContentCatalog'.
  * @param {Array <Object>} catalog - An array of all pages and partials.
  * @param {Object} thisFile - The current page.
  * @param {Object} componentAttributes - An object containing all attributes of the component.
@@ -104,7 +102,7 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
  * @param {Object} lineOffset - Optional: An object containing a key "line" with Integer values denoting the line number offset accumulated from included files.
  * @returns {Map <String,Object>} A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
-function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, navFiles, inheritedAttributes = {}, tags = [], lineOffset = {line:0}) {
+function getAnchorsFromPageOrPartial(mapInput, catalog, thisFile, componentAttributes, navFiles, inheritedAttributes = {}, tags = [], lineOffset = { line: 0 }) {
     const re = /(?<!(`|\/\/.*))\[\[{1,2}([^\],]+)(,([^\]]*))?\]\]|(?<!(`|\/\/.*))\[#([^\]]*)(,([^\]]*))?\]|(?<!(`|\/\/.*))anchor:([^\[]+)(,([^\]]*))?\[/
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[(.+)?\]/m;
     const reTags = /.*,?tags?=([^,]+)/m;
@@ -114,7 +112,7 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
     let resultMap = new Map
     let results = []
     let ignoreLine = false,
-        ignoreBlock = {sourceBlock: false, exampleBlock: false, inlineSource: false, commentBlock: false};
+        ignoreBlock = { sourceBlock: false, exampleBlock: false, inlineSource: false, commentBlock: false };
     const splitContent = thisFile.contents.toString().split("\n")
     // let lineOffset = 0
     let allowInclude = (tags.length > 0) ? false : true
@@ -126,9 +124,9 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
     //-------------
     for (let t of tags) {
         let v = t.startsWith("!") ? false : true;
-        if (!v) {allowInclude = true}
+        if (!v) { allowInclude = true }
         t = t.startsWith("!") ? t.slice(1) : t
-        taggedRegions[t] = {include: v, active: false}
+        taggedRegions[t] = { include: v, active: false }
     }
     let currentLineIndex = -1
     for (let line of splitContent) {
@@ -145,10 +143,10 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
             else if (tagEndMatch && taggedRegions[tagEndMatch[1]]) {
                 taggedRegions[tagEndMatch[1]].active = false
             }
-            allowInclude = Object.entries(taggedRegions).filter(([k,v]) => !v.include).length > 0 ? Object.entries(taggedRegions).filter(([k,v]) => (!v.include && v.active)).length === 0 : Object.entries(taggedRegions).filter(([k,v]) => v.active).length > 0
+            allowInclude = Object.entries(taggedRegions).filter(([k, v]) => !v.include).length > 0 ? Object.entries(taggedRegions).filter(([k, v]) => (!v.include && v.active)).length === 0 : Object.entries(taggedRegions).filter(([k, v]) => v.active).length > 0
         }
-        if (!allowInclude) {continue;}
-        currentLineIndex = splitContent.indexOf(line,currentLineIndex+1)
+        if (!allowInclude) { continue; }
+        currentLineIndex = splitContent.indexOf(line, currentLineIndex + 1)
 
         //-------------
         // Add special behavior for custom "use-antora-rules" attribute
@@ -159,7 +157,7 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
         else if (ignoreLine && line.indexOf("endif::") > -1) {
             ignoreLine = false
         }
-        
+
         const matchIgnoreToggle = line.match(reIgnoreToggle)
         if (matchIgnoreToggle) {
             switch (matchIgnoreToggle[0]) {
@@ -176,7 +174,7 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
                 case String(matchIgnoreToggle[0].match(/\/{4}/)):
                     ignoreBlock.commentBlock = !ignoreBlock.commentBlock;
                     break;
-            }            
+            }
         }
         if (ignoreLine || Object.values(ignoreBlock).some(e => e)) { continue; }
         //-------------
@@ -194,23 +192,30 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
             let targetFile
             if (includeSearchResult[1]) {
                 targetFile = determineTargetPartialFromIncludeMacro(catalog, thisFile, includeSearchResult[1], includeSearchResult[2])
+                if (!targetFile) {
+                    targetFile = getTargetFileOverAllContent(includeSearchResult[1] + includeSearchResult[2], thisFile, mapInput)
+                }
             }
             else {
                 targetFile = determineTargetPageFromIncludeMacro(catalog, thisFile, includeSearchResult[2], false)
+                if (!targetFile) {
+                    targetFile = getTargetFileOverAllContent(includeSearchResult[1] + includeSearchResult[2], thisFile, mapInput)
+                }
             }
             if (targetFile) {
                 let tags = includeSearchResult[3] ? includeSearchResult[3].match(reTags) : []
-                if (!tags){tags=[]}
+                if (!tags) { tags = [] }
                 if (tags.length > 0) {
                     tags = tags[1].split(";")
                 }
                 lineOffset.line += currentLineIndex
-                const partialAnchorMap = getAnchorsFromPageOrPartial(catalog, targetFile, componentAttributes, navFiles, inheritedAttributes, tags, lineOffset)
+                const partialAnchorMap = getAnchorsFromPageOrPartial(mapInput, catalog, targetFile, componentAttributes, navFiles, inheritedAttributes, tags, lineOffset)
                 lineOffset.line -= currentLineIndex
                 resultMap = mergeAnchorMapEntries(resultMap, partialAnchorMap, navFiles, thisFile)
             }
             else {
                 console.warn("could not find", includeSearchResult[0])
+                if (includeSearchResult[0].includes("terms_and_definitions")) {console.log(mapInput.contentCatalog.find(x => x.src.stem.includes("terms_and_definitions_opendrive"))); throw "STOPO "}
             }
         }
         else {
@@ -242,6 +247,22 @@ function getAnchorsFromPageOrPartial(catalog, thisFile, componentAttributes, nav
     }
     lineOffset.line += currentLineIndex
     return resultMap
+}
+
+/**
+ * Determine target of include from complete collection.
+ * @param {*} includeSearchResult - 
+ * @param {Object} thisFile - 
+ * @param {Object} mapInput - A set of configuration parameters. Must contain 'contentCatalog'.
+ * @returns {Object} The found file
+ */
+function getTargetFileOverAllContent(includeAddress, thisFile, mapInput) {
+    const targetPath = getSrcPathFromFileId(includeAddress)
+    const version = targetPath.version ? targetPath.version : thisFile.src.version
+    const module = targetPath.module ? targetPath.module : thisFile.src.module
+    const component = targetPath.component ? targetPath.component : thisFile.src.component
+    const family = targetPath.type ? targetPath.type : thisFile.src.family
+    return mapInput.contentCatalog.find(x => x.src.version === version && x.src.module === module && x.src.component === component && x.src.family === family)
 }
 
 /**
@@ -287,6 +308,50 @@ function getAllKeywordsAsArray(page) {
 }
 
 /**
+ * Returns the content of a file after merging all includes into it.
+ * @param {Array <Object>} pages - An array of pages.
+ * @param {Object} page - The current page.
+ * @param {String} targetStop - Optional: If set, finds a specific anchor of type [#anchor].
+ * @param {Integer} addOffsetToSection - Optional: Adds an offset to all sections. Used for included file content.
+ * @returns {Array <String,Integer>} The merged content and the offset for the provided targetStop, if any.
+ */
+function getMergedFileContent(pages, page, targetStop = undefined, addOffsetToSection = 0) {
+    const reSectionStart = /^(=+)\s[^\n]+/
+    const reIncludeStart = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/
+    let targetLevelOffset = 0
+    const content = page.contents.toString()
+    let newContent = []
+    for (let line of content.split("\n")) {
+        const sectionSearchResult = line.match(reSectionStart)
+        const includeSearchResult = line.match(reIncludeStart)
+        if (targetStop && line.includes(targetStop)) {
+            newContent.push(line)
+            break;
+        }
+        if (sectionSearchResult && sectionSearchResult.length > 0 && addOffsetToSection > 0) {
+            line = "=".repeat(parseInt(addOffsetToSection)) + line
+        }
+        if (includeSearchResult && includeSearchResult.length > 0) {
+            const leveloffset = includeSearchResult[3] ? parseInt(includeSearchResult[3]) : 0
+            const targetPage = determineTargetPageFromIncludeMacro(pages, page, includeSearchResult[1])
+            if (targetPage) {
+                let includedContent, includedOffset
+                [includedContent, includedOffset] = getMergedFileContent(pages, targetPage, targetStop, addOffsetToSection + leveloffset)
+                newContent = newContent.concat(includedContent)
+                if (targetStop && includedContent.includes(targetStop)) {
+                    targetLevelOffset += leveloffset + includedOffset
+                    break;
+                }
+            }
+        }
+        else {
+            newContent.push(line)
+        }
+    }
+    return [newContent.join("\n"), targetLevelOffset]
+}
+
+/**
  * Determines the number of relevant sections up to a maximum section value.
  * This function also parses all included files that may be relevant depending on their accumulated leveloffset value.
  * @param {Array <Object>} pages - An array of pages.
@@ -295,12 +360,21 @@ function getAllKeywordsAsArray(page) {
  * @param {String} startText - Optional: If set, finds a specific anchor of type [#anchor] or [[anchor]].
  * @returns {Array <Integer>} The determined number of sections for the targetSectionLevel and below.
  */
-function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, startText = "") {
+function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, startText = "", isFromInclude = false) {
+    const reSectionStart = /^(=+)\s[^\n]+/
+    const reIncludeStart = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/
+
     let currentTargetSectionLevel = targetSectionLevel
     let relativeIndex = startText ? [1] : [0]
     let content = page.contents.toString()
-    const reSectionStart = /^(=+)\s[^\n]+/
-    const reIncludeStart = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/
+    if (isFromInclude) {
+        // include all content from start until startText is found
+        // update currentTargetSectionLevel according to accumulated leveloffset
+        // TBD: Update relativeIndex?
+        let targetLevelOffset
+        [content, targetLevelOffset] = getMergedFileContent(pages, page, `[#${startText}]`)
+        currentTargetSectionLevel += targetLevelOffset
+    }
     //-------------
     // If the parameter startText is defined, limit the content to everything above that anchor.
     //-------------
@@ -367,14 +441,14 @@ function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, s
  * @param {Object} file  - The file that is to be analyzed.
  */
 function getActivePageAttributesAtLine(catalog, componentAttributes, inheritedAttributes, index, file) {
-    const content = index ? file.contents.toString().split("\n").slice(0,index+1) : file.contents.toString().split("\n")
+    const content = index ? file.contents.toString().split("\n").slice(0, index + 1) : file.contents.toString().split("\n")
     for (let line of content) {
         let newLine = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
         let includeTarget = checkForIncludedFileFromLine(catalog, file, newLine)
         if (includeTarget) {
             getActivePageAttributesAtLine(catalog, componentAttributes, inheritedAttributes, null, includeTarget)
         }
-        else {updatePageAttributes(inheritedAttributes, newLine)}
+        else { updatePageAttributes(inheritedAttributes, newLine) }
     }
 }
 
@@ -388,16 +462,14 @@ function getActivePageAttributesAtLine(catalog, componentAttributes, inheritedAt
  * @param {String} style - Optional: A specific reference style to be returned. Options: "full", "short", or "basic".
  * @returns {String} The extracted alt text.
  */
-function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, page, anchor, style = "") {
+function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, page, anchor, style = "", parentPage = {}) {
     const reSectionEqualSigns = /^\s*(=+)\s+(.*)$/m
     const reCaptionLabel = /^\.(\S.+)$/m
     const reAnchorType = /#?([^-\]]+)-?[^\]]*/m
-    const regexAnchor = anchor.replaceAll("-","\\-").replaceAll(".","\\.").replaceAll("(","\\(").replaceAll(")","\\)")
+    const regexAnchor = anchor.replaceAll("-", "\\-").replaceAll(".", "\\.").replaceAll("(", "\\(").replaceAll(")", "\\)")
     const regexAltAnchor = regexAnchor.slice(4)
     const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     const reAltAnchor = new RegExp(`\\[\\[${regexAltAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAltAnchor}(,([^\\]]*))?\\]|anchor:${regexAltAnchor}(,([^\\]]*))?`, 'm')
-    const reExampleBlock = /^(\[source([^\]]+)?\]\s*\n)?={4}$/m
-    const reSourceBlock = /^\[source([^\]]+)?\]\s*\n-{4}\s*$/m
     let inheritedAttributes = {}
     let content = page.contents.toString()
     const contentSplit = content.split("\n")
@@ -409,11 +481,11 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     }
     content = contentSplit.join("\n")
 
-    const resultAnchorType = anchor.match(reAnchorType)
-    if(!content.match(reAnchor) && content.match(reAltAnchor)) {console.warn(`${anchor} could not be found in file ${page.src.abspath}, but found similar match instead! Please check file`); return null}
-    else if (!content.match(reAnchor)) {console.warn(`${anchor} could not be found in file ${page.src.abspath}`); return null}
+    let resultAnchorType = anchor.match(reAnchorType)
+    if (!content.match(reAnchor) && content.match(reAltAnchor)) { console.warn(`${anchor} could not be found in file ${page.src.abspath}, but found similar match instead! Please check file`); return null }
+    else if (!content.match(reAnchor)) { console.warn(`${anchor} could not be found in file ${page.src.abspath}`); return null }
     const indexOfAnchor = content.match(reAnchor).index | null
-    if (indexOfAnchor!== null && indexOfAnchor > -1) {
+    if (indexOfAnchor !== null && indexOfAnchor > -1) {
         getActivePageAttributesAtLine(pages, componentAttributes, inheritedAttributes, indexOfAnchor, page)
     }
     else {
@@ -424,8 +496,8 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const resultForNextHeading = content.slice(indexOfAnchor).match(reSectionEqualSigns)
     // const resultForPreviousHeading = content.slice(0,indexOfAnchor).match(reSectionEqualSigns)
     const resultNextCaption = content.slice(indexOfAnchor).match(reCaptionLabel)
-    const countLineBreaksHeading = resultForNextHeading ? content.slice(indexOfAnchor,indexOfAnchor+resultForNextHeading.index).split("\n").length : 0
-    const countLineBreaks = resultNextCaption ? content.slice(indexOfAnchor,indexOfAnchor+resultNextCaption.index).split("\n").length : 0
+    const countLineBreaksHeading = resultForNextHeading ? content.slice(indexOfAnchor, indexOfAnchor + resultForNextHeading.index).split("\n").length : 0
+    const countLineBreaks = resultNextCaption ? content.slice(indexOfAnchor, indexOfAnchor + resultNextCaption.index).split("\n").length : 0
     const lineBreakLimitBreached = countLineBreaks > 4 ? true : false
     // Use special anchor formats: sec, top, fig, tab, ...
     let result
@@ -437,92 +509,27 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const appendixRefsig = componentAttributes['appendix-caption'] ? componentAttributes['appendix-caption'] : "Appendix"
     const figureCaption = inheritedAttributes['figure-caption'] ? inheritedAttributes['figure-caption'] : componentAttributes['figure-caption'] ? componentAttributes['figure-caption'] : "Figure"
     const tableCaption = inheritedAttributes['table-caption'] ? inheritedAttributes['table-caption'] : componentAttributes['table-caption'] ? componentAttributes['table-caption'] : "Table"
-    const exampleCaption = inheritedAttributes['example-caption'] ? inheritedAttributes['example-caption'] : componentAttributes['example-caption'] ? componentAttributes['example-caption'] : "Example"
+    // const exampleCaption = inheritedAttributes['example-caption'] ? inheritedAttributes['example-caption'] : componentAttributes['example-caption'] ? componentAttributes['example-caption'] : "Example"
     const codeCaption = inheritedAttributes['listing-caption'] ? inheritedAttributes['listing-caption'] : componentAttributes['listing-caption'] ? componentAttributes['listing-caption'] : ""
     // let verbose = (anchor==="sec-lc-aggregate-types" && style === "full")
     //-------------
     // Only act on anchors that match one of the ASAM anchor types (matching reAnchorType).
     //-------------
     if (resultAnchorType) {
-        let anchorWarningEntry = {anchor:anchor,page:page, type:null}
-        switch (resultAnchorType[1]) {
-            case "fig":
-                break;
-            case "tab":
-                break;
-            case "code":
-                if (countLineBreaks > 2) {
-                    anchorWarningEntry.type = "title";
-                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: No title found in next line after ${anchor}!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
-                    break;
-                }
-                else {
-                    let matchExample = content.slice(indexOfAnchor).match(reExampleBlock);
-                    let matchSource = content.slice(indexOfAnchor).match(reSourceBlock);
-                    if (!(matchExample && content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length === 3) && !(matchSource && content.slice(indexOfAnchor,indexOfAnchor+matchSource.index).split("\n").length === 3) ){
-                        anchorWarningEntry.type = "block";
-                        if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Code anchor ${anchor} not immediately followed by block after title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
-                    }
-                    if (matchExample && content.slice(indexOfAnchor,indexOfAnchor+matchExample.index).split("\n").length === 3 ) {
-                        anchorWarningEntry.type = "exAsCode";
-                        if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`INFO: Code anchor ${anchor} used with example block!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
-                    }
-                    break;
-                }
-            case "top":
-                if (countLineBreaksHeading > 2) {
-                    anchorWarningEntry.type = "title";
-                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
-                }
-                else if (page.src.family === "partial") {
-                    anchorWarningEntry.type = "partialTitle";
-                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Top anchor ${anchor} used in partil!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
-                }
-                else if (!resultForNextHeading || resultForNextHeading[1].length !== 1) {
-                    anchorWarningEntry.type = "section";
-                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Anchor ${anchor} used for section, not title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
-                }
-                break;
-            case "sec":
-                if (countLineBreaksHeading > 2) {
-                    anchorWarningEntry.type = "title";
-                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
-                }
-                else if (page.src.family === "page" && (!resultForNextHeading || resultForNextHeading[1].length === 1)) {
-                    anchorWarningEntry.type = "section";
-                    if(!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))){console.warn(`ASAM rule violation: Anchor ${anchor} used for title, not section!\nFile: ${page.src.abspath}`);anchorWarnings.push(anchorWarningEntry);}
-                }
-                break;
-        }
+        lintAnchors(anchor, page, resultAnchorType, countLineBreaks, content, indexOfAnchor, countLineBreaksHeading, resultForNextHeading)
+
         const entryIndex = anchorPageMap.get(anchor).index
         if (anchorPageMap.get(anchor) && !entryIndex) return "No Index"
+        if (Object.entries(parentPage).length > 0 && resultAnchorType[1] === "top") { resultAnchorType[1] = "sec" }
         switch (resultAnchorType[1]) {
             case "fig":
-                result = lineBreakLimitBreached ? null : resultNextCaption;
-                const figureIndex = getAnchorPageMapEntryValue(anchorPageMap, entryIndex, "fig-")
-                if (result) {
-                    title = result[1];
-                    prefix = figureCaption + ' ' + figureIndex;
-                    returnValue = title;
-                }
+                [result, title, prefix, returnValue] = useShortRefRule(entryIndex, figureCaption, "fig-")
                 break;
             case "tab":
-                result = lineBreakLimitBreached ? null : resultNextCaption;
-                const tableIndex = getAnchorPageMapEntryValue(anchorPageMap, entryIndex, "tab-")
-                if (result) {
-                    title = result[1];
-                    prefix = tableCaption + ' ' + tableIndex;
-                    returnValue = title;
-                }
+                [result, title, prefix, returnValue] = useShortRefRule(entryIndex, tableCaption, "tab-")
                 break;
             case "code":
-                result = lineBreakLimitBreached ? null : resultNextCaption;
-                const codeIndex = getAnchorPageMapEntryValue(anchorPageMap, entryIndex, "code-")
-                if (result) {
-                    title = result[1];
-                    prefix = codeCaption.length > 0 ? codeCaption + ' ' + codeIndex : null;
-                    returnValue = title;
-                }
+                [result, title, prefix, returnValue] = useShortRefRule(entryIndex, codeCaption, "code-")
                 break;
             case "top":
                 returnValue = getAltTextFromTitle(page, content);
@@ -546,10 +553,20 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
             case "sec":
                 result = resultForNextHeading ? resultForNextHeading : content.match(/^(=) (.*)$/m);
                 // if (verbose)  {console.log(result)}
-                let pageNumber = getAttributeFromFile(page, "titleoffset");
+                let pageNumber
+                let relativeSectionNumber
+                if (Object.entries(parentPage).length > 0) {
+                    pageNumber = getAttributeFromFile(parentPage, "titleoffset")
+                    relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages, parentPage, result[1].split("=").length - 1, anchor, true);
+                }
+                else {
+                    pageNumber = getAttributeFromFile(page, "titleoffset")
+                    relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages, page, result[1].split("=").length - 1, anchor);
+                }
+                // let pageNumber = getAttributeFromFile(page, "titleoffset");
                 if (!pageNumber) { pageNumber = ""; }
                 else { pageNumber = pageNumber.trim(); }
-                let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages, page, result[1].split("=").length - 1, anchor);
+                // let relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages, page, result[1].split("=").length - 1, anchor);
                 relativeSectionNumber[0] = ""
                 prefix = isNaN(pageNumber.charAt(0)) ? `${appendixRefsig} ${pageNumber}`.trim() : `${sectionRefsig} ${pageNumber}`.trim();
                 prefix = relativeSectionNumber.length > 1 && pageNumber !== "" ? prefix + relativeSectionNumber.join(".") : prefix;
@@ -570,7 +587,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
         //-------------
         switch (style) {
             case "full":
-                returnValue = reftext ? reftext : prefix && (prefix !== sectionRefsig && prefix !== appendixRefsig) ? `${prefix}, "${title}"` : prefix ? `${prefix} "${title}"`: `${title}`;
+                returnValue = reftext ? reftext : prefix && resultAnchorType[1] === "top" && prefix.startsWith(appendixRefsig) ? `${prefix} __${title}__` : prefix && (prefix !== sectionRefsig && prefix !== appendixRefsig) ? `${prefix}, "${title}"` : prefix ? `${prefix} "${title}"` : `${title}`;
                 break;
             case "short":
                 returnValue = reftext ? reftext : prefix ? prefix : title;
@@ -590,6 +607,83 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     }
     returnValue = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, returnValue)
     return (returnValue)
+
+    function useShortRefRule(entryIndex, caption, type) {
+        result = lineBreakLimitBreached ? null : resultNextCaption
+        const typeIndex = getAnchorPageMapEntryValue(anchorPageMap, entryIndex, type)
+        if (result) {
+            title = result[1]
+            prefix = caption.length > 0 ? caption + ' ' + typeIndex : null;
+            returnValue = title
+        }
+        return [result, title, prefix, returnValue]
+    }
+}
+
+/**
+ * Applies ASAM linting rules for anchors
+ * @param {String} anchor - The anchor in question.
+ * @param {Object} page - The current page.
+ * @param {Object} resultAnchorType - The RegExp result for the anchor type.
+ * @param {Integer} countLineBreaks - The counted number of line breaks between the anchor and the next title.
+ * @param {String} content - The content of the file being analyzed.
+ * @param {Integer} indexOfAnchor - The index of the anchor in the content.
+ * @param {Integer} countLineBreaksHeading - The number of line breaks for headings.
+ * @param {Object} resultForNextHeading - The next found heading after the match based on a regex.
+ */
+function lintAnchors(anchor, page, resultAnchorType, countLineBreaks, content, indexOfAnchor, countLineBreaksHeading, resultForNextHeading) {
+    const reExampleBlock = /^(\[source([^\]]+)?\]\s*\n)?={4}$/m
+    const reSourceBlock = /^\[source([^\]]+)?\]\s*\n-{4}\s*$/m
+    let anchorWarningEntry = { anchor: anchor, page: page, type: null }
+    switch (resultAnchorType[1]) {
+        case "fig":
+            break
+        case "tab":
+            break
+        case "code":
+            if (countLineBreaks > 2) {
+                anchorWarningEntry.type = "title"
+                if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: No title found in next line after ${anchor}!\nFile: ${page.src.abspath}`); anchorWarnings.push(anchorWarningEntry) }
+                break
+            }
+            else {
+                let matchExample = content.slice(indexOfAnchor).match(reExampleBlock)
+                let matchSource = content.slice(indexOfAnchor).match(reSourceBlock)
+                if (!(matchExample && content.slice(indexOfAnchor, indexOfAnchor + matchExample.index).split("\n").length === 3) && !(matchSource && content.slice(indexOfAnchor, indexOfAnchor + matchSource.index).split("\n").length === 3)) {
+                    anchorWarningEntry.type = "block"
+                    if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: Code anchor ${anchor} not immediately followed by block after title!\nFile: ${page.src.abspath}`); anchorWarnings.push(anchorWarningEntry) }
+                }
+                if (matchExample && content.slice(indexOfAnchor, indexOfAnchor + matchExample.index).split("\n").length === 3) {
+                    anchorWarningEntry.type = "exAsCode"
+                    if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`INFO: Code anchor ${anchor} used with example block!\nFile: ${page.src.abspath}`); anchorWarnings.push(anchorWarningEntry) }
+                }
+                break
+            }
+        case "top":
+            if (countLineBreaksHeading > 2) {
+                anchorWarningEntry.type = "title"
+                if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}\nCountLineBreaksHeading: ${countLineBreaksHeading}\nResultNextHeading: ${resultForNextHeading}`); anchorWarnings.push(anchorWarningEntry) }
+            }
+            else if (page.src.family === "partial") {
+                anchorWarningEntry.type = "partialTitle"
+                if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: Top anchor ${anchor} used in partial!\nFile: ${page.src.abspath}`); anchorWarnings.push(anchorWarningEntry) }
+            }
+            else if (!resultForNextHeading || resultForNextHeading[1].length !== 1) {
+                anchorWarningEntry.type = "section"
+                if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: Anchor ${anchor} used for section, not title!\nFile: ${page.src.abspath}`); anchorWarnings.push(anchorWarningEntry) }
+            }
+            break
+        case "sec":
+            if (countLineBreaksHeading > 2) {
+                anchorWarningEntry.type = "title"
+                if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: Anchor ${anchor} not immediately followed by title!\nFile: ${page.src.abspath}`); anchorWarnings.push(anchorWarningEntry) }
+            }
+            else if (page.src.family === "page" && (!resultForNextHeading || resultForNextHeading[1].length === 1)) {
+                anchorWarningEntry.type = "section"
+                if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: Anchor ${anchor} used for title, not section!\nFile: ${page.src.abspath}`); anchorWarnings.push(anchorWarningEntry) }
+            }
+            break
+    }
 }
 
 /**
@@ -601,13 +695,13 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
  */
 function getAnchorPageMapEntryValue(anchorPageMap, entryIndex, filterType) {
     let newFilteredArray = []
-    const filteredArray = [...anchorPageMap].filter(([k,v]) => {
+    const filteredArray = [...anchorPageMap].filter(([k, v]) => {
         if (!k.startsWith(filterType) || v.index[0] > entryIndex[0] || v.index[0] === entryIndex[0] && v.index[1] > entryIndex[1]) return false
         return true
     })
     filteredArray.forEach(entry => {
-        for (const [i,e] of entry[1].usedIn.entries()) {
-            newFilteredArray.push([entry[0],e,entry[1].allIndices[i]])
+        for (const [i, e] of entry[1].usedIn.entries()) {
+            newFilteredArray.push([entry[0], e, entry[1].allIndices[i]])
         }
     })
     newFilteredArray = newFilteredArray.filter(x => {
@@ -710,11 +804,10 @@ function isPublishableFile(page) {
  */
 function determinePageForXrefInLine(line, indexOfXref, pages, nav) {
     const endOfXref = line.indexOf("[")
-    const reducedLine = line.substring(indexOfXref+5,endOfXref)
+    const reducedLine = line.substring(indexOfXref + 5, endOfXref)
     let parts = reducedLine.split("@")
     const targetVersion = parts.length > 1 ? parts[0] : nav.src.version
-    if(parts.length > 1)
-    {
+    if (parts.length > 1) {
         parts = parts[1].split(":")
     }
     else {
@@ -722,7 +815,7 @@ function determinePageForXrefInLine(line, indexOfXref, pages, nav) {
     }
     // const lastColon = reducedLine.lastIndexOf(":")
     // const numberOfColons = (reducedLine.match(/:/g) || []).length
-    const numberOfColons = parts.length -1
+    const numberOfColons = parts.length - 1
     // const targetModule = numberOfColons > 0 ? reducedLine.substring(0,lastColon) : nav.src.module
     const targetModule = numberOfColons > 0 ? parts.at(-2) : nav.src.module
     const targetComponent = numberOfColons > 1 ? parts.at(-3) : nav.src.component
@@ -804,7 +897,7 @@ function getRolePageMapForPages(pages) {
  * @param {Object} componentAttributes - The attributes defined in the component or site.
  * @returns {Map <String, Object>} A map of anchors and the pages where they were found in.
  */
-function getAnchorPageMapForPages(catalog, pages, navFiles, componentAttributes) {
+function getAnchorPageMapForPages(mapInput, catalog, pages, navFiles, componentAttributes) {
     var anchorMap = new Map;
     for (let page of pages.filter((page) => page.out)) {
         let hasPriority = false
@@ -814,8 +907,8 @@ function getAnchorPageMapForPages(catalog, pages, navFiles, componentAttributes)
                 break;
             }
         }
-        if (!hasPriority) {continue;}
-        let updateMap = getAnchorsFromPageOrPartial(catalog, page, componentAttributes, navFiles)
+        if (!hasPriority) { continue; }
+        let updateMap = getAnchorsFromPageOrPartial(mapInput, catalog, page, componentAttributes, navFiles)
         if (updateMap && updateMap.size > 0) {
             if (hasPriority) {
                 anchorMap = mergeAnchorMapEntries(updateMap, anchorMap, navFiles)
@@ -850,7 +943,7 @@ const updateMapEntry = (inputMap, key, addedValue) => {
  * @returns {Map <String, Object>} The updated anchor map.
  */
 function mergeAnchorMapEntries(anchorMap, updateMap, navFiles, overridePage = null) {
-    if (!updateMap || updateMap.size === 0) {return anchorMap}
+    if (!updateMap || updateMap.size === 0) { return anchorMap }
     const mergedNavFileContent = navFiles.map(a => a.contents.toString()).join("\n")
     for (let key of updateMap.keys()) {
         // const verbose = key == "top-EAID_E5B4C9F4_52A5_4673_9790_6A042A3E3CB0" ? true : false
@@ -859,24 +952,23 @@ function mergeAnchorMapEntries(anchorMap, updateMap, navFiles, overridePage = nu
                 const newUsedInIndex = mergedNavFileContent.indexOf(overridePage.src.relative)
                 // if (verbose) {console.log("newUsedInIndex",newUsedInIndex)}
                 if (newUsedInIndex === -1) {
-                updateMap.get(key).usedIn.push(overridePage)
-                updateMap.get(key).usedInLine.push(updateMap.get(key).line)
+                    updateMap.get(key).usedIn.push(overridePage)
+                    updateMap.get(key).usedInLine.push(updateMap.get(key).line)
                 }
                 else {
                     for (let index in updateMap.get(key).usedIn) {
                         const currentUsedInIndex = mergedNavFileContent.indexOf(updateMap.get(key).usedIn[index])
                         // if (verbose){console.log(index, currentUsedInIndex, updateMap.get(key).usedIn[index])}
                         if (currentUsedInIndex === -1 || currentUsedInIndex > newUsedInIndex) {
-                            updateMap.get(key).usedIn.splice(index,0,overridePage)
-                            updateMap.get(key).usedInLine.splice(index,0,updateMap.get(key).line)
+                            updateMap.get(key).usedIn.splice(index, 0, overridePage)
+                            updateMap.get(key).usedInLine.splice(index, 0, updateMap.get(key).line)
                             break;
                         }
-                        if (index === updateMap.get(key).usedIn.length -1) {
+                        if (index === updateMap.get(key).usedIn.length - 1) {
                             updateMap.get(key).usedIn.push(overridePage)
                             updateMap.get(key).usedInLine.push(updateMap.get(key).line)
                             break;
                         }
-
                     }
                 }
             }
@@ -916,7 +1008,7 @@ function mergeAnchorMapEntries(anchorMap, updateMap, navFiles, overridePage = nu
  */
 function createdSortedNavFileContent(mapInput) {
     let mergedNavContents = []
-    for (let nav of mapInput.navFiles.sort((a,b) => {
+    for (let nav of mapInput.navFiles.sort((a, b) => {
         return a.nav.index - b.nav.index
     })) {
         const newNavContent = nav.contents.toString().split("\n")
@@ -934,9 +1026,9 @@ function createdSortedNavFileContent(mapInput) {
 function generateMapsForPages(mapInput) {
     const keywordPageMap = getKeywordPageMapForPages(mapInput.useKeywords, mapInput.pages)
     const rolePageMap = getRolePageMapForPages(mapInput.pages)
-    let anchorPageMap = getAnchorPageMapForPages(mapInput.contentCatalog, mapInput.pages, mapInput.navFiles, mapInput.componentAttributes)
+    let anchorPageMap = getAnchorPageMapForPages(mapInput, mapInput.contentCatalog, mapInput.pages, mapInput.navFiles, mapInput.componentAttributes)
     const mergedNavContents = createdSortedNavFileContent(mapInput)
-    
+
     anchorPageMap.forEach((value, key) => {
         const debug = key.includes("EAID_898D9CC9_ADA9_4992_9AB8_C13AE98C756A")
         value.index = [mergedNavContents.indexOf(value.source.src.relative), value.line]
@@ -952,11 +1044,11 @@ function generateMapsForPages(mapInput) {
                 }
             }
             value.usedIn = [value.source].concat(value.usedIn)
-            let sortedEntries = value.usedIn.map((v, i) => {return [v, value.allIndices[i]]})
-            sortedEntries.sort((a, b) => {                
-                if (a[1][0] === b[1][0]) {return a[1][1] - b[1][1]}
-                if (a[1][0] === -1) {return 1}
-                if (b[1][0] === -1) {return -1}
+            let sortedEntries = value.usedIn.map((v, i) => { return [v, value.allIndices[i]] })
+            sortedEntries.sort((a, b) => {
+                if (a[1][0] === b[1][0]) { return a[1][1] - b[1][1] }
+                if (a[1][0] === -1) { return 1 }
+                if (b[1][0] === -1) { return -1 }
                 return a[1][0] - b[1][0]
             })
             value.usedIn = sortedEntries.map(v => v[0])
@@ -1117,6 +1209,13 @@ function getSrcPathFromFileId(fileId) {
         splitFileId.shift()
     }
     relative = splitFileId[0]
+    function fullPath(self) {
+        const version = self.version ? self.version + "/" : ""
+        const component = self.component ? self.component + "/" : ""
+        const module = self.module ? self.module * "/" : ""
+        const type = self.type ? self.type * "/" : ""
+        return component + version + module + self.relative
+    }
     return { version: version, component: component, module: antoraModule, type: type, relative: relative }
 }
 
@@ -1128,16 +1227,16 @@ function getSrcPathFromFileId(fileId) {
  */
 function isListingBlock(file, anchor) {
     const reSourceBlock = /^\[source([^\]]+)?\]\s*\n-{4}\s*$/m
-    const regexAnchor = anchor.replaceAll("-","\\-").replaceAll(".","\\.").replaceAll("(","\\(").replaceAll(")","\\)")
+    const regexAnchor = anchor.replaceAll("-", "\\-").replaceAll(".", "\\.").replaceAll("(", "\\(").replaceAll(")", "\\)")
     const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     const content = file.contents.toString()
     const start = content.match(reAnchor) ? content.match(reAnchor).index : null
-    if (!start) {return false}
+    if (!start) { return false }
     const match = content.slice(start).match(reSourceBlock)
-    if (!match) {return false}
+    if (!match) { return false }
     const end = match.index
     // console.log("is listing: ",content.slice(start,start+end).split("\n").length === 3); console.log(content.slice(start,start+end).split("\n"), content.slice(start,start+end).split("\n").length)
-    return (content.slice(start,start+end).split("\n").length === 3)
+    return (content.slice(start, start + end).split("\n").length === 3)
 }
 
 /**
@@ -1148,16 +1247,16 @@ function isListingBlock(file, anchor) {
  */
 function isExampleBlock(file, anchor) {
     const reExampleBlock = /^(\[source([^\]]+)?\]\s*\n)?={4}$/m
-    const regexAnchor = anchor.replaceAll("-","\\-").replaceAll(".","\\.").replaceAll("(","\\(").replaceAll(")","\\)")
+    const regexAnchor = anchor.replaceAll("-", "\\-").replaceAll(".", "\\.").replaceAll("(", "\\(").replaceAll(")", "\\)")
     const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     const content = file.contents.toString()
     const start = content.match(reAnchor) ? content.match(reAnchor).index : null
-    if (!start) {return false}
+    if (!start) { return false }
     const match = content.slice(start).match(reExampleBlock)
-    if (!match) {return false}
+    if (!match) { return false }
     const end = match.index
     // console.log("is example: ",content.slice(start,start+end).split("\n").length === 3); console.log(content.slice(start,start+end).split("\n"), content.slice(start,start+end).split("\n").length)
-    return (content.slice(start,start+end).split("\n").length === 3)
+    return (content.slice(start, start + end).split("\n").length === 3)
 }
 
 module.exports = {
@@ -1180,5 +1279,7 @@ module.exports = {
     getAttributeFromContent,
     isExampleBlock,
     isListingBlock,
-    createdSortedNavFileContent
+    createdSortedNavFileContent,
+    getMergedFileContent,
+    getTargetFileOverAllContent
 }
