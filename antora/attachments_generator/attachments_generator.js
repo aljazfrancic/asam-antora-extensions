@@ -15,6 +15,10 @@ const AdmZip = require("adm-zip");
 const path = require('path');
 const File = require('../../core/file.js');
 
+/**
+ * Generates attachments for the download dropdown based on an asciidoc attribute set on the page or the component.
+ * @param {Object} contentAggregate - The contentAggregate variable from Antora.
+ */
 function generateAttachments(contentAggregate) {
     console.log("Checking for generated attachments...")
     contentAggregate.forEach(v => {

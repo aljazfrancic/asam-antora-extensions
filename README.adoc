@@ -209,6 +209,10 @@ include::antora/asam_macros/description.adoc[leveloffset=+2]
 
 ---
 
+include::antora/attachments_generator/description.adoc[leveloffset=+2]
+
+---
+
 include::antora/bibliography/description.adoc[leveloffset=+2]
 
 ---

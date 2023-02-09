@@ -1,0 +1,32 @@
+= Attachments generator
+This extensions automatically zips a given folder and adds it to a target folder as attachment.
+
+== Configuration
+The extension is active by default but only acts if a certain asciidoc parameter has been set in the component.
+
+To enable the attachments generator within a component, add the following configuration to respective antora.yml file:
+
+[source, YAML]
+----
+generate-attachments: [["id/of/folder/", "path/in/attachments/output_file_of_folder.zip"], ["id/of/file", "path/in/attachments/output_file.zip"]]
+----
+
+.Configuration for three downloadable attachments, where the source files are all located in sepearte folders ("Examples", "Model", and "Schema") inside the Antora partials folder
+====
+[source,YAML]
+----
+asciidoc:
+  attributes:
+    generate-attachments: [["partial$Examples/", "generated/ASAM_OpenSCENARIO_{page-component-version}_Examples.zip"], ["partial$Model/", "generated/ASAM_OpenSCENARIO_{page-component-version}_Model.zip"], ["partial$Schema/", "generated/ASAM_OpenSCENARIO_{page-component-version}_Schema.zip"]]
+    page-download-links: [["generated/ASAM_OpenSCENARIO_{page-component-version}_Model.zip","OpenSCENARIO Enterprise Architect UML model"],["generated/ASAM_OpenSCENARIO_{page-component-version}_Schema.zip", "OpenSCENARIO XSD schema"],["generated/ASAM_OpenSCENARIO_{page-component-version}_Examples.zip","OpenSCENARIO Examples"]]
+----
+====
+
+== Notes
+This extension supports the use of the Antora attribute `page-component-version` in the output file name, which is replaced with the version of this component.
+
+To make the download button available, use the `page-download-links` attribute which is interpreted by the ASAM UI.
+
+== How it works
+The extension checks each component for the generate-attachments attribute.
+If it is found, it tries to zip all files within the provided path and name the zip file according to the second entry of each item in the array.
