@@ -749,12 +749,12 @@ function getAltTextFromTitle(page, content) {
 function getPageContentForExtensionFeatures(page) {
     const contentSum = page.contents.toString()
     let newContent = contentSum.split("\n")
-    let indexOfTitle = 0
+    let indexOfTitle = -1
     let indexOfNavtitle = -1
     let indexOfReftext = -1
     for (let line of newContent) {
         // Find title
-        if (line.startsWith("= ")) {
+        if (line.startsWith("= ") && indexOfTitle < 0) {
             indexOfTitle = newContent.indexOf(line)
         }
         // Find level 2 sections
@@ -767,6 +767,7 @@ function getPageContentForExtensionFeatures(page) {
             indexOfReftext = newContent.indexOf(line)
         }
     }
+    indexOfTitle = indexOfTitle < 0 ? 0 : indexOfTitle
     return [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext]
 }
 
