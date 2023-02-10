@@ -72,6 +72,7 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                     // b) return the updated content as virtual files
                     // ----------------
                     const inputFiles = v.files.filter(x => x.src.path.includes(eaInputPath))
+                    console.log(inputFiles)
                     fs.mkdirSync(targetInputDirectory, {recursive: true})
                     for (let file of inputFiles) {
                         const relPath = path.relative(eaInputPath,file.src.path.replace(file.src.basename,""))
@@ -82,6 +83,7 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                             fs.mkdirSync(`${targetInputDirectory}/${relPath}`, {recursive: true})
                             fs.writeFileSync(`${targetInputDirectory}/${relPath}/${file.src.basename}`, file.contents)
                         }
+                        v.files = v.files.filter(x => x !== file)
                     }
                     const python = spawnSync('python3', ['ea_converter.py', targetOutputDirectory, convertedOutputDirectory, navOutputDirectory, imgDirOffset+imgDirectory, pathInModule, targetInputDirectory.replace("./",process.cwd()+"/"), navigationTitle])
                     console.log(python.stdout.toString())
@@ -108,12 +110,13 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                     // ----------------
                     // Clean up temporary files and folders after this is done, then return back to the previous directory for the next version/component.
                     // ----------------
-                    fs.rmSync(targetOutputDirectory, { recursive: true });
+                    // fs.rmSync(targetOutputDirectory, { recursive: true });
                     console.log("Temporary output files deleted")
                     process.chdir(startPath)
                 } catch(e){
                     console.log(e)                    
                 }
+                throw "STOP TEST"
             }
         })
   }
