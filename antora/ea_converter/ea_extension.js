@@ -72,7 +72,6 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                     // b) return the updated content as virtual files
                     // ----------------
                     const inputFiles = v.files.filter(x => x.src.path.includes(eaInputPath))
-                    console.log(inputFiles)
                     fs.mkdirSync(targetInputDirectory, {recursive: true})
                     for (let file of inputFiles) {
                         const relPath = path.relative(eaInputPath,file.src.path.replace(file.src.basename,""))
