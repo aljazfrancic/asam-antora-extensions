@@ -110,13 +110,12 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                     // ----------------
                     // Clean up temporary files and folders after this is done, then return back to the previous directory for the next version/component.
                     // ----------------
-                    // fs.rmSync(targetOutputDirectory, { recursive: true });
+                    fs.rmSync(targetOutputDirectory, { recursive: true });
                     console.log("Temporary output files deleted")
                     process.chdir(startPath)
                 } catch(e){
                     console.log(e)                    
                 }
-                throw "STOP TEST"
             }
         })
   }
