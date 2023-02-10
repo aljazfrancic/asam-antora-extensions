@@ -199,8 +199,13 @@ def main(argv):
     Path(target_content_path).mkdir(parents=True, exist_ok= True)
     Path(module_path).mkdir(parents=True, exist_ok= True)
 
+    print(source_path)
     for root, dirs, files in os.walk(source_path, followlinks=True):
+        print("root", root)
+        print("dirs", dirs)
+        print("files", files)
         rel_path = os.path.relpath(root, source_path)
+        print("rel_path",rel_path)
         rel_target_path = target_content_path
         if rel_path != ".":
             rel_target_path = "/".join([target_content_path,rel_path])
@@ -212,6 +217,7 @@ def main(argv):
             # If the index.html is found, parse it as normal but also extract the meta file and the navigation file from it.
             #----------
             if f == "index.html":
+                print("index.html")
                 meta_query = get_navigation_structure(root,fname,module_content_path,module_path,navigation_title)
                 get_meta_information(meta_query,rel_target_path)
 

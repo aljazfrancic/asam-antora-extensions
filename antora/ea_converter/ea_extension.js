@@ -1,6 +1,7 @@
 'use strict'
 var spawnSync = require("child_process").spawnSync;
 const fs = require("fs");
+const path = require("path");
 const lib = require("./lib/doxygen_converter.js")
 
 const FileCreator = require('../../core/file_creator.js')
@@ -26,6 +27,7 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
         const converterDirectory = __dirname
         const startPath = process.cwd()
         const targetOutputDirectory = "gen"
+        const targetInputDirectory = `./${targetOutputDirectory}/input`
         const convertedOutputDirectory = "converted_interface"
         const navOutputDirectory = "navigation_file"
         // ----------------
@@ -40,7 +42,8 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                 const defaultOrigin = v.files[0].src.origin
                 const splitAbsPath = v.files[0].src.abspath ? v.files[0].src.abspath.split("/") : null
                 const abspathPrefix = splitAbsPath ? splitAbsPath.slice(0,splitAbsPath.indexOf("modules")).join("/")+"/" : null
-                const eaInputPath = v.asciidoc.attributes.ea_input_path ? abspathPrefix+eaModulePath+"/"+v.asciidoc.attributes.ea_input_path : abspathPrefix+eaModulePath+'/_attachments'
+                // const eaInputPath = v.asciidoc.attributes.ea_input_path ? abspathPrefix+eaModulePath+"/"+v.asciidoc.attributes.ea_input_path : abspathPrefix+eaModulePath+'/_attachments'
+                const eaInputPath = v.asciidoc.attributes.ea_input_path ? eaModulePath+"/"+v.asciidoc.attributes.ea_input_path : eaModulePath+'/attachments'
                 const imgDirectory = eaInputPath
                 // const imgDirectory = v.asciidoc.attributes.ea_module_path ? "images" + pathInModule : "images"
                 const navigationTitle = v.asciidoc.attributes.ea_navigation_title ? v.asciidoc.attributes.ea_navigation_title : "UML model"
@@ -68,7 +71,19 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                     // a) convert the html content to asciidoc and then
                     // b) return the updated content as virtual files
                     // ----------------
-                    const python = spawnSync('python3', ['ea_converter.py', targetOutputDirectory, convertedOutputDirectory, navOutputDirectory, imgDirOffset+imgDirectory, pathInModule, eaInputPath, navigationTitle])
+                    const inputFiles = v.files.filter(x => x.src.path.includes(eaInputPath))
+                    fs.mkdirSync(targetInputDirectory, {recursive: true})
+                    for (let file of inputFiles) {
+                        const relPath = path.relative(eaInputPath,file.src.path.replace(file.src.basename,""))
+                        try {
+                            fs.writeFileSync(`${targetInputDirectory}/${relPath}/${file.src.basename}`, file.contents)
+                        }
+                        catch (e) {
+                            fs.mkdirSync(`${targetInputDirectory}/${relPath}`, {recursive: true})
+                            fs.writeFileSync(`${targetInputDirectory}/${relPath}/${file.src.basename}`, file.contents)
+                        }
+                    }
+                    const python = spawnSync('python3', ['ea_converter.py', targetOutputDirectory, convertedOutputDirectory, navOutputDirectory, imgDirOffset+imgDirectory, pathInModule, targetInputDirectory.replace("./",process.cwd()+"/"), navigationTitle])
                     console.log(python.stdout.toString())
                     console.log(python.stderr.toString())
                     console.log("Enterprise Architect conversion done")
@@ -93,13 +108,12 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                     // ----------------
                     // Clean up temporary files and folders after this is done, then return back to the previous directory for the next version/component.
                     // ----------------
-                    fs.rmSync(targetOutputDirectory, { recursive: true });
+                    fs.rm(targetOutputDirectory, { recursive: true });
                     console.log("Temporary output files deleted")
                     process.chdir(startPath)
                 } catch(e){
                     console.log(e)                    
                 }
-            // throw "STOP AFTER CONVERSION"
             }
         })
   }
