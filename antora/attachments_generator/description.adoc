@@ -8,16 +8,18 @@ To enable the attachments generator within a component, add the following config
 
 [source, YAML]
 ----
-generate-attachments: [["id/of/folder/", "path/in/attachments/output_file_of_folder.zip"], ["id/of/file", "path/in/attachments/output_file.zip"]]
+generate-attachments: [["id/of/folder/", "path/in/attachments/output_file_of_folder.zip", "clean"], ["id/of/file", "path/in/attachments/output_file.zip"]]
 ----
 
-.Configuration for three downloadable attachments, where the source files are all located in sepearte folders ("Examples", "Model", and "Schema") inside the Antora partials folder
+The optional third entry, "clean", controls whether the source files are removed from the Antora content aggregate (set to "clean") or not (not set or set to anything but "clean").
+
+.Configuration for three downloadable attachments, where the source files are all located in sepearte folders ("Examples", "Model", and "Schema") inside the Antora attachments folder and the Model and the Schema source files are removed (clean)
 ====
 [source,YAML]
 ----
 asciidoc:
   attributes:
-    generate-attachments: [["partial$Examples/", "generated/ASAM_OpenSCENARIO_{page-component-version}_Examples.zip"], ["partial$Model/", "generated/ASAM_OpenSCENARIO_{page-component-version}_Model.zip"], ["partial$Schema/", "generated/ASAM_OpenSCENARIO_{page-component-version}_Schema.zip"]]
+    generate-attachments: [["attachment$Examples/", "generated/ASAM_OpenSCENARIO_{page-component-version}_Examples.zip"], ["attachment$Model/", "generated/ASAM_OpenSCENARIO_{page-component-version}_Model.zip", "clean"], ["attachment$Schema/", "generated/ASAM_OpenSCENARIO_{page-component-version}_Schema.zip", "clean"]]
     page-download-links: [["generated/ASAM_OpenSCENARIO_{page-component-version}_Model.zip","OpenSCENARIO Enterprise Architect UML model"],["generated/ASAM_OpenSCENARIO_{page-component-version}_Schema.zip", "OpenSCENARIO XSD schema"],["generated/ASAM_OpenSCENARIO_{page-component-version}_Examples.zip","OpenSCENARIO Examples"]]
 ----
 ====

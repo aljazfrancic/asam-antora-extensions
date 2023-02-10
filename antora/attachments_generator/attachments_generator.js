@@ -30,6 +30,7 @@ function generateAttachments(contentAggregate) {
             const inputAttachmentArray = v.asciidoc.attributes['generate-attachments']
             inputAttachmentArray.forEach(entry => {
                 const zip = new AdmZip()
+                const clean = entry[2] && entry[2] === "clean" ? true : false
                 const inputPath = ContentAnalyzer.getSrcPathFromFileId(entry[0])
                 const name = ContentAnalyzer.replaceAllAttributesInLine(v.asciidoc.attributes, {}, entry[1]).replaceAll("{page-component-version}",v.version.replace(" ","_"))
                 const files = v.files.filter(x => x.src.path && x.src.path.includes(inputPath.relative))
@@ -43,6 +44,9 @@ function generateAttachments(contentAggregate) {
                 files.forEach(file => {
                     const relativePath = path.relative(`modules/${inputPath.module}/${inputPath.family}/${inputPath.relative}`,file.src.path)
                     zip.addFile(relativePath,file.contents,"")
+                    if (clean) {
+                        v.files = v.files.filter(x => x !== file)
+                    }
                 })
                 const zipBuffer = zip.toBuffer()
                 const typeFolder = "attachments";
