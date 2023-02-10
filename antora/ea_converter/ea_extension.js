@@ -35,7 +35,7 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
         // ----------------
         contentAggregate.forEach(v => {
             if(v.asciidoc && (v.asciidoc.attributes.ea_module || v.asciidoc.attributes.ea_module_path || v.asciidoc.attributes.ea_input_path)) {
-                console.log("EA conversion for",v.version,"@",v.title)
+                console.log("Enterprise Architect documentation conversion for",v.version,"@",v.title)
                 let eaModulePath = v.asciidoc.attributes.ea_module ? "modules/"+v.asciidoc.attributes.ea_module : "modules/ROOT"
                 let pathInModule = v.asciidoc.attributes.ea_module_path ? "/"+v.asciidoc.attributes.ea_module_path : ""
                 let imgDirOffset = v.asciidoc.attributes.ea_module_path ? "../".repeat(pathInModule.split("/").length) + "_" : "_"
@@ -86,7 +86,7 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                     const python = spawnSync('python3', ['ea_converter.py', targetOutputDirectory, convertedOutputDirectory, navOutputDirectory, imgDirOffset+imgDirectory, pathInModule, targetInputDirectory.replace("./",process.cwd()+"/"), navigationTitle])
                     console.log(python.stdout.toString())
                     console.log(python.stderr.toString())
-                    console.log("Enterprise Architect conversion done")
+                    console.log("Enterprise Architect documentation conversion done")
 
                     // ----------------
                     // Finally, parse the created files and add them to Antora for this version
