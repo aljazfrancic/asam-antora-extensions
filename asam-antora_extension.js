@@ -75,7 +75,9 @@ module.exports.register = function ({ config }) {
                 // For each component-version-combo, get all pages and all nav files.
                 //-------------
                 let pages = contentCatalog.findBy({ component, version, family: 'page'})
-                let navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
+                let navFiles = contentCatalog.findBy({ component, version, family: 'nav'}).sort((a,b) => {
+                    return a.nav.index - b.nav.index
+                })
                 //-------------
                 // Addon AsciiNav: Parse files and create navigation if attribute "antora_mapping" is used.
                 //-------------

@@ -1,6 +1,7 @@
 'use strict'
 var spawnSync = require("child_process").spawnSync;
 const fs = require("fs");
+const lib = require("./lib/doxygen_converter.js")
 
 const FileCreator = require('../../core/file_creator.js')
 
@@ -31,7 +32,7 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
         // Execute on every version and component
         // ----------------
         contentAggregate.forEach(v => {
-            if(v.asciidoc.attributes.ea_module || v.asciidoc.attributes.ea_module_path || v.asciidoc.attributes.ea_input_path) {
+            if(v.asciidoc && (v.asciidoc.attributes.ea_module || v.asciidoc.attributes.ea_module_path || v.asciidoc.attributes.ea_input_path)) {
                 console.log("EA conversion for",v.version,"@",v.title)
                 let eaModulePath = v.asciidoc.attributes.ea_module ? "modules/"+v.asciidoc.attributes.ea_module : "modules/ROOT"
                 let pathInModule = v.asciidoc.attributes.ea_module_path ? "/"+v.asciidoc.attributes.ea_module_path : ""
@@ -41,11 +42,27 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                 const abspathPrefix = splitAbsPath ? splitAbsPath.slice(0,splitAbsPath.indexOf("modules")).join("/")+"/" : null
                 const eaInputPath = v.asciidoc.attributes.ea_input_path ? abspathPrefix+eaModulePath+"/"+v.asciidoc.attributes.ea_input_path : abspathPrefix+eaModulePath+'/_attachments'
                 const imgDirectory = eaInputPath
-                const navigationTitle = v.asciidoc.attributes.ea_navigation_title ? v.asciidoc.attributes.ea_navigation_title : "Model definition"
+                // const imgDirectory = v.asciidoc.attributes.ea_module_path ? "images" + pathInModule : "images"
+                const navigationTitle = v.asciidoc.attributes.ea_navigation_title ? v.asciidoc.attributes.ea_navigation_title : "UML model"
 
                 try{
+                    // let [virtualFiles,navFile] = lib.htmlToAsciiDoc(eaInputPath, eaModulePath+"/pages"+pathInModule, eaModulePath, imgDirectory, pathInModule)
+                    // console.log("read files")
+                    // // ----------------
+                    // // Finally, parse the created files and add them to Antora for this version
+                    // // ----------------
+                    // let newFiles = FileCreator.convertArrayToVirtualFiles(virtualFiles,defaultOrigin,abspathPrefix)
+                    // let navFiles = v.files.filter(x => x.src.stem.includes("eanav")  && x.src.path.includes(eaModulePath+"/"))
+                    // // TODO: Add function that creates the nav.adoc file in case it does not exist!
+                    // console.log("got nav files")
+                    // navFiles[0].contents = navFile.content
+                    // console.log("changed nav file")
+                    // v.files = v.files.concat(newFiles).sort((a,b) =>
+                    // {
+                    //     return a.path - b.path
+                    // })
+                    // console.log("added virtual files")
                     process.chdir(converterDirectory)
-
                     // ----------------
                     // Run the python script on the generated files to
                     // a) convert the html content to asciidoc and then
@@ -64,9 +81,9 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                     let virtualTargetPath = eaModulePath+"/pages"+pathInModule;
                     newFiles = newFiles.concat(FileCreator.addAllFilesInFolderAsVirtualFiles(currentPath, virtualTargetPath, defaultOrigin, abspathPrefix, true))
                     currentPath = "./"+targetOutputDirectory+"/"+navOutputDirectory;
-                    let navFiles = v.files.filter(x => x.src.stem === "nav" && x.src.path.includes(eaModulePath+"/"))
+                    // let navFiles = v.files.filter(x => x.src.stem === "nav" && x.src.path.includes(eaModulePath+"/"))
+                    let navFiles = v.files.filter(x => x.src.stem.includes("eanav")  && x.src.path.includes(eaModulePath+"/"))
                     // TODO: Add function that creates the nav.adoc file in case it does not exist!
-
                     navFiles[0].contents = fs.readFileSync(currentPath+"/nav.adoc")
                     v.files = v.files.concat(newFiles).sort((a,b) =>
                     {
@@ -80,8 +97,9 @@ function convertEnterpriseArchitect ( workdir, contentAggregate ) {
                     console.log("Temporary output files deleted")
                     process.chdir(startPath)
                 } catch(e){
-                    console.log(e)
+                    console.log(e)                    
                 }
+            // throw "STOP AFTER CONVERSION"
             }
         })
   }

@@ -40,7 +40,9 @@ def get_navigation_structure(source_path,fname,target_path,module_path,navigatio
 
     content = ""
     nav_content = [":sectnums!:\n"]
-    nav_content.append("* "+navigation_title+"\n")
+    nav_content.append("* "+navigation_title+"\n\n")
+    nav_content.append(":sectnums!:\n")
+    nav_content.append("** xref:{target_path}meta.adoc[]\n".format(target_path=target_path+"/"))
     with open(source_path+"/"+fname+".html", "r") as file:
         content = file.read()
 
@@ -65,8 +67,7 @@ def get_navigation_structure(source_path,fname,target_path,module_path,navigatio
             nav_content.append(":sectnums!:\n")
             nav_content.append("*** xref:{link}[{label}]\n".format(link=link_path,label=link_text))
 
-    nav_content.append(":!sectnums:\n")
-    nav_content.append("** xref:meta.adoc[Meta]")
+    
     with open(module_path+"/nav.adoc","w") as nav:
         nav.writelines(nav_content)
 
@@ -92,9 +93,9 @@ def get_meta_information(meta_query,target_path):
 
 
     html_combined = "\n".join(html)
-    body = "= Meta information\n:page-width-limit: none\n\n++++\n"+html_combined+"\n++++\n"
+    body = "= Model meta information\n:page-width-limit: none\n\n++++\n"+html_combined+"\n++++\n"
     meta_file = "meta.adoc"
-    with open(target_path+"/"+meta_file, 'w') as file:
+    with open(target_path+"/"+meta_file, 'w', encoding="utf-8") as file:
         file.write(body)
 
     return meta_file
@@ -116,22 +117,34 @@ def parse_file_and_create_adoc(source_path,fname,target_path):
         content = source_file.read()
 
     pq = PyQuery(content)
-    title = pq('h2:first').text()
-    has_title = True
+    header_type = None
+    if pq('h1:first'):
+        title = pq('h1:first').text()
+        header_type = 1
+        has_title = True
+    else:
+        title = pq('h2:first').text()
+        header_type = 2
+        has_title = True
     if not title:
         has_title = False
         title_start = content.find("<title>")
         title_end = content.find("</title>")
         if not title_start == title_end:
             title = content[title_start+len("<title>"):title_end]
+            header_type = 3
 
         else:
             title = fname
+            header_type = 4
 
 
     current_header = "= " + title+"\n:page-width-limit: none\n\n"
-    if has_title:
-        body = pq('div#contents').html().replace('<h2>{title}</h2>'.format(title=current_header),"")
+    if has_title and header_type == 1:
+        body = pq('div#contents').html().replace('<h1>{title}</h1>'.format(title=title),"")
+
+    elif has_title and header_type == 2:
+        body = pq('div#contents').html().replace('<h2>{title}</h2>'.format(title=title),"")
 
     else:
         body = pq('div#contents').html()
@@ -139,6 +152,7 @@ def parse_file_and_create_adoc(source_path,fname,target_path):
     if not body:
         body = ""
 
+    # print (body)
     with open(target_path+"/"+fname+".adoc","w", encoding="utf-8") as file:
         file.write(current_header + "++++")
         file.write(body)
@@ -159,7 +173,7 @@ def main(argv):
     module_path = "../_antora/modules/ROOT"
     img_path = "../_attachments"
     module_content_path = ""
-    navigation_title = "Model definition"
+    navigation_title = "UML model"
     if len(argv)>=1 and argv[0]:
         target_path = argv[0]
 
