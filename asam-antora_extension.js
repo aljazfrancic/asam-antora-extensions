@@ -160,7 +160,7 @@ module.exports.register = function ({ config }) {
                 if (parsedConfig.numberedTitles) {
                     console.log("Create sequential section numbers, titles, and captions...\n"+"-".repeat(50))
                     catalog =  contentCatalog.findBy({ component, version})
-                    ConsistentNumbering.applySectionAndTitleNumbers(mapInput, mapInput.contentCatalog, pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component)
+                    ConsistentNumbering.applySectionAndTitleNumbers(mapInput, mapInput.contentCatalog, pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component, version)
                     console.log("-".repeat(50)+"\n")
                 }
                 //-------------

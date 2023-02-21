@@ -26,13 +26,14 @@ const ContentManipulator = require('../../core/content_manipulator.js')
  * @param {String} sectionNumberStyle - The selected style for section numbers. If "iso", the trailing "." is dropped.
  * @param {Object} contentCatalog - The content catalog provided by Antora.
  * @param {String} component - The current component.
+ * @param {String} version - The current version.
  */
-function applySectionAndTitleNumbers (mapInput, catalog, pages, navFiles, sectionNumberStyle, contentCatalog, component) {
+function applySectionAndTitleNumbers (mapInput, catalog, pages, navFiles, sectionNumberStyle, contentCatalog, component, version) {
     const style = sectionNumberStyle ? sectionNumberStyle.toLowerCase() : "default"
     //-------------
     // Determine the appendix caption and the standard offset for the appendix to be used.
     //-------------
-    const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].asciidoc.attributes
+    const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].versions.filter(x => x.version === version)[0].asciidoc.attributes
     const appendixCaption = Object.keys(componentAttributes).indexOf("appendix-caption") > -1 ? componentAttributes["appendix-caption"] : "Appendix"
     let appendixOffset = Object.keys(componentAttributes).indexOf("appendix-offset") > -1 ? componentAttributes["appendix-offset"] : 0
     //-------------

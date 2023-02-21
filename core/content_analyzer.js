@@ -202,7 +202,8 @@ function getAnchorsFromPageOrPartial(mapInput, catalog, thisFile, componentAttri
                     targetFile = getTargetFileOverAllContent(includeSearchResult[1] + includeSearchResult[2], thisFile, mapInput)
                 }
             }
-            if (targetFile) {
+            if (targetFile && targetFile === thisFile) {console.log("Found an include for",targetFile.src.path,"in",thisFile.src.path)}
+            else if (targetFile) {
                 let tags = includeSearchResult[3] ? includeSearchResult[3].match(reTags) : []
                 if (!tags) { tags = [] }
                 if (tags.length > 0) {
@@ -517,7 +518,6 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     //-------------
     if (resultAnchorType) {
         lintAnchors(anchor, page, resultAnchorType, countLineBreaks, content, indexOfAnchor, countLineBreaksHeading, resultForNextHeading)
-
         const entryIndex = anchorPageMap.get(anchor).index
         if (anchorPageMap.get(anchor) && !entryIndex) return "No Index"
         if (Object.entries(parentPage).length > 0 && resultAnchorType[1] === "top") { resultAnchorType[1] = "sec" }
