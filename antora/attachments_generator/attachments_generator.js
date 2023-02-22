@@ -43,7 +43,8 @@ function generateAttachments(contentAggregate) {
                 v.asciidoc.attributes['page-download-links'].find(x => x[0].includes(entry[1]))[0] = `${name}`
                 files.forEach(file => {
                     const relativePath = path.relative(`modules/${inputPath.module}/${inputPath.family}/${inputPath.relative}`,file.src.path)
-                    zip.addFile(relativePath,file.contents,"")
+                    if (relativePath) { zip.addFile(relativePath,file.contents,"") }
+                    else { zip.addFile(file.src.basename,file.contents,"") }
                     if (clean) {
                         v.files = v.files.filter(x => x !== file)
                     }
