@@ -1,5 +1,9 @@
 = ASAM's Antora and Asciidoctor extensions
 
+ifndef::use-antora-rules[]
+IMPORTANT: Access the documentation on https://common.pages.asam.net/asam-antora-extensions[GitLab pages^].
+endif::[]
+
 This repository contains ASAM's Antora and Asciidoctor extensions.
 It contains a collection of features that can be added to the Antora pipeline through the playbook and/or the CLI as well as Asciidoctor extensions that work together with the Antora extensions.
 They are designed to be used with Antora, not base Asciidoctor!
