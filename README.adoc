@@ -211,53 +211,74 @@ Only relevant in combination with `id`.
 
 ifndef::use-antora-rules[]
 == Extensions in detail
-endif::[]
+
 :antora_mapping: true
-ifndef::use-antora-rules[]
 
 include::antora/asam_macros/description.adoc[leveloffset=+2]
 
+ifndef::use-antora-rules[]
 ---
+endif::[]
 
 include::antora/attachments_generator/description.adoc[leveloffset=+2]
 
+ifndef::use-antora-rules[]
 ---
+endif::[]
 
 include::antora/bibliography/description.adoc[leveloffset=+2]
 
+ifndef::use-antora-rules[]
 ---
+endif::[]
 
 include::antora/consistent_numbering/description.adoc[leveloffset=+2]
 
+ifndef::use-antora-rules[]
 ---
+endif::[]
 
 include::antora/crossref_replacement/description.adoc[leveloffset=+2]
 
+ifndef::use-antora-rules[]
 ---
+endif::[]
 
 include::antora/doxygen_converter/description.adoc[leveloffset=+2]
 
+ifndef::use-antora-rules[]
 ---
+endif::[]
 
 include::antora/ea_converter/description.adoc[leveloffset=+2]
 
+ifndef::use-antora-rules[]
 ---
+endif::[]
 
 include::antora/keywords_overview/description.adoc[leveloffset=+2]
 
+ifndef::use-antora-rules[]
 ---
+endif::[]
 
 include::antora/orphan_pages/description.adoc[leveloffset=+2]
 
+ifndef::use-antora-rules[]
 ---
+endif::[]
 
 include::antora/nav_from_index/description.adoc[leveloffset=+2]
 
+ifndef::use-antora-rules[]
 ---
+endif::[]
 
 include::antora/loft/description.adoc[leveloffset=+2]
 
+ifndef::use-antora-rules[]
 ---
+endif::[]
 
 include::antora/reference_style_mixing/description.adoc[leveloffset=+2]
 

@@ -7,14 +7,14 @@ site:
 content:
   sources:
     - url: .
-      branches: [main]
+      branches: [HEAD]
       start_path: docs
       edit_url: 'https://code.asam.net/common/asam-antora-extensions/-/blob/{refname}/{path}'
 # end::content[]
 
 ui:
   bundle:
-    url: ./build/ui-bundle.zip
+    url: https://code.asam.net/common/antora-ui/-/jobs/artifacts/main/raw/build/ui-bundle.zip?job=bundle-stable
     snapshot: true
   # supplemental_files: ./supplemental_ui
 

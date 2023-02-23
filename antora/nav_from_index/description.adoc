@@ -1,5 +1,7 @@
 = Navigation from index
+:no_antora_mapping:
 This extension scans all pages and finds passages marked with the AsciiDoc attribute "antora_mapping".
+It ignores pages that have the attribute `:no_antora_mapping` set. +
 All content between ":antora_mapping: <value>" and either a negation of the attribute (":!antora_mapping:" or ":antora_mapping!:") or the end of the page are considered input for the navigation file for this page's module.
 
 If :antora_mapping: is set to "title", the main file (e.g. "index.adoc") functions as a parent page for all the mapping files as well as the component's starting page. +

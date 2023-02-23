@@ -24,6 +24,7 @@ const FileCreator = require('../../core/file_creator.js')
  */
 function createAntoraNavigationFromIndex( pages, navFiles ) {
     for (let page of pages) {
+        const pageException = /^:no_antora_mapping:/
         const reAntoraMapping = /:(!)?antora_mapping(!)?:(.*)/;
         const reInclude = /^\s*include::(\.\/)?([^\[]+)\[([^\]]*)\]/;
         const reSection = /^(=)+ (.*)/;
@@ -37,6 +38,7 @@ function createAntoraNavigationFromIndex( pages, navFiles ) {
             numberedParent = false;
         let offsetEntry = 0
         for (let line of pageContent) {
+            if (line.match(pageException)) {break}
             const result = reAntoraMapping.exec(line)
             const resExceptions = reExceptions.exec(line)
             const resXref = reXref.exec(line)

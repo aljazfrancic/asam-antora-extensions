@@ -1,1 +1,0 @@
-../../../../../antora/bibliography/description.adoc
