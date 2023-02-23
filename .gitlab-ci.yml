@@ -3,7 +3,6 @@ build_pages:
   stage: pages
   only:
   - main
-  cache: *pull_cache
   tags:
     -  asciidoc
   image:
@@ -20,7 +19,6 @@ pages:
   image: busybox
   only:
   - main
-  cache: *pull_cache
   tags:
     - asciidoc
   script:
