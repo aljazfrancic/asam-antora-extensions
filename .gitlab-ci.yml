@@ -1,0 +1,33 @@
+stages: [deploy, pages]
+build_pages:
+  stage: pages
+  only:
+  - main
+  cache: *pull_cache
+  tags:
+    -  asciidoc
+  image:
+    name: ghcr.io/asam-ev/project-guide-docker:4
+    entrypoint: [""]
+  script:
+    - antora --stacktrace --fetch --clean site.yml
+  artifacts:
+    paths:
+      - public/
+
+pages:
+  stage: pages
+  image: busybox
+  only:
+  - main
+  cache: *pull_cache
+  tags:
+    - asciidoc
+  script:
+    - echo "The site will be deployed to $CI_PAGES_URL"
+  artifacts:
+    paths:
+    - public
+  needs:
+    - job: build_pages
+      artifacts: true
