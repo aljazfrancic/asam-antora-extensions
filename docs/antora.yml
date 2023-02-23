@@ -9,6 +9,7 @@ asciidoc:
     asciidoc-resources: general:ROOT:partial$asciidoc-resources
     partials-path: partial$
     root-path: page$
+    page-width-limit: none
 
 nav:
 - modules/ROOT/nav.adoc
