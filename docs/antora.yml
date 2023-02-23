@@ -1,0 +1,14 @@
+name: ASAM_Antora_Extensions
+title: ASAM Antora Extensions
+version: ~
+start_page: ROOT:index.adoc
+
+asciidoc:
+  attributes:
+    use-antora-rules: true
+    asciidoc-resources: general:ROOT:partial$asciidoc-resources
+    partials-path: partial$
+    root-path: page$
+
+nav:
+- modules/ROOT/nav.adoc

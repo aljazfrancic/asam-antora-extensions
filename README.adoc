@@ -209,8 +209,12 @@ Only relevant in combination with `id`.
 ----
 ====
 
-
+ifndef::use-antora-rules[]
 == Extensions in detail
+endif::[]
+:antora_mapping: true
+ifndef::use-antora-rules[]
+
 include::antora/asam_macros/description.adoc[leveloffset=+2]
 
 ---
@@ -256,3 +260,6 @@ include::antora/loft/description.adoc[leveloffset=+2]
 ---
 
 include::antora/reference_style_mixing/description.adoc[leveloffset=+2]
+
+endif::[]
+:!antora_mapping:
