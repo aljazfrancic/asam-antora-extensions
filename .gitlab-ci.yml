@@ -1,8 +1,9 @@
-stages: [deploy, pages]
+stages: [pages, trigger]
 build_pages:
   stage: pages
-  only:
-  - main
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "trigger"
   tags:
     -  asciidoc
   image:
@@ -17,8 +18,9 @@ build_pages:
 pages:
   stage: pages
   image: busybox
-  only:
-  - main
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "trigger"
   tags:
     - asciidoc
   script:
@@ -29,3 +31,12 @@ pages:
   needs:
     - job: build_pages
       artifacts: true
+
+trigger_ui:
+  stage: trigger
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  trigger:
+    project: common/antora-ui
+    branch: main
+  
