@@ -26,6 +26,7 @@ asciidoc:
 
 == Notes
 This extension supports the use of the Antora attribute `page-component-version` in the output file name, which is replaced with the version of this component.
+It also supports a new custom derived attribute, `page-component-version-hyphenated`, which uses the `page-component-version` attribute as input and replaces all dots with hyphens.
 
 To make the download button available, use the `page-download-links` attribute which is interpreted by the ASAM UI.
 

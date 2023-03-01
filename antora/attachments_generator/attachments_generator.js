@@ -1,9 +1,8 @@
 'use strict'
 //-------------
 //-------------
-// Module for the custom ASAM bibtex extension.
-// This module provides two central functions, 'getBibliographyFiles', that retrieves and parses the specified bibliography files, and 'applyBibliography', that applies the citations and the bibliography macro.
-// This extension currently only supports IEEE style citation for books and proceedings.
+// Module creating attachments as zip files from input files.
+// This module provides one central function, 'generateAttachments', that collects provided files and compresses them into a zip file.
 //
 //-------------
 //-------------
@@ -32,9 +31,9 @@ function generateAttachments(contentAggregate) {
                 const zip = new AdmZip()
                 const clean = entry[2] && entry[2] === "clean" ? true : false
                 const inputPath = ContentAnalyzer.getSrcPathFromFileId(entry[0])
-                const name = ContentAnalyzer.replaceAllAttributesInLine(v.asciidoc.attributes, {}, entry[1]).replaceAll("{page-component-version}",v.version.replace(" ","_"))
-                const files = v.files.filter(x => x.src.path && x.src.path.includes(inputPath.relative))
-                if (files) {
+                const name = ContentAnalyzer.replaceAllAttributesInLine(v.asciidoc.attributes, {}, entry[1]).replaceAll("{page-component-version}",v.version.replaceAll(" ","_")).replaceAll("{page-component-version-hyphenated}",v.version.replaceAll(" ","_").replaceAll(".","-"))
+                const files = v.files.filter(x => x.src && x.src.path && x.src.path.includes(inputPath.relative))
+                if (files.length > 0) {
                     inputPath.module = files[0].src.path.match(/modules\/([^\/]+)\//)[1]
                     inputPath.component = v.name
                     inputPath.version = v.version
