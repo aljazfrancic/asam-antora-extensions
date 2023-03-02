@@ -40,7 +40,7 @@ function listAllOrphanPages (contentCatalog, versions, addToNavigation, unlisted
         const navEntriesByUrl = ContentAnalyzer.getNavEntriesByUrl(nav)
         const unlistedPages = contentCatalog
           .findBy({ component, version, family: 'page' })
-          .filter((page) => page.out)
+          .filter((page) => page.out && page.src &&  page.src.stem !== "_config")
           .reduce((collector, page) => {
             if ((page.pub.url in navEntriesByUrl) || page.pub.url === defaultUrl) return collector
             //-------------
@@ -75,7 +75,7 @@ function listAllNonHostedPages(contentCatalog, versions, logger) {
     versions.forEach(({ name: component, version }) => {
         const unlistedPages = contentCatalog
           .findBy({ component, version, family: 'page' })
-          .reduce((collector, page) => {if (page.out) return collector
+          .reduce((collector, page) => {if (page.out || (page.src && page.src.stem === "_config")) return collector
             //-------------
             // Create logger entry for any page that was has been found but is not entered in at least one navigation file
             //-------------
