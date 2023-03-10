@@ -40,22 +40,40 @@ function generateAttachments(contentAggregate) {
                     inputPath.family = inputPath.type+"s"
                 }
                 v.asciidoc.attributes['page-download-links'].find(x => x[0].includes(entry[1]))[0] = `${name}`
-                files.forEach(file => {
-                    const relativePath = path.relative(`modules/${inputPath.module}/${inputPath.family}/${inputPath.relative}`,file.src.path)
-                    if (relativePath) { zip.addFile(relativePath,file.contents,"") }
-                    else { zip.addFile(file.src.basename,file.contents,"") }
-                    if (clean) {
-                        v.files = v.files.filter(x => x !== file)
-                    }
-                })
-                const zipBuffer = zip.toBuffer()
-                const typeFolder = "attachments";
-                const zipFile = new File({ path: `modules/${inputPath.module}/${typeFolder}/${name}`, contents: zipBuffer, src: {}})
-                Object.assign(zipFile.src, { path: zipFile.path, basename: zipFile.basename, stem: zipFile.stem, extname: zipFile.extname, origin: {url: 'generated', startPath: 'generated', refname: 'generated', reftype: 'generated', refhash: 'generated'} })
-                v.files.push(zipFile)
+                if (files.length === 1 && [".zip"].includes(files[0].src.extname))  {
+                    const f = files[0]
+                    const oldName = f.basename
+                    const newBasename = name.split("/").at(-1)
+                    const newStem = newBasename.split(".")[0]
+                    f.path = f.path.replace(oldName, name)
+                    f.src.path = f.path
+                    f.basename = newBasename
+                    f.src.basename = f.basename
+                    f.stem = newStem
+                    f.src.stem = f.stem
+                } else {
+                    files.forEach(file => {
+                        const relativePath = path.relative(`modules/${inputPath.module}/${inputPath.family}/${inputPath.relative}`,file.src.path)
+                        if (relativePath) { zip.addFile(relativePath,file.contents,"") }
+                        else { zip.addFile(file.src.basename,file.contents,"") }
+                        if (clean) {
+                            v.files = v.files.filter(x => x !== file)
+                        }
+                    })
+                    const zipBuffer = zip.toBuffer()
+                    const typeFolder = "attachments";
+                    const zipFile = new File({ path: `modules/${inputPath.module}/${typeFolder}/${name}`, contents: zipBuffer, src: {}})
+                    Object.assign(zipFile.src, { path: zipFile.path, basename: zipFile.basename, stem: zipFile.stem, extname: zipFile.extname, origin: {url: 'generated', startPath: 'generated', refname: 'generated', reftype: 'generated', refhash: 'generated'} })
+                    v.files.push(zipFile)
+                }
             })
         }
+        setCustomAttribute(v)
     })
+}
+
+function setCustomAttribute(v) {
+    v.asciidoc.attributes['page-component-version-hyphenated'] = v.version.replaceAll(" ","_").replaceAll(".","-")
 }
 
 module.exports = {
