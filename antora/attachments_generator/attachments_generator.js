@@ -44,13 +44,13 @@ function generateAttachments(contentAggregate) {
                     const f = files[0]
                     const oldName = f.basename
                     const newBasename = name.split("/").at(-1)
-                    const newStem = newBasename.split(".")[0]
+                    const newStem = newBasename.replace(/\.[^/.]+$/, "")
                     f.path = f.path.replace(oldName, name)
                     f.src.path = f.path
                     f.basename = newBasename
                     f.src.basename = f.basename
                     f.stem = newStem
-                    f.src.stem = f.stem
+                    f.src.stem = f.stem                    
                 } else {
                     files.forEach(file => {
                         const relativePath = path.relative(`modules/${inputPath.module}/${inputPath.family}/${inputPath.relative}`,file.src.path)
