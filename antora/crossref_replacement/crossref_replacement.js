@@ -22,10 +22,10 @@ const ContentAnalyzer = require("../../core/content_analyzer.js")
  */
 function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorMap, pages, alternateXrefStyle=null ) {
     if (anchorMap.size === 0) {return pages}
-    const re = /<<([^>,]+)(,\s*([^>]+))?>>/gm
+    const re = /<<([^>,]+)(,\s*(.+))?>>/gm
     const reAlt = /xref:[^#\[]+#([^\[]+)\[(([^\]]*))\]/gm
     const reExceptions = /^-{4} *$|^={4} *$|^\/{4} *$|^\+{4} *$|^\.{4} *$|^_{4} *$/gm
-    const reIgnoreLine = /^.*\/{2}.*(<<[^>]+>>)|^.*`[^`\n]*(<<[^>]+>>)[^`\n]*`|^.*\/{2}.*(xref:[^#\[]+)#.*|^.*`[^`\n]*(xref:[^#\[]+)#[^`\n]*`/gm
+    const reIgnoreLine = /^.*\/{2}.*(<<.+>>)|^.*`[^`\n]*(<<.+>>)[^`\n]*`|^.*\/{2}.*(xref:[^#\[]+)#.*|^.*`[^`\n]*(xref:[^#\[]+)#[^`\n]*`/gm
     pages.forEach(page => {
         let content = page.contents.toString()
         let references = [...content.matchAll(re)]
@@ -58,8 +58,8 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                     // Workaround in case Section shall also be used on references without numbers
                     // if (ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" && referencePage === page) {autoAltText = ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], alternateXrefStyle)}
                     const altText = ref[3] ? ref[3] : autoAltText
-                    const anchorLink = ref[1]
-                    const replacementXref = "xref:"+referencePage.src.version+"@"+referencePage.src.component+":"+referencePage.src.module+":"+referencePage.src.relative+"#"+anchorLink+"["+altText+"]"
+                    const anchorLink = referencePage !== page  || !ref[1].startsWith("top-")? "#" + ref[1] : ""
+                    const replacementXref = "xref:" + referencePage.src.version + "@" + referencePage.src.component + ":" + referencePage.src.module + ":" + referencePage.src.relative + anchorLink + "[" + altText + "]"
                     const startIndex = content.indexOf(ref.input.slice(ref.index))
                     content = content.slice(0,startIndex)+content.slice(startIndex).replace(ref[0],replacementXref)
                 }
