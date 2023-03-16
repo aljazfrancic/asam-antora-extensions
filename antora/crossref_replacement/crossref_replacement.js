@@ -57,7 +57,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                     let autoAltText = ref[1].startsWith("top-") ? "" : ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" ? "" : ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], tempStyle )
                     // Workaround in case Section shall also be used on references without numbers
                     // if (ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" && referencePage === page) {autoAltText = ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], alternateXrefStyle)}
-                    const altText = ref[3] ? ref[3] : autoAltText
+                    const altText = ref[3] ? ContentAnalyzer.preventLatexMathConversion(ref[3]) : autoAltText
                     const anchorLink = referencePage !== page  || !ref[1].startsWith("top-")? "#" + ref[1] : ""
                     const replacementXref = "xref:" + referencePage.src.version + "@" + referencePage.src.component + ":" + referencePage.src.module + ":" + referencePage.src.relative + anchorLink + "[" + altText + "]"
                     const startIndex = content.indexOf(ref.input.slice(ref.index))

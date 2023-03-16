@@ -605,7 +605,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     else {
         returnValue = getAltTextFromTitle(page, content);
     }
-    returnValue = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, returnValue)
+    returnValue = preventLatexMathConversion(replaceAllAttributesInLine(componentAttributes, inheritedAttributes, returnValue))    
     return (returnValue)
 
     function useShortRefRule(entryIndex, caption, type) {
@@ -619,6 +619,21 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
         return [result, title, prefix, returnValue]
     }
 }
+
+function preventLatexMathConversion(unsafe) {
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+    const valueHasSourceCodeAtStartOfTitle = unsafe.match(/"(`([^`]*)`)/)
+    return valueHasSourceCodeAtStartOfTitle ? unsafe.replace(valueHasSourceCodeAtStartOfTitle[1], `pass:[<code>${escapeHtml(valueHasSourceCodeAtStartOfTitle[2])}</code>]`) : unsafe
+}
+
+
 
 /**
  * Applies ASAM linting rules for anchors
@@ -1282,5 +1297,6 @@ module.exports = {
     isListingBlock,
     createdSortedNavFileContent,
     getMergedFileContent,
-    getTargetFileOverAllContent
+    getTargetFileOverAllContent,
+    preventLatexMathConversion
 }
