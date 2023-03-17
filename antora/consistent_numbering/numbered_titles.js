@@ -252,11 +252,13 @@ function tryApplyingPageAndSectionNumberValuesToPage( mapInput, nav, catalog, pa
         //-------------
         if (indexOfXref <= 0) {
             if (!generateNumbers) {
-
                 return [content, !generateNumbers,"default"]
             }
+            const reservedContent = content.slice(0, content.indexOf(line)).reverse().join("\n")
+            const appendixTypeInNav = ContentAnalyzer.getAttributeFromContent(reservedContent, 'appendix-type')
+            const appendixType = appendixTypeInNav ? ` (${appendixTypeInNav.trim()})` : componentAttributes['appendix-type'] ? ` (${componentAttributes['appendix-type'].trim()})` : ""
             chapterIndex = Helper.determineNextChapterIndex(targetLevel, chapterIndex, style, appendixCaption, isAppendix)
-            const changedLine = isAppendix && targetLevel === 1 ? line.slice(0,level) + " " + appendixCaption + " " + chapterIndex + ":" + line.slice(level) : line.slice(0,level) + " " + chapterIndex + line.slice(level)
+            const changedLine = isAppendix && targetLevel === 1 ? line.slice(0,level) + " " + appendixCaption + " " + chapterIndex + appendixType + ":" + line.slice(level) : line.slice(0,level) + " " + chapterIndex + line.slice(level)
             content[content.indexOf(line)] = changedLine
             chapterIndex = style === "iso" ? chapterIndex +"."+ 0 : chapterIndex + 0 +"."
         }
@@ -294,8 +296,11 @@ function tryApplyingPageAndSectionNumberValuesToPage( mapInput, nav, catalog, pa
                 numberOfLevelTwoSections = newLevelTwoSections
                 let [newContent, indexOfTitle, indexOfNavtitle, indexOfReftext] = ContentAnalyzer.getPageContentForExtensionFeatures(page)
                 const targetIndex = style === "iso" ? chapterIndex.split(".") : chapterIndex.split(".").slice(0,-1)
+                let appendixTypeString = ""
                 if (isAppendix && targetLevel === 1) {
-                    newContent.splice(indexOfTitle+2,0,":titleprefix: "+ appendixCaption+" "+targetIndex.join(".")+":")
+                    const appendixType = ContentAnalyzer.getAttributeFromFile(page, 'appendix-type', 20) ? ContentAnalyzer.getAttributeFromFile(page, 'appendix-type', 20).trim() : componentAttributes['appendix-type'] ? componentAttributes['appendix-type'].trim() : null
+                    appendixTypeString = appendixType ? ` (${appendixType})` : ""
+                    newContent.splice(indexOfTitle+2, 0, ":titleprefix: " + appendixCaption + " " + targetIndex.join(".") + appendixTypeString + ":")
                 }
                 //-------------
                 // If the option is passed in this function (e.g. as "appendix") and the value is not "default", it is added above the title.
@@ -314,7 +319,7 @@ function tryApplyingPageAndSectionNumberValuesToPage( mapInput, nav, catalog, pa
                 const reftext_full = isNaN(targetIndex[0]) ? `${appendixCaption} ${targetIndex.join(".")}, __${title}__` : `${sectionRefsig} ${targetIndex.join(".")}, "${title}"`
                 const reftext_short = isNaN(targetIndex[0]) ? `${appendixCaption} ${targetIndex.join(".")}` : `${sectionRefsig} ${targetIndex.join(".")}`
                 const reftext_basic = isNaN(targetIndex[0]) ? `__${title}__` : `"${title}"`
-                const navtitle = (isAppendix && targetLevel === 1) ? `${appendixCaption} ${targetIndex.join(".")}: ${title}` :  `${targetIndex.join(".")} ${title}`
+                const navtitle = (isAppendix && targetLevel === 1) ? `${appendixCaption} ${targetIndex.join(".")}${appendixTypeString}: ${title}` :  `${targetIndex.join(".")} ${title}`
                 ContentManipulator.updateAttributeWithValueOnPage(page, "navtitle", navtitle)
                 ContentManipulator.updateAttributeWithValueOnPage(page, "reftext_full", reftext_full)
                 ContentManipulator.updateAttributeWithValueOnPage(page, "reftext_short", reftext_short)
