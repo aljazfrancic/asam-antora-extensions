@@ -181,7 +181,8 @@ module.exports.register = function ({ config }) {
                 if (parsedConfig.alternateXrefStyle && parsedConfig.alternateXrefStyle !== "") {
                     console.log(`Applying explicit xref style ${parsedConfig.alternateXrefStyle} for xrefs...`)
                     catalog =  contentCatalog.findBy({ component, version})
-                    RefStyle.addXrefStyleToSectionAndPageXrefs(mapInput, catalog, componentAttributes, anchorPageMap, parsedConfig.alternateXrefStyle)
+                    mapInput.componentAttributes = componentAttributes
+                    RefStyle.addXrefStyleToSectionAndPageXrefs(mapInput, catalog, mapInput.componentAttributes, anchorPageMap, parsedConfig.alternateXrefStyle)
                     console.log("-".repeat(50)+"\n")
                 }
                 //-------------

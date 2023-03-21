@@ -458,12 +458,15 @@ function getActivePageAttributesAtLine(catalog, componentAttributes, inheritedAt
  * @param {Object} componentAttributes - An object containing all attributes of the component.
  * @param {Map <String, Object>} anchorPageMap - A map containing all found anchors and their pages.
  * @param {Array <Object>} pages - An array of all pages.
- * @param {Object} page - The current page.
+ * @param {Object} page - The current page where the xref points to.
  * @param {String} anchor - The anchor in question.
  * @param {String} style - Optional: A specific reference style to be returned. Options: "full", "short", or "basic".
+ * @param {Object} parentPage - Optional: The page the xref points to if it is not the source of the anchor.
+
  * @returns {String} The extracted alt text.
  */
 function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, page, anchor, style = "", parentPage = {}) {
+    // console.log("Start func")
     const reSectionEqualSigns = /^\s*(=+)\s+(.*)$/m
     const reCaptionLabel = /^\.(\S.+)$/m
     const reAnchorType = /#?([^-\]]+)-?[^\]]*/m
@@ -518,8 +521,8 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     //-------------
     if (resultAnchorType) {
         lintAnchors(anchor, page, resultAnchorType, countLineBreaks, content, indexOfAnchor, countLineBreaksHeading, resultForNextHeading)
-        const entryIndex = anchorPageMap.get(anchor).index
-        if (anchorPageMap.get(anchor) && !entryIndex) return "No Index"
+        const entryIndex = anchorPageMap.get(anchor) ? anchorPageMap.get(anchor).index : null
+        if (!entryIndex) return "No Index"
         if (Object.entries(parentPage).length > 0 && resultAnchorType[1] === "top") { resultAnchorType[1] = "sec" }
         switch (resultAnchorType[1]) {
             case "fig":
@@ -532,23 +535,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 [result, title, prefix, returnValue] = useShortRefRule(entryIndex, codeCaption, "code-")
                 break;
             case "top":
-                returnValue = getAltTextFromTitle(page, content);
-                title = content.match(/^= (.*)$/m) ? content.match(/^= (.*)$/m)[1] : null;
-                title = title ? title : returnValue;
-                switch (style) {
-                    case "full":
-                        reftext = getAttributeFromFile(page, "reftext_full");
-                        break;
-                    case "short":
-                        reftext = getAttributeFromFile(page, "reftext_short");
-                        break;
-                    case "basic":
-                        reftext = getAttributeFromFile(page, "reftext_basic");
-                        break;
-                }
-                const titleoffset = getAttributeFromFile(page, "titleoffset");
-                const titleprefix = getAttributeFromFile(page, "tileprefix");
-                prefix = titleprefix ? titleprefix : titleoffset ? titleoffset : "";
+                ({ title, reftext, prefix, returnValue } = getTopAnchorValues(page, content, style))
                 break;
             case "sec":
                 result = resultForNextHeading ? resultForNextHeading : content.match(/^(=) (.*)$/m);
@@ -585,19 +572,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
         //-------------
         // Update the return value based on the selected style (if any). Otherwise, leave as is.
         //-------------
-        switch (style) {
-            case "full":
-                returnValue = reftext ? reftext : prefix && resultAnchorType[1] === "top" && prefix.startsWith(appendixRefsig) ? `${prefix} __${title}__` : prefix && (prefix !== sectionRefsig && prefix !== appendixRefsig) ? `${prefix}, "${title}"` : prefix ? `${prefix} "${title}"` : `${title}`;
-                break;
-            case "short":
-                returnValue = reftext ? reftext : prefix ? prefix : title;
-                break;
-            case "basic":
-                returnValue = reftext ? reftext : `${title}`;
-                break;
-            default:
-                break;
-        }
+        returnValue = applyStyleForXrefLabel(style, returnValue, reftext, prefix, resultAnchorType, appendixRefsig, title, sectionRefsig)
     }
     //-------------
     // Backup: If all else fails (i.e. an invalid anchor was found), get the alt text from the title.
@@ -618,6 +593,45 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
         }
         return [result, title, prefix, returnValue]
     }
+}
+
+function applyStyleForXrefLabel(style, returnValue, reftext, prefix, resultAnchorType, appendixRefsig, title, sectionRefsig) {
+    switch (style) {
+        case "full":
+            returnValue = reftext ? reftext : prefix && resultAnchorType[1] === "top" && prefix.startsWith(appendixRefsig) ? `${prefix} __${title}__` : prefix && (prefix !== sectionRefsig && prefix !== appendixRefsig) ? `${prefix}, "${title}"` : prefix ? `${prefix} "${title}"` : `${title}`
+            break
+        case "short":
+            returnValue = reftext ? reftext : prefix ? prefix : title
+            break
+        case "basic":
+            returnValue = reftext ? reftext : `${title}`
+            break
+        default:
+            break
+    }
+    return returnValue
+}
+
+function getTopAnchorValues(page, content, style) {
+    let reftext
+    const returnValue = getAltTextFromTitle(page, content)
+    let title = content.match(/^= (.*)$/m) ? content.match(/^= (.*)$/m)[1] : null
+    title = title ? title : returnValue
+    switch (style) {
+        case "full":
+            reftext = getAttributeFromFile(page, "reftext_full")
+            break
+        case "short":
+            reftext = getAttributeFromFile(page, "reftext_short")
+            break
+        case "basic":
+            reftext = getAttributeFromFile(page, "reftext_basic")
+            break
+    }
+    const titleoffset = getAttributeFromFile(page, "titleoffset")
+    const titleprefix = getAttributeFromFile(page, "tileprefix")
+    const prefix = titleprefix ? titleprefix : titleoffset ? titleoffset : ""
+    return { returnValue, title, reftext, prefix }
 }
 
 function preventLatexMathConversion(unsafe) {
@@ -1045,6 +1059,11 @@ function generateMapsForPages(mapInput) {
     let anchorPageMap = getAnchorPageMapForPages(mapInput, mapInput.contentCatalog, mapInput.pages, mapInput.navFiles, mapInput.componentAttributes)
     const mergedNavContents = createdSortedNavFileContent(mapInput)
 
+    anchorPageMap = indexifyAnchorMap(anchorPageMap, mergedNavContents)
+    return { keywordPageMap, rolePageMap, anchorPageMap }
+}
+
+function indexifyAnchorMap(anchorPageMap, mergedNavContents) {
     anchorPageMap.forEach((value, key) => {
         const debug = key.includes("EAID_898D9CC9_ADA9_4992_9AB8_C13AE98C756A")
         value.index = [mergedNavContents.indexOf(value.source.src.relative), value.line]
@@ -1062,9 +1081,9 @@ function generateMapsForPages(mapInput) {
             value.usedIn = [value.source].concat(value.usedIn)
             let sortedEntries = value.usedIn.map((v, i) => { return [v, value.allIndices[i]] })
             sortedEntries.sort((a, b) => {
-                if (a[1][0] === b[1][0]) { return a[1][1] - b[1][1] }
-                if (a[1][0] === -1) { return 1 }
-                if (b[1][0] === -1) { return -1 }
+                if (a[1][0] === b[1][0]) { return a[1][1] - b[1][1]} 
+                if (a[1][0] === -1) { return 1} 
+                if (b[1][0] === -1) { return -1} 
                 return a[1][0] - b[1][0]
             })
             value.usedIn = sortedEntries.map(v => v[0])
@@ -1095,7 +1114,7 @@ function generateMapsForPages(mapInput) {
 
     // Filter the map entries with an index of -1
     anchorPageMap = new Map(([...anchorPageMap]).filter(x => x[1].index[0] !== -1))
-    return { keywordPageMap, rolePageMap, anchorPageMap }
+    return anchorPageMap
 }
 
 /**
@@ -1298,5 +1317,8 @@ module.exports = {
     createdSortedNavFileContent,
     getMergedFileContent,
     getTargetFileOverAllContent,
-    preventLatexMathConversion
+    preventLatexMathConversion,
+    indexifyAnchorMap,
+    getTopAnchorValues,
+    applyStyleForXrefLabel
 }
