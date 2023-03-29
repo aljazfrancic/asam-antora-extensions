@@ -119,13 +119,15 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
             if (debug) {console.log("tempStyle", tempStyle)}
             const targetPath = ContentAnalyzer.getSrcPathFromFileId(match[1])
             if (!targetPath.module) { targetPath.module = file.src.module }            
-            const xrefTarget = targetPath.component ? mapInput.contentCatalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative && x.src.component === targetPath.component) : catalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative)
+            if (!targetPath.version) { targetPath.version = file.src.version }
+            const xrefTarget = targetPath.component ? mapInput.contentCatalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative && x.src.component === targetPath.component && x.src.version === targetPath.version) : catalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative)
             // if (debug) {console.log("targetPath", targetPath)}
             // if (debug) {console.log("xrefTarget", xrefTarget)}
             // if (debug) {console.log("src", file.src)}
             if (!xrefTarget) {
                 if (!ContentAnalyzer.getTargetFileOverAllContent(match[1], file, mapInput)) {
-                    console.warn("could not determine target of xref...", match[0], "in", file.src.abspath);
+                    const p = file.src.abspath ? file.src.abspath : file.src.path
+                    console.warn("could not determine target of xref...", match[0], "in", p);
                 }
                 continue
             }
@@ -154,7 +156,7 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
                 anchorSource = relevantAnchorPageMap.get(match[2].slice(1)) ? relevantAnchorPageMap.get(match[2].slice(1)).source : xrefTarget
                 if (!relevantAnchorPageMap.get(match[2].slice(1)) && targetPath.component === file.src.component) {
                     if (!anchorErrors.find(x => (x.file === file && x.anchors.includes(match[2].slice(1))))) {
-                        console.warn("ERROR IN FILE", file.src.abspath)
+                        console.warn("ERROR IN FILE", file.src.abspath ? file.src.abspath : file.src.path)
                         console.warn("anchor", match[2].slice(1), "not found in anchor map!")
                         const altMatch = relevantAnchorPageMap.get(match[2].slice(1).replace("top-", "sec-"))
                         if (altMatch) {
@@ -171,9 +173,9 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
                     continue
                 }
                 if (anchorSource !== xrefTarget && (!relevantAnchorPageMap.get(match[2].slice(1)).usedIn || !relevantAnchorPageMap.get(match[2].slice(1)).usedIn.find(x => x === xrefTarget))) {
-                    console.warn("ERROR IN FILE", file.src.abspath)
+                    console.warn("ERROR IN FILE", file.src.abspath ? file.src.abspath : file.src.path)
                     const usedIn = relevantAnchorPageMap.get(match[2].slice(1)).usedIn ? relevantAnchorPageMap.get(match[2].slice(1)).usedIn : relevantAnchorPageMap.get(match[2].slice(1)).source
-                    console.warn("anchor", match[2].slice(1), "has no occurrence in file", xrefTarget.src.path, ".\nAnchor is actually found in", usedIn.src.path)
+                    console.warn("anchor", match[2].slice(1), "has no occurrence in file", xrefTarget.src ? xrefTarget.src.path : xrefTarget, ".\nAnchor is actually found in", usedIn.src ? usedIn.src.path : usedIn)
                     continue
                 }
                 const parentPage = xrefTarget === anchorSource ? {} : xrefTarget

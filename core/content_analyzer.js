@@ -680,7 +680,7 @@ function lintAnchors(anchor, page, resultAnchorType, countLineBreaks, content, i
                 let matchSource = content.slice(indexOfAnchor).match(reSourceBlock)
                 if (!(matchExample && content.slice(indexOfAnchor, indexOfAnchor + matchExample.index).split("\n").length === 3) && !(matchSource && content.slice(indexOfAnchor, indexOfAnchor + matchSource.index).split("\n").length === 3)) {
                     anchorWarningEntry.type = "block"
-                    if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: Code anchor ${anchor} not immediately followed by block after title!\nFile: ${page.src.abspath}`); anchorWarnings.push(anchorWarningEntry) }
+                    if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: Code anchor ${anchor} not immediately followed by block after title!\nFile: ${page.src.abspath ? page.src.abspath : page.src}`); anchorWarnings.push(anchorWarningEntry) }
                 }
                 if (matchExample && content.slice(indexOfAnchor, indexOfAnchor + matchExample.index).split("\n").length === 3) {
                     anchorWarningEntry.type = "exAsCode"

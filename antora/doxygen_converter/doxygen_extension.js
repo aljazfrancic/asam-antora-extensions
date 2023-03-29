@@ -69,7 +69,7 @@ function convertDoxygen(workdir, contentAggregate) {
                     // ----------------
                     // Finally, parse the created files and add them to Antora for this version
                     // ----------------
-                    let newFiles = FileCreator.convertArrayToVirtualFiles(virtualFiles,defaultOrigin,abspathPrefix)
+                    let newFiles = FileCreator.convertArrayToVirtualFiles(virtualFiles, defaultOrigin, abspathPrefix)
                     let navFiles = v.files.filter(x => x.src.stem.includes("doxynav")  && x.src.path.includes(doxygenModulePath+"/"))
                     // TODO: Add function that creates the nav.adoc file in case it does not exist!
 
