@@ -120,7 +120,7 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
             const targetPath = ContentAnalyzer.getSrcPathFromFileId(match[1])
             if (!targetPath.module) { targetPath.module = file.src.module }            
             if (!targetPath.version) { targetPath.version = file.src.version }
-            const xrefTarget = targetPath.component ? mapInput.contentCatalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative && x.src.component === targetPath.component && x.src.version === targetPath.version) : catalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative)
+            let xrefTarget = targetPath.component ? mapInput.contentCatalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative && x.src.component === targetPath.component && x.src.version === targetPath.version) : catalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative)
             // if (debug) {console.log("targetPath", targetPath)}
             // if (debug) {console.log("xrefTarget", xrefTarget)}
             // if (debug) {console.log("src", file.src)}
@@ -129,7 +129,14 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
                     const p = file.src.abspath ? file.src.abspath : file.src.path
                     console.warn("could not determine target of xref...", match[0], "in", p);
                 }
-                continue
+                xrefTarget = targetPath.component && !xrefTarget ? mapInput.contentCatalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative && x.src.component === targetPath.component && x.src.version === targetPath.version) : xrefTarget
+                if (!xrefTarget) {
+                    continue
+                }
+                else {
+                    console.warn(`found alternative match in different version ${xrefTarget.src.version} instead of ${targetPath.version}`)
+                    console.warn("consider improving this xref")
+                }
             }
             if (xrefTarget.src.stem === "_config.adoc") { continue }
             if (match[2]) {
