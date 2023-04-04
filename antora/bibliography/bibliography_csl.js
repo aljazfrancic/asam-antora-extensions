@@ -14,6 +14,7 @@ const ContentAnalyzer = require('../../core/content_analyzer.js')
 const CSL = require('citeproc')
 const { BibLatexParser } = require("biblatex-csl-converter")
 const fs = require('fs')
+const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 /**
  * Replaces all cite:[] macros with links and the bibliography::[] with a sorted list of referenced bibliography entries.
@@ -44,15 +45,34 @@ function applyBibliography(mapInput, bibliographyFiles, styleID="iso690-numeric-
                 return fs.readFileSync(`${__dirname}/lib/locales/locales-${lang}.xml`, 'utf8')
             }
             catch {
-                return false
+                try {
+                    console.log("Submodule for csl locale not found. Falling back to remote.")
+                    let xhr = new XMLHttpRequest();
+                    xhr.open('GET', 'https://raw.githubusercontent.com/Juris-M/citeproc-js-docs/master/locales-' + lang + '.xml', false);
+                    xhr.send(null);
+                    return xhr.responseText;
+                }
+                catch {
+                    return false
+                }
             }
         },
         retrieveItem: function(id){
           return bibEntries.entries[id];
         }
       }
-    const style = fs.readFileSync(`${__dirname}/lib/styles/${styleID}.csl`, 'utf8')
-    var citeproc = new CSL.Engine(citeprocSys, style, language, true)
+    let style
+    try {
+        style = fs.readFileSync(`${__dirname}/lib/styles/${styleID}.csl`, 'utf8')
+    }
+    catch {
+        console.log("Submodule for csl styles not found. Falling back to remote.")
+        let xhr = new XMLHttpRequest();
+        xhr.open('GET', 'https://raw.githubusercontent.com/citation-style-language/styles/master/' + styleID + '.csl', false);
+        xhr.send(null);
+        style = xhr.responseText;
+    }
+    let citeproc = new CSL.Engine(citeprocSys, style, language, true)
 
     // Sort pages by entry in navigation
     const mergedNavContent = ContentAnalyzer.createdSortedNavFileContent(mapInput)
