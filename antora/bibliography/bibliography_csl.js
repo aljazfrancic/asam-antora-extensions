@@ -18,13 +18,19 @@ const fs = require('fs')
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 const jsdom = require('jsdom')
 
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
+  }
+  
+
 /**
  * Replaces all cite:[] macros with links and the bibliography::[] with a sorted list of referenced bibliography entries.
  * @param {Object} mapInput - A set of configuration parameters. Must contain 'componentAttributes', 'pages', 'version', 'navFiles'.
  * @param {Array <Object>} bibliographyFiles - An array of all bibliography (.bib) files, one per component & version.
  * @param {String} styleID - The name of the style (csl) that is to be applied for the bibliography.
+ * @param {String} language - The language used for the bibliography (using locale).
  */
-function applyBibliography(mapInput, bibliographyFiles, styleID="iso690-numeric-brackets-cs", language="en") {
+function applyBibliography(mapInput, bibliographyFiles, styleID = "iso690-numeric-brackets-cs", language = "en") {
     if (!mapInput.componentAttributes['asamBibliography']) {return}
     // Set up regular expressions
     const reException = /ifndef::use-antora-rules\[\](.*\r\n*)*?endif::\[\]/gm
@@ -92,23 +98,20 @@ function applyBibliography(mapInput, bibliographyFiles, styleID="iso690-numeric-
     const pathToId = `${antoraBibliography.src.module}:${antoraBibliography.src.relative}`
     let itemIDs = []
     mapInput.pages.forEach(page => {
-        itemIDs = replaceCitationsWithLinks(page, reException, mapInput, bibEntries, pathToId, itemIDs, citeprocSys)
+        itemIDs = replaceCitationsWithLinks(page)
     })
 
     // Create bibliography page
     createBibliography(antoraBibliography, bibEntries, itemIDs, citeproc)
 
-    // /**
-    //  * Replaces all citations within a file by the respective link to the bibliography page. Also processes included pages and partials.
-    //  * @param {Object} f - The file where the citations are to be replaced.
-    //  * @param {String} reException - The regular expression for content that is to be excepted from replacement (e.g. in comments).
-    //  * @param {Object} mapInput - A set of configuration parameters. Must contain 'catalog'.
-    //  * @param {Object} bibEntries - An object containing all entries of the bibliography (using the bibtex library).
-    //  * @param {Integer} currentIndex - The current index for new bibtex references.
-    //  * @param {String} pathToId - The path to the identified bibliography page.
-    //  * @returns {Integer} - The current index after processing the file.
-    //  */
-    function replaceCitationsWithLinks(page, reException, mapInput, bibEntries, pathToId, itemIDs, citeprocSys, pageAttributes = {}) {
+    /**
+     * Replaces all citations within a file by the respective link to the bibliography page. Also processes included pages and partials.
+     * @param {Object} page - The file where the citations are to be replaced.
+     * @param {Array <>} citationsPre - Optional: The citations already made in previous files and lines.
+     * @param {Object} pageAttributes - Optional: The collective page attributes.
+     * @returns {Array <>} - The collective citation IDs.
+     */
+    function replaceCitationsWithLinks(page, citationsPre = [], pageAttributes = {}) {
         const reReference = /(?<!\/{2} .*)cite:\[([^\]]+)\]/g
         let fileContentReplaced = page.contents.toString().replaceAll(reException,``).split("\n")
         let fileContent = page.contents.toString()
@@ -118,7 +121,7 @@ function applyBibliography(mapInput, bibliographyFiles, styleID="iso690-numeric-
             const lineWithoutAttributes = ContentAnalyzer.replaceAllAttributesInLine(mapInput.componentAttributes, pageAttributes, line)
             const includedFile = ContentAnalyzer.checkForIncludedFileFromLine(mapInput.catalog,page,lineWithoutAttributes)
             if (includedFile) {
-                itemIDs = replaceCitationsWithLinks(includedFile, reException, mapInput, bibEntries, pathToId, itemIDs, citeprocSys, pageAttributes)
+                itemIDs = replaceCitationsWithLinks(includedFile, citationsPre=citationsPre, pageAttributes=pageAttributes)
             }
             let result = line;
             const matches = [...line.matchAll(reReference)]
@@ -127,10 +130,15 @@ function applyBibliography(mapInput, bibliographyFiles, styleID="iso690-numeric-
                 if (m[1] && citeprocSys.retrieveItem(m[1])) {
                     // If it has no number yet, generate one
                     if (!itemIDs.includes(m[1])) {
-                        itemIDs.push(m[1])
+                        itemIDs.push(m[1])                        
                     }
-                    // TODO: Replace this with a style-specific citation
-                    const subst = `[xref:${pathToId}#bib-${m[1].toLowerCase()}[${1 + itemIDs.indexOf(m[1])}]]`;
+                    const citation = {citationItems: [{id: m[1]}], properties: {noteIndex: 0}}
+                    const cited = citeproc.processCitationCluster(citation, citationsPre, [])
+                    citationsPre.push([cited[1][0][2], cited[1][0][0]])
+                    const prefix = citeproc.citation.opt.layout_prefix
+                    const suffix = citeproc.citation.opt.layout_suffix
+                    const reIdentifier = new RegExp(`^${escapeRegExp(prefix)}(.+)${escapeRegExp(suffix)}$`)
+                    const subst = cited[1][0][1].replace(reIdentifier,`${prefix}xref:${pathToId}#bib-${m[1]}[$1]${suffix}`);
                     result = result.replace(m[0], subst);
                 }
                 // If there is a match but no entry in the bib file
@@ -142,7 +150,6 @@ function applyBibliography(mapInput, bibliographyFiles, styleID="iso690-numeric-
             fileContentReplaced[fileContentReplaced.indexOf(line)] = result
         }
 
-        // f.contents = Buffer.from(fileContentReplaced.join("\n"))    
         page.contents = Buffer.from(fileContent)
         return itemIDs
     }
@@ -157,30 +164,17 @@ function applyBibliography(mapInput, bibliographyFiles, styleID="iso690-numeric-
     function createBibliography(antoraBibliography, bibEntries, itemIDs, citeproc) {
         // Sort entries by index
         citeproc.updateItems(itemIDs)
-        // citeproc.setOutputFormat("rtf")
-        // throw "HERE"
         const result = citeproc.makeBibliography()
         let dom = new jsdom.JSDOM(`<!DOCTYPE html>${result[1].join("").replaceAll("\n","").replaceAll(/> +</g,"><")}`)
         const entries = dom.window.document.getElementsByClassName("csl-entry")
         let content = antoraBibliography.contents.toString()
-        // const replacementContent = `\n\n++++\n${result[0].bibstart}${result[1].join("\n\n")}\n${result[0].bibend}\n++++\n`
         let replacementContent = []
         result[0].entry_ids.forEach((id, index) => {
             const identifier = entries[index].getElementsByClassName("csl-left-margin")[0]
             const text = entries[index].getElementsByClassName("csl-right-inline")[0]
-            console.log(identifier.innerHTML, text.innerHTML)
-            replacementContent.push(`[[bib-${id[0]}]]${identifier.innerHTML}pass:m,p[${text.innerHTML.replaceAll("]","\\]")}]`)
-            // for (const e of entries) {
-            //     const identifier = e.getElementsByClassName("csl-left-margin")[0]
-            //     const text = e.getElementsByClassName("csl-right-inline")[0]
-            //     console.log(identifier.innerHTML, text.innerHTML)
-            //     replacementContent.push(`[[bib-${id[0]}]]${result[1][index]}`.replaceAll("\\tab","").replaceAll(/{\\i{}([^}].+[^{])}/g, `__$1__`).replaceAll(/{\\b{}([^}].+[^{])}/g, `*$1*`).replaceAll(/\\super (.+)\\nosupersub{}/g, `^$1^`).replaceAll(/\\sub (.+)\\nosupersub{}/g, `~$1~`).replaceAll("\\uc0\\u8212{}", "--"))
-            // }
-            // replacementContent.push(`[[bib-${id[0]}]]${result[1][index]}`.replaceAll("\\tab","").replaceAll(/{\\i{}([^}].+[^{])}/g, `__$1__`).replaceAll(/{\\b{}([^}].+[^{])}/g, `*$1*`).replaceAll(/\\super (.+)\\nosupersub{}/g, `^$1^`).replaceAll(/\\sub (.+)\\nosupersub{}/g, `~$1~`).replaceAll("\\uc0\\u8212{}", "--"))
+            replacementContent.push(`[[bib-${id[0]}]]${identifier.innerHTML} pass:m,p[${text.innerHTML.replaceAll("]","\\]")}]`)
         })
-        // console.log(replacementContent.join("\n"))
         replacementContent = replacementContent.join("\n\n")
-        // let replacementContent = `\n\n${result[1].join("\n")}\n`
         const newContent = content.replace("bibliography::[]",replacementContent)
         antoraBibliography.contents = Buffer.from(newContent)
     }
