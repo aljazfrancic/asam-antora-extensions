@@ -80,8 +80,8 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
         xhr.send(null);
         style = xhr.responseText;
     }
-    let citeproc = new CSL.Engine(citeprocSys, style, language, true)
-
+    const citeproc = new CSL.Engine(citeprocSys, style, language, true)
+     citeproc.updateItems(bibEntries.data.map(x => {return x.id}))
     // Sort pages by entry in navigation
     const mergedNavContent = ContentAnalyzer.createdSortedNavFileContent(mapInput)
     mapInput.pages.sort((a,b) => {
@@ -96,49 +96,57 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
 
     // Identify the references actually used throughout this document and replace them with links
     const pathToId = `${antoraBibliography.src.module}:${antoraBibliography.src.relative}`
-    let itemIDs = []
+    let citationsPre = []
+    let linkReplacements = {}
     mapInput.pages.forEach(page => {
-        itemIDs = replaceCitationsWithLinks(page)
+        replaceCitationsWithLinks({ page: page })
+    })
+    mapInput.pages.forEach(page => {
+        replaceCitationsWithLinks({ page: page, final: true })
     })
 
     // Create bibliography page
-    createBibliography(antoraBibliography, bibEntries, itemIDs, citeproc)
+    createBibliography(antoraBibliography, citeproc)
 
     /**
      * Replaces all citations within a file by the respective link to the bibliography page. Also processes included pages and partials.
      * @param {Object} page - The file where the citations are to be replaced.
      * @param {Array <>} citationsPre - Optional: The citations already made in previous files and lines.
      * @param {Object} pageAttributes - Optional: The collective page attributes.
-     * @returns {Array <>} - The collective citation IDs.
      */
-    function replaceCitationsWithLinks(page, citationsPre = [], pageAttributes = {}) {
+    function replaceCitationsWithLinks({page, pageAttributes = {}, final = false} = {}) {
         const reReference = /(?<!\/{2} .*)cite:\[([^\]]+)\]/g
+        const reLineReplacement = /bibrefid-([^\]]+)/g
         let fileContentReplaced = page.contents.toString().replaceAll(reException,``).split("\n")
         let fileContent = page.contents.toString()
+        const cslCitationPrefix = citeproc.cslXml.dataObj.children.find(x => x.name==="citation").children.find(x => x.name === "layout").children[0].attrs.prefix
+        const cslCitationSuffix = citeproc.cslXml.dataObj.children.find(x => x.name==="citation").children.find(x => x.name === "layout").children[0].attrs.suffix
+        const prefix = citeproc.citation.opt.layout_prefix ? citeproc.citation.opt.layout_prefix : cslCitationPrefix ? cslCitationPrefix : ""
+        const suffix = citeproc.citation.opt.layout_suffix ? citeproc.citation.opt.layout_suffix : cslCitationSuffix ? cslCitationSuffix : ""
+        const reIdentifier = new RegExp(`^${escapeRegExp(prefix)}(.+)${escapeRegExp(suffix)}$`)
         for (let line of fileContentReplaced) {
             // Check for included file and apply function to that if found. Update the currentIndex accordingly
             ContentAnalyzer.updatePageAttributes(pageAttributes,line)
             const lineWithoutAttributes = ContentAnalyzer.replaceAllAttributesInLine(mapInput.componentAttributes, pageAttributes, line)
             const includedFile = ContentAnalyzer.checkForIncludedFileFromLine(mapInput.catalog,page,lineWithoutAttributes)
             if (includedFile) {
-                itemIDs = replaceCitationsWithLinks(includedFile, citationsPre=citationsPre, pageAttributes=pageAttributes)
+                replaceCitationsWithLinks({page: includedFile, pageAttributes: pageAttributes, final: final})
             }
             let result = line;
+            if (!final) {
             const matches = [...line.matchAll(reReference)]
             for (let m of matches){
                 // If a match was found and an entry in the bib file exists                
                 if (m[1] && citeprocSys.retrieveItem(m[1])) {
                     // If it has no number yet, generate one
-                    if (!itemIDs.includes(m[1])) {
-                        itemIDs.push(m[1])                        
-                    }
-                    const citation = {citationItems: [{id: m[1]}], properties: {noteIndex: 0}}
+                    const citation = {citationItems: [{id: m[1]}]}
                     const cited = citeproc.processCitationCluster(citation, citationsPre, [])
-                    citationsPre.push([cited[1][0][2], cited[1][0][0]])
-                    const prefix = citeproc.citation.opt.layout_prefix
-                    const suffix = citeproc.citation.opt.layout_suffix
-                    const reIdentifier = new RegExp(`^${escapeRegExp(prefix)}(.+)${escapeRegExp(suffix)}$`)
-                    const subst = cited[1][0][1].replace(reIdentifier,`${prefix}xref:${pathToId}#bib-${m[1]}[$1]${suffix}`);
+                    citationsPre.push([cited[1].at(-1)[2], cited[1].at(-1)[0]])
+                    // const subst = cited[1][0][1].replace(reIdentifier,`${prefix}xref:${pathToId}#bib-${m[1]}[$1]${suffix}`);
+                    const subst = cited[1].at(-1)[1].replace(reIdentifier,`${prefix}xref:${pathToId}#bib-${m[1]}[bibrefid-${cited[1].at(-1)[2]}]${suffix}`);
+                    for (let c of cited[1]) {
+                        linkReplacements[c[2]] = c[1].replace(reIdentifier, "$1")
+                    }                    
                     result = result.replace(m[0], subst);
                 }
                 // If there is a match but no entry in the bib file
@@ -148,10 +156,17 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
             }
             fileContent = fileContent.replace(line,result)
             fileContentReplaced[fileContentReplaced.indexOf(line)] = result
+            } else {
+                const matches = [...line.matchAll(reLineReplacement)]
+                for (let m of matches){
+                    result = result.replace(m[0], linkReplacements[m[1]])
+                }
+                fileContent = fileContent.replace(line,result)
+                fileContentReplaced[fileContentReplaced.indexOf(line)] = result
+            }
         }
 
         page.contents = Buffer.from(fileContent)
-        return itemIDs
     }
 
     /**
@@ -161,18 +176,21 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
      * @param {Array <String>} itemIDs - An ordered array containing the items of the bibliography that were used throughout the documentation.
      * @param {Object} citeproc - The citeproc object for creating the bibliography based on the defined style.
      */
-    function createBibliography(antoraBibliography, bibEntries, itemIDs, citeproc) {
+    function createBibliography(antoraBibliography, citeproc) {
         // Sort entries by index
-        citeproc.updateItems(itemIDs)
         const result = citeproc.makeBibliography()
         let dom = new jsdom.JSDOM(`<!DOCTYPE html>${result[1].join("").replaceAll("\n","").replaceAll(/> +</g,"><")}`)
         const entries = dom.window.document.getElementsByClassName("csl-entry")
         let content = antoraBibliography.contents.toString()
         let replacementContent = []
         result[0].entry_ids.forEach((id, index) => {
-            const identifier = entries[index].getElementsByClassName("csl-left-margin")[0]
-            const text = entries[index].getElementsByClassName("csl-right-inline")[0]
-            replacementContent.push(`[[bib-${id[0]}]]${identifier.innerHTML} pass:m,p[${text.innerHTML.replaceAll("]","\\]")}]`)
+            const identifier = entries[index].getElementsByClassName("csl-left-margin")[0] ? entries[index].getElementsByClassName("csl-left-margin")[0] : null
+            const text = entries[index].getElementsByClassName("csl-right-inline")[0] ? entries[index].getElementsByClassName("csl-right-inline")[0] : null
+            if (identifier && text) {
+                replacementContent.push(`[[bib-${id[0]}]]${identifier.innerHTML} pass:m,p[${text.innerHTML.replaceAll("]","\\]")}]`)
+            } else {
+                replacementContent.push(`[[bib-${id[0]}]]pass:m,p[${entries[index].innerHTML.replaceAll("]","\\]")}]`)
+            }
         })
         replacementContent = replacementContent.join("\n\n")
         const newContent = content.replace("bibliography::[]",replacementContent)
