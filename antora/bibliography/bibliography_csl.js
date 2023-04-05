@@ -12,8 +12,8 @@
 //-------------
 const ContentAnalyzer = require('../../core/content_analyzer.js')
 const CSL = require('citeproc')
+const {Cite} = require("@citation-js/plugin-bibtex/node_modules/@citation-js/core");
 require("@citation-js/plugin-bibtex")
-const Cite = require("@citation-js/core");
 const fs = require('fs')
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 const jsdom = require('jsdom')
@@ -30,7 +30,7 @@ function escapeRegExp(string) {
  * @param {String} styleID - The name of the style (csl) that is to be applied for the bibliography.
  * @param {String} language - The language used for the bibliography (using locale).
  */
-function applyBibliography(mapInput, bibliographyFiles, styleID = "iso690-numeric-brackets-cs", language = "en") {
+function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", language = "en") {
     if (!mapInput.componentAttributes['asamBibliography']) {return}
     // Set up regular expressions
     const reException = /ifndef::use-antora-rules\[\](.*\r\n*)*?endif::\[\]/gm
@@ -44,7 +44,7 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "iso690-numeri
     if (!antoraBibliography) {throw "Found .bib file but no page with 'bibliography::[]'!"}
 
     // Set up bibliography data
-    const bibEntries = new Cite.Cite(bibFile.file.contents.toString())
+    const bibEntries = new Cite(bibFile.file.contents.toString())
     const citeprocSys = {
         retrieveLocale: function (lang){
             try {
