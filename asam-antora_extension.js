@@ -31,7 +31,8 @@ const Orphans = require('./antora/orphan_pages/orphan_pages.js');
 const LostAndFound = require('./antora/orphan_pages/orphan_files.js')
 const Loft = require("./antora/loft/loft.js");
 const RefStyle = require("./antora/reference_style_mixing/reference_style_mixing.js")
-const Bibliography = require("./antora/bibliography/bibliography.js")
+// const Bibliography = require("./antora/bibliography/bibliography.js")
+const Bibliography = require("./antora/bibliography/bibliography_csl.js")
 const AttachmentsGenerator = require("./antora/attachments_generator/attachments_generator.js")
 //-------------
 //-------------
@@ -104,10 +105,13 @@ module.exports.register = function ({ config }) {
                 //-------------
                 // Addon Bibliography: Works similar to the original Asciidoctor bibtex extension, but for Antora.
                 // Required setting: keywords: bibliography: true (site.yml); asamBibliography: 'path/to/file.bib' (antora.yml)
+                // NOTE: This applies the 'iso690-numeric-brackets-cs' as default even if the default of the function itself is 'ieee'.
                 //-------------
                 if (parsedConfig.asamBibliography) {
                     console.log("Creating bibliography and reference links...\n"+"-".repeat(50))
-                    Bibliography.applyBibliography(mapInput, bibliographyFiles)
+                    const style = config.bibtexStyle ? config.bibtexStyle : componentAttributes['bibtex-style'] ? componentAttributes['bibtex-style'] : "iso690-numeric-brackets-cs"
+                    const language = config.bibtexLocale ? config.bibtexLocale : componentAttributes['bibtex-locale'] ? componentAttributes['bibtex-locale'] : "en"
+                    Bibliography.applyBibliography(mapInput, bibliographyFiles, style, language)
                     console.log("-".repeat(50)+"\n")
                 }
                 console.log("Generating content overview maps...\n"+"-".repeat(50))
