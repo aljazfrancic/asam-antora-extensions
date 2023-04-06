@@ -33,11 +33,28 @@ function escapeRegExp(string) {
 function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", language = "en") {
     if (!mapInput.componentAttributes['asamBibliography']) {return}
     // Set up regular expressions
-    const reException = /ifndef::use-antora-rules\[\](.*\r\n*)*?endif::\[\]/gm
+    const reException = /ifndef::use-antora-rules\[\](.*\r*\n*)*?endif::\[\]/gm
     const reBibliography = /^\s*bibliography::\[\]/gm
-    // styleID = "ieee-with-url" // For Testing ONLY: TODO
+    // let antoraBibliography, lineInNavigation, relevantNavFile
 
-    // Find relevant bibliography file and bibliography page
+    // // Find relevant bibliography file and bibliography page
+    // for (let nav of mapInput.navFiles) {
+    //     let contents = nav.contents.toString().split("\n")
+    //     for (let line of contents.reverse()) {
+    //         const match = line.match(/\** *(xref:.+\[.*\])/)
+    //         if (match) {
+    //             const bibMatchCandidate = ContentAnalyzer.determinePageForXrefInLine(match[1], 0, mapInput.catalog, nav)
+    //             if (bibMatchCandidate.contents.toString().match("bibliography::[]") && !)
+    //             if (bibMatch && bibMatch[0] === antoraBibliography) {
+    //                 contents = contents.replace(match[0], "").replace("[bibliography]","")
+    //                 nav.contents = Buffer.from(contents)
+    //                 antoraBibliography.contents = Buffer.from("")
+    //                 antoraBibliography.out = null
+    //                 return
+    //             }
+    //         }
+    //     }
+    // }
     const antoraBibliography = mapInput.pages.find(x => x.contents.toString().replaceAll(reException,``).match(reBibliography))
     console.log("found bibliography adoc file",antoraBibliography)
     const bibFile = bibliographyFiles.find(x => x.component === mapInput.component && x.version === mapInput.version)
