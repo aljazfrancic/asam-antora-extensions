@@ -183,7 +183,7 @@ function parseFileAndCreateAdoc(sourcePath, filename, targetPath, imgPath, virtu
     })
     const count = (adocContent.match(/\+{4}\n/g) || []).length;
     if (count%2 === 1) {
-        adocContent +="++++\n"
+        adocContent +="\n++++\n"
     }
 
     // Add everything to the virtual files array
