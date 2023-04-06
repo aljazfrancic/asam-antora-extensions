@@ -1,3 +1,5 @@
+// DEPRECATED! Use bibliography_csl instead
+
 'use strict'
 //-------------
 //-------------

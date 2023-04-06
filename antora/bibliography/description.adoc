@@ -3,8 +3,7 @@ As of now, Antora does not support bibliographies out of the box.
 The Asciidoctor features and extensions do not work for JavaScript and distributed content.
 Rather, they are typically written in Ruby and expect all content to be in one output file (which is not the case with Antora).
 
-To solve this, ASAM has implemented a custom extension for Antora to support bibtex files and bibtex-style references for the most relevant types.
-Note that the only format currently supported is IEEE and that the number of types is limited to the list below.
+To solve this, ASAM has implemented a custom extension for Antora to support bibtex files and bibtex-style references.
 
 == Configuration
 To enable the bibliography feature in general, add the following configuration to the extension attributes:
@@ -25,7 +24,6 @@ antora:
 ----
 ====
 
-
 To enable the bibliography within a component, add the following configuration to respective antora.yml file:
 
 [source, YAML]
@@ -43,77 +41,20 @@ asciidoc:
 ----
 ====
 
+To choose a different citation style or language, you can set the following parameters in either the site.yml (for the whole extension) or each relevant antora.yml (as asciidoc attribute for this component-version):
+
+[source, YAML]
+----
+bibtex-style: <name of the csl file without extension (.csl)>
+bibtex-locale: <valid language tag>
+----
+
 == Notes
-The module is optional if all relevant pages are located within the same module anyway.
+All entries get an anchor with the following syntax: `bib-<entry-id>`, where `<entry-id>` is the id of the bibliography entry. +
+The default style is `iso690-numeric-brackets-cs`, the default locale is `en`.
 
-All entries get an anchor with the following syntax: `bib-<entry-id>`, where `<entry-id>` is the id of the bibliography entry.
-
-The following types and respective fields are currently supported:
-
-|===
-|Type|Fields
-
-|book
-a| * author
-* editor
-* title
-* volume
-* number
-* series
-* address
-* publisher
-* month
-* year
-* pages
-* url
-
-|inbook
-a| * author
-* chapter
-* title
-* volume
-* number
-* series
-* edition
-* address
-* publisher
-* month
-* year
-* pages
-* url
-
-|proceedings
-a| * editor
-* title
-* booktitle
-* volume
-* number
-* series
-* address
-* publisher
-* organization
-* month
-* year
-* pages
-* annote
-
-|techreport
-a| * title
-* number
-* institution
-* address
-* month
-* year
-* url
-
-|misc
-a|* author
-* title
-* howpublished
-* month
-* year
-
-|===
+Those defaults are set in the `asam-antora_extensions.js`.
+The default values of the bibliography extension itself may differ!
 
 == How it works
 The extension first finds the listed bibliography file (.bib) and parses its content.

@@ -19,10 +19,10 @@ const ContentAnalyzer = require('../../core/content_analyzer.js')
  * @param {String} unlistedPagesHeading - If addToNavigation is true, this is the name under which the orphan pages are to be collected under.
  * @param {*} logger - A logger for logging output.
  */
-function find_orphan_pages( contentCatalog, addToNavigation, unlistedPagesHeading, logger ) {
+function find_orphan_pages( contentCatalog, addToNavigation, unlistedPagesHeading, logger, exceptions=null ) {
 contentCatalog.getComponents().forEach(({ versions }) => {
-    listAllOrphanPages(contentCatalog, versions, addToNavigation, unlistedPagesHeading, logger)
-    listAllNonHostedPages(contentCatalog, versions, logger)
+    listAllOrphanPages(contentCatalog, versions, addToNavigation, unlistedPagesHeading, logger, exceptions)
+    listAllNonHostedPages(contentCatalog, versions, logger, exceptions)
   })
 }
 
@@ -35,14 +35,14 @@ contentCatalog.getComponents().forEach(({ versions }) => {
  * @param {String} unlistedPagesHeading - The heading for all orphan pages if they are to be listed.
  * @param {*} logger - A logger for logging output.
  */
-function listAllOrphanPages (contentCatalog, versions, addToNavigation, unlistedPagesHeading, logger) {
+function listAllOrphanPages (contentCatalog, versions, addToNavigation, unlistedPagesHeading, logger, exceptions) {
     versions.forEach(({ name: component, version, navigation: nav, url: defaultUrl }) => {
         const navEntriesByUrl = ContentAnalyzer.getNavEntriesByUrl(nav)
         const unlistedPages = contentCatalog
           .findBy({ component, version, family: 'page' })
           .filter((page) => page.out && page.src &&  page.src.stem !== "_config")
           .reduce((collector, page) => {
-            if ((page.pub.url in navEntriesByUrl) || page.pub.url === defaultUrl) return collector
+            if ((page.pub.url in navEntriesByUrl) || page.pub.url === defaultUrl || page.pub.url.includes(exceptions)) return collector
             //-------------
             // Create logger entry for any page that was has been found but is not entered in at least one navigation file
             //-------------
@@ -71,11 +71,11 @@ function listAllOrphanPages (contentCatalog, versions, addToNavigation, unlisted
  * @param {Array <Object>} versions - Array of version extracted from the contentCatalog.
  * @param {*} logger - A logger for logging output.
  */
-function listAllNonHostedPages(contentCatalog, versions, logger) {
+function listAllNonHostedPages(contentCatalog, versions, logger, exceptions) {
     versions.forEach(({ name: component, version }) => {
         const unlistedPages = contentCatalog
           .findBy({ component, version, family: 'page' })
-          .reduce((collector, page) => {if (page.out || (page.src && page.src.stem === "_config")) return collector
+          .reduce((collector, page) => {if (page.out || (page.src && page.src.stem === "_config") || (page.src && page.src.path && page.src.path.includes(exceptions))) return collector
             //-------------
             // Create logger entry for any page that was has been found but is not entered in at least one navigation file
             //-------------

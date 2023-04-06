@@ -20,6 +20,13 @@ To add the found orphan pages to the navigation, add the following configuration
 add_to_navigation: true
 ----
 
+In some cases (e.g. in combination with the doxygen converter), you may want to exclude files with a specific path or name.
+To do so, you can add the following attribute to your site.yml:
+[source, YAML]
+----
+orphan_exceptions: some_unique_path_name
+----
+
 By default, the standard name under which orphan pages are then added, is 'Unlisted pages'.
 To give it a different name, add the following configuration to the extension attributes:
 
@@ -28,7 +35,7 @@ To give it a different name, add the following configuration to the extension at
 unlisted_pages_heading: "Orphan pages"
 ----
 
-.Configuration for adding orphan pages under the label "Lost and found" and listing all unused partials and content with draft flags.
+.Configuration for adding orphan pages under the label "Lost and found" and listing all unused partials and content with draft flags, excluding anything with in a folder named "gen".
 ====
 [source,YAML]
 ----
@@ -38,6 +45,7 @@ antora:
     add_to_navigation: true
     unlisted_pages_heading: "Lost and found"
     list_unused_partials: true
+    orphan_exceptions: /gen/
 ----
 ====
 

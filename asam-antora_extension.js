@@ -216,7 +216,7 @@ module.exports.register = function ({ config }) {
         // Execute all features for each component-version-combination
         //-------------
         console.log("List orphan pages...\n"+"-".repeat(50))
-        Orphans.find_orphan_pages(contentCatalog,parsedConfig.addToNavigation, parsedConfig.unlistedPagesHeading, logger)
+        Orphans.find_orphan_pages(contentCatalog,parsedConfig.addToNavigation, parsedConfig.unlistedPagesHeading, logger, parsedConfig.orphanExceptions)
         console.log("-".repeat(50)+"\n")
       })
   }
