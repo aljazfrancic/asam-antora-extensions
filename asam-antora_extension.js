@@ -72,6 +72,9 @@ module.exports.register = function ({ config }) {
         //-------------
         contentCatalog.getComponents().forEach(({ versions }) => {
             versions.forEach(({ name: component, version, url: defaultUrl }) => {
+                console.log("#".repeat(50))
+                console.log(`Processing ${component} (${version})`)
+                console.log("#".repeat(50))
                 //-------------
                 // For each component-version-combo, get all pages and all nav files.
                 //-------------
