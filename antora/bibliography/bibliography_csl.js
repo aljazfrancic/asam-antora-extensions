@@ -196,7 +196,9 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
     function createBibliography(antoraBibliography, citeproc) {
         // Sort entries by index
         const result = citeproc.makeBibliography()
+        console.log("result", result)
         if (!result) {
+            console.log("Cannot create bibliography")
             return false
         }
         let content = antoraBibliography.contents.toString()
