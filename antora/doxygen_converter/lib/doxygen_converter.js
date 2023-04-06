@@ -181,6 +181,10 @@ function parseFileAndCreateAdoc(sourcePath, filename, targetPath, imgPath, virtu
             adocContent = [adocContent,jq(this).prop("outerHTML")].join("\n")
         }
     })
+    const count = (temp.match(/\+{4}\n/g) || []).length;
+    if (count%2 === 1) {
+        adocContent +="++++\n"
+    }
 
     // Add everything to the virtual files array
     virtualFiles.push({name:filename.replace(".html",".adoc"),path:targetPath,content:Buffer.from(adocContent, "utf-8")})
