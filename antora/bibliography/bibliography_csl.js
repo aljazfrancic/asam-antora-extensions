@@ -106,7 +106,6 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
     mapInput.pages.forEach(page => {
         replaceCitationsWithLinks({ page: page, final: true })
     })
-
     // Create bibliography page
     const status = createBibliography(antoraBibliography, citeproc)
     if (!status) {
@@ -195,6 +194,7 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
      */
     function createBibliography(antoraBibliography, citeproc) {
         // Sort entries by index
+        console.log("Creating bibliography")
         const result = citeproc.makeBibliography()
         console.log("result", result)
         if (!result) {
@@ -217,6 +217,8 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
         replacementContent = replacementContent.join("\n\n")
         const newContent = content.replace("bibliography::[]",replacementContent)
         antoraBibliography.contents = Buffer.from(newContent)
+        console.log("Bibliography updated")
+        console.log(newContent)
         return true
     }
 }
