@@ -33,7 +33,7 @@ function escapeRegExp(string) {
 function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", language = "en") {
     if (!mapInput.componentAttributes['asamBibliography']) {return}
     // Set up regular expressions
-    const reException = /ifndef::use-antora-rules\[\](.*\r\n*)*?endif::\[\]/gm
+    const reException = /ifndef::use-antora-rules\[\](.*\r*\n*)*?endif::\[\]/gm
     const reBibliography = /^\s*bibliography::\[\]/gm
     // styleID = "ieee-with-url" // For Testing ONLY: TODO
 
