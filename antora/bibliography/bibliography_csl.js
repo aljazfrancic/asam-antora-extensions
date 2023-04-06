@@ -200,7 +200,7 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
             return false
         }
         let content = antoraBibliography.contents.toString()
-        let replacementContent = []
+        let replacementContent = ["\n"]
         let dom = new jsdom.JSDOM(`<!DOCTYPE html>${result[1].join("").replaceAll("\n","").replaceAll(/> +</g,"><")}`)
         const entries = dom.window.document.getElementsByClassName("csl-entry")
         result[0].entry_ids.forEach((id, index) => {
