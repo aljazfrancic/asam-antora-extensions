@@ -60,6 +60,6 @@ The default values of the bibliography extension itself may differ!
 The extension first finds the listed bibliography file (.bib) and parses its content.
 Once Antora has classified all files, it first identifies the (first) page for each component-version combination where the `bibliography::[]` macro is called. +
 It then sorts the pages and replaces each cite:[] macro with a link to the relevant bibliography page and the entry there, using the entry-id as input for the anchor, if the id was found in the bibliography file.
-If it is the first citation of that entry, it gets the next available integer (starting with 1) as Ref number, which also shows up in the created link as reftext.
 
-After all citations have been replaced, the extension creates the bibliography page by sorting the bibliography entries by Ref number and then replacing the `bibliography::[]` call in its body with a formatted string containing all cited sources in numerical order.
+After all citations have been replaced, the extension creates the bibliography page, replacing the `bibliography::[]` call in its body with a formatted string containing all cited sources in the order defined by the chosen style.
+If the chosen style does not provide a bibliography function, the bibliography page is removed completely from the Antora output (including its entry in the navigation).
