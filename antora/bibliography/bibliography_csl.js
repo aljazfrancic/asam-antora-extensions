@@ -39,6 +39,7 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
 
     // Find relevant bibliography file and bibliography page
     const antoraBibliography = mapInput.pages.find(x => x.contents.toString().replaceAll(reException,``).match(reBibliography))
+    console.log("found bibliography adoc file",antoraBibliography)
     const bibFile = bibliographyFiles.find(x => x.component === mapInput.component && x.version === mapInput.version)
     if (!bibFile) {throw "No .bib file found!"}
     if (!antoraBibliography) {throw "Found .bib file but no page with 'bibliography::[]'!"}
