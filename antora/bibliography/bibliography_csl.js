@@ -98,15 +98,33 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
     const pathToId = `${antoraBibliography.src.module}:${antoraBibliography.src.relative}`
     let citationsPre = []
     let linkReplacements = {}
+    // Replace cite macro with citation id. This also orders the entries according to the style
     mapInput.pages.forEach(page => {
         replaceCitationsWithLinks({ page: page })
     })
+    // Replace citation id with final name (this can change during the first iteration, thus we need to go over it again.)
     mapInput.pages.forEach(page => {
         replaceCitationsWithLinks({ page: page, final: true })
     })
 
     // Create bibliography page
-    createBibliography(antoraBibliography, citeproc)
+    const status = createBibliography(antoraBibliography, citeproc)
+    if (!status) {
+        for (let nav of mapInput.navFiles) {
+            let contents = nav.contents.toString()
+            const match = contents.match(/\** *(xref:.*bibliography.adoc\[.*\])/)
+            if (match) {
+                const bibMatch = ContentAnalyzer.determinePageForXrefInLine(match[1], 0, mapInput.catalog, nav)
+                if (bibMatch && bibMatch[0] === antoraBibliography) {
+                    contents = contents.replace(match[0], "").replace("[bibliography]","")
+                    nav.contents = Buffer.from(contents)
+                    antoraBibliography.contents = Buffer.from("")
+                    antoraBibliography.out = null
+                    return
+                }
+            }
+        }
+    }
 
     /**
      * Replaces all citations within a file by the respective link to the bibliography page. Also processes included pages and partials.
@@ -142,11 +160,10 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
                     const citation = {citationItems: [{id: m[1]}]}
                     const cited = citeproc.processCitationCluster(citation, citationsPre, [])
                     citationsPre.push([cited[1].at(-1)[2], cited[1].at(-1)[0]])
-                    // const subst = cited[1][0][1].replace(reIdentifier,`${prefix}xref:${pathToId}#bib-${m[1]}[$1]${suffix}`);
                     const subst = cited[1].at(-1)[1].replace(reIdentifier,`${prefix}xref:${pathToId}#bib-${m[1]}[bibrefid-${cited[1].at(-1)[2]}]${suffix}`);
                     for (let c of cited[1]) {
-                        linkReplacements[c[2]] = c[1].replace(reIdentifier, "$1")
-                    }                    
+                        linkReplacements[c[2]] = c[1].replace(reIdentifier, "$1").replace(/<i>(.+)<\/i>/, "__$1__").replace(/<b>(.+)<\/b>/, "**$1**")
+                    }
                     result = result.replace(m[0], subst);
                 }
                 // If there is a match but no entry in the bib file
@@ -179,10 +196,13 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
     function createBibliography(antoraBibliography, citeproc) {
         // Sort entries by index
         const result = citeproc.makeBibliography()
-        let dom = new jsdom.JSDOM(`<!DOCTYPE html>${result[1].join("").replaceAll("\n","").replaceAll(/> +</g,"><")}`)
-        const entries = dom.window.document.getElementsByClassName("csl-entry")
+        if (!result) {
+            return false
+        }
         let content = antoraBibliography.contents.toString()
         let replacementContent = []
+        let dom = new jsdom.JSDOM(`<!DOCTYPE html>${result[1].join("").replaceAll("\n","").replaceAll(/> +</g,"><")}`)
+        const entries = dom.window.document.getElementsByClassName("csl-entry")
         result[0].entry_ids.forEach((id, index) => {
             const identifier = entries[index].getElementsByClassName("csl-left-margin")[0] ? entries[index].getElementsByClassName("csl-left-margin")[0] : null
             const text = entries[index].getElementsByClassName("csl-right-inline")[0] ? entries[index].getElementsByClassName("csl-right-inline")[0] : null
@@ -195,6 +215,7 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
         replacementContent = replacementContent.join("\n\n")
         const newContent = content.replace("bibliography::[]",replacementContent)
         antoraBibliography.contents = Buffer.from(newContent)
+        return true
     }
 }
 
