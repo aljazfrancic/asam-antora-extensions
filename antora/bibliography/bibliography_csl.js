@@ -162,7 +162,7 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
                     citationsPre.push([cited[1].at(-1)[2], cited[1].at(-1)[0]])
                     const subst = cited[1].at(-1)[1].replace(reIdentifier,`${prefix}xref:${pathToId}#bib-${m[1]}[bibrefid-${cited[1].at(-1)[2]}]${suffix}`);
                     for (let c of cited[1]) {
-                        linkReplacements[c[2]] = c[1].replace(reIdentifier, "$1").replace(/<i>(.+)<\/i>/, "__$1__").replace(/<b>(.+)<\/b>/, "**$1**")
+                        linkReplacements[c[2]] = c[1].replace(reIdentifier, "$1").replace(/<i>__(.+)__<\/i>/, "$1").replace(/<i>__(.+)__(.+)<\/i>/, "$1__$2__").replace(/<i>(.+)<\/i>/, "__$1__").replace(/<b>(.+)<\/b>/, "**$1**")
                     }
                     result = result.replace(m[0], subst);
                 }
@@ -204,12 +204,16 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
         let dom = new jsdom.JSDOM(`<!DOCTYPE html>${result[1].join("").replaceAll("\n","").replaceAll(/> +</g,"><")}`)
         const entries = dom.window.document.getElementsByClassName("csl-entry")
         result[0].entry_ids.forEach((id, index) => {
+            entries[index].innerHTML = entries[index].innerHTML.replaceAll("]","\\]").replaceAll(/<i>__(.+)__<\/i>/g, "$1").replaceAll(/<i>__(.+)__/g, "$1<i>").replaceAll(/<b>\+\+(.+)\+\+<\/b>/g, "$1").replaceAll(/<b>\+\+(.+)\+\+/g, "$1<b>")
             const identifier = entries[index].getElementsByClassName("csl-left-margin")[0] ? entries[index].getElementsByClassName("csl-left-margin")[0] : null
             const text = entries[index].getElementsByClassName("csl-right-inline")[0] ? entries[index].getElementsByClassName("csl-right-inline")[0] : null
             if (identifier && text) {
-                replacementContent.push(`[[bib-${id[0]}]]${identifier.innerHTML} pass:m,p[${text.innerHTML.replaceAll("]","\\]")}]`)
+                // text.innerHTML = text.innerHTML.replaceAll("]","\\]").replaceAll(/<i>__(.+)__<\/i>/g, "$1").replaceAll(/<i>__(.+)__/g, "$1<i>")
+                replacementContent.push(`[[bib-${id[0]}]]${identifier.innerHTML} pass:m,p[${text.innerHTML}]`)
+                console.log(replacementContent.at(-1))
             } else {
-                replacementContent.push(`[[bib-${id[0]}]]pass:m,p[${entries[index].innerHTML.replaceAll("]","\\]")}]`)
+                // entries[index].innerHTML = entries[index].innerHTML.replaceAll("]","\\]").replaceAll(/<i>__(.+)__<\/i>/g, "$1").replaceAll(/<i>__(.+)__/g, "$1<i>")
+                replacementContent.push(`[[bib-${id[0]}]]pass:m,p[${entries[index].innerHTML}]`)
             }
         })
         replacementContent = replacementContent.join("\n\n")
