@@ -204,15 +204,15 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
         let dom = new jsdom.JSDOM(`<!DOCTYPE html>${result[1].join("").replaceAll("\n","").replaceAll(/> +</g,"><")}`)
         const entries = dom.window.document.getElementsByClassName("csl-entry")
         result[0].entry_ids.forEach((id, index) => {
-            entries[index].innerHTML = entries[index].innerHTML.replaceAll("]","\\]").replaceAll(/<i>__(.+)__<\/i>/g, "$1").replaceAll(/<i>__(.+)__/g, "$1<i>").replaceAll(/<b>\+\+(.+)\+\+<\/b>/g, "$1").replaceAll(/<b>\+\+(.+)\+\+/g, "$1<b>")
+            entries[index].innerHTML = entries[index].innerHTML.replaceAll(/<i>__(.+)__<\/i>/g, "$1").replaceAll(/<i>__(.+)__/g, "$1<i>").replaceAll(/<b>\+\+(.+)\+\+<\/b>/g, "$1").replaceAll(/<b>\+\+(.+)\+\+/g, "$1<b>")
             const identifier = entries[index].getElementsByClassName("csl-left-margin")[0] ? entries[index].getElementsByClassName("csl-left-margin")[0] : null
-            const text = entries[index].getElementsByClassName("csl-right-inline")[0] ? entries[index].getElementsByClassName("csl-right-inline")[0] : null
+            const text = entries[index].getElementsByClassName("csl-right-inline")[0] ? entries[index].getElementsByClassName("csl-right-inline")[0].innerHTML.replaceAll(/<i>(.+)<\/i>/g,"__$1__").replaceAll(/<b>(.+)<\/b>/g,"++$1++") : null
             if (identifier && text) {
                 // text.innerHTML = text.innerHTML.replaceAll("]","\\]").replaceAll(/<i>__(.+)__<\/i>/g, "$1").replaceAll(/<i>__(.+)__/g, "$1<i>")
-                replacementContent.push(`[[bib-${id[0]}]]${identifier.innerHTML} pass:m,p[${text.innerHTML}]`)
+                replacementContent.push(`[[bib-${id[0]}]]${identifier.innerHTML} ${text}`)
                 console.log(replacementContent.at(-1))
             } else {
-                // entries[index].innerHTML = entries[index].innerHTML.replaceAll("]","\\]").replaceAll(/<i>__(.+)__<\/i>/g, "$1").replaceAll(/<i>__(.+)__/g, "$1<i>")
+                entries[index].innerHTML = entries[index].innerHTML.replaceAll("]","\\]")
                 replacementContent.push(`[[bib-${id[0]}]]pass:m,p[${entries[index].innerHTML}]`)
             }
         })
