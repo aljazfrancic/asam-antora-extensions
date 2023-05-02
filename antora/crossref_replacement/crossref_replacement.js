@@ -24,7 +24,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
     if (anchorMap.size === 0) {return pages}
     const re = /<<([^>,]+)(,\s*(.+))?>>/gm
     const reAlt = /xref:[^#\[]+#([^\[]+)\[(([^\]]*))\]/gm
-    const reExceptions = /^-{4} *$|^={4} *$|^\/{4} *$|^\+{4} *$|^\.{4} *$|^_{4} *$/gm
+    const reExceptions = /^-{4} *$|^\/{4} *$|^\+{4} *$|^\.{4} *$|^_{4} *$/gm
     const reIgnoreLine = /^.*\/{2}.*(<<.+>>)|^.*`[^`\n]*(<<.+>>)[^`\n]*`|^.*\/{2}.*(xref:[^#\[]+)#.*|^.*`[^`\n]*(xref:[^#\[]+)#[^`\n]*`/gm
     pages.forEach(page => {
         let content = page.contents.toString()

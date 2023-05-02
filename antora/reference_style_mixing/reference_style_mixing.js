@@ -61,7 +61,7 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
     // [1]: link to file; [2]: anchor (if set), [4]: xrefstyle with settings (if set), [5]: xrefstyle settings only (if set), [6]: Replacement text (if set)
     const re = /xref:([^\[]*\.adoc)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?([^\]]*)\]/gm
     const reIncorrectXref = /xref:([^\[\.]*)(#[^\[]*)?(\[)(xrefstyle\s*=\s*([^,\]]*))?,?(.*)\]/gm
-    const reExceptions = /(^-{4}) *|(^={4}) *$|(^\/{4}) *|(^\+{4}) *$|(^\.{4}) *$|(^_{4}) */gm
+    const reExceptions = /(^-{4}) *|(^\/{4}) *|(^\+{4}) *$|(^\.{4}) *$|(^_{4}) */gm
     // const reIgnoreLine = /^.*\/{2}.*(xref:[^#\[]+)#.*|^.*`[^`\n]*(xref:[^#\[]+)#[^`\n]*`/gm
     const validStyles = ["full", "short", "basic"]
     const debugName = "qweuipoqwueiprüü"
