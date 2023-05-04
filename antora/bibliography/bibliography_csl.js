@@ -210,7 +210,7 @@ function applyBibliography(mapInput, bibliographyFiles, styleID = "ieee", langua
             if (identifier && text) {
                 // text.innerHTML = text.innerHTML.replaceAll("]","\\]").replaceAll(/<i>__(.+)__<\/i>/g, "$1").replaceAll(/<i>__(.+)__/g, "$1<i>")
                 replacementContent.push(`[[bib-${id[0]}]]${identifier.innerHTML} ${text}`)
-                console.log(replacementContent.at(-1))
+                // console.log(replacementContent.at(-1))
             } else {
                 entries[index].innerHTML = entries[index].innerHTML.replaceAll("]","\\]")
                 replacementContent.push(`[[bib-${id[0]}]]pass:m,p[${entries[index].innerHTML}]`)
