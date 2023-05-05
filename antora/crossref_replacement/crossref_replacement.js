@@ -25,7 +25,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
     const re = /<<([^>,]+)(,\s*(.+))?>>/gm
     const reAlt = /xref:[^#\[]+#([^\[]+)\[(([^\]]*))\]/gm
     const reExceptions = /^-{4} *$|^\/{4} *$|^\+{4} *$|^\.{4} *$|^_{4} *$/gm
-    const reIgnoreLine = /^.*\/{2}.*(<<.+>>)|^.*`[^`\n]*(<<.+>>)[^`\n]*`|^.*\/{2}.*(xref:[^#\[]+)#.*|^.*`[^`\n]*(xref:[^#\[]+)#[^`\n]*`/gm
+    const reIgnoreLine = /^.*\/{2}.*(<<.+>>)|^.*\\(<<.+>>)|^.*\/{2}.*(xref:[^#\[]+)#.*|^.*\\(xref:[^#\[]+)#.*`/gm
     pages.forEach(page => {
         let content = page.contents.toString()
         let references = [...content.matchAll(re)]
@@ -36,10 +36,11 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
         const ignoreLines = [...content.matchAll(reIgnoreLine)]
         references.forEach(ref => {
             let debug = false
-            // if(ref[1] === "sec-ASM-88") {console.log("sec-ASM-88"); debug = true}
+            // if(ref[1] === "top-conditions-and-triggers") {console.log("top-conditions-and-triggers"); debug = true}
             const indexOfPreviousLineBreak = ref.input.slice(0,ref.index).lastIndexOf("\n") + 1
             if (!ignoreLines.filter(x => x[1] === ref[0] || x[2] === ref[0] || x[3] === ref[1] || x[4] === ref[1] ).map(x => x.index).includes(indexOfPreviousLineBreak) && exceptions.filter(x => x.index < ref.index).length % 2 === 0 && anchorMap.get(ref[1])) {
                 const val = anchorMap.get(ref[1])
+                if (debug) {console.log(val)}
                 let referencePage
                 if (val.usedIn && val.usedIn.length > 1) {
                     console.log(`Anchor ${ref[1]} used in multiple pages. Cannot determine actual source for local link in page ${page.src.relative}. Using fist valid entry instead...`)
@@ -51,18 +52,17 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                 else {
                     referencePage = val.source
                 }
-
-                if ( true ) {
-                    const tempStyle = componentAttributes.xrefstyle ? componentAttributes.xrefstyle.replace("@","") : ""
-                    let autoAltText = ref[1].startsWith("top-") ? "" : ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" ? "" : ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], tempStyle )
-                    // Workaround in case Section shall also be used on references without numbers
-                    // if (ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" && referencePage === page) {autoAltText = ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], alternateXrefStyle)}
-                    const altText = ref[3] ? ContentAnalyzer.preventLatexMathConversion(ref[3]) : autoAltText
-                    const anchorLink = referencePage !== page  || !ref[1].startsWith("top-")? "#" + ref[1] : ""
-                    const replacementXref = "xref:" + referencePage.src.version + "@" + referencePage.src.component + ":" + referencePage.src.module + ":" + referencePage.src.relative + anchorLink + "[" + altText + "]"
-                    const startIndex = content.indexOf(ref.input.slice(ref.index))
-                    content = content.slice(0,startIndex)+content.slice(startIndex).replace(ref[0],replacementXref)
-                }
+                if (debug) {console.log(referencePage)}
+                const tempStyle = componentAttributes.xrefstyle ? componentAttributes.xrefstyle.replace("@","") : ""
+                let autoAltText = ref[1].startsWith("top-") ? "" : ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" ? "" : ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], tempStyle )
+                // Workaround in case Section shall also be used on references without numbers
+                // if (ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" && referencePage === page) {autoAltText = ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], alternateXrefStyle)}
+                const altText = ref[3] ? ContentAnalyzer.preventLatexMathConversion(ref[3]) : autoAltText
+                const anchorLink = referencePage !== page  || !ref[1].startsWith("top-")? "#" + ref[1] : ""
+                const replacementXref = "xref:" + referencePage.src.version + "@" + referencePage.src.component + ":" + referencePage.src.module + ":" + referencePage.src.relative + anchorLink + "[" + altText + "]"
+                const startIndex = content.indexOf(ref.input.slice(ref.index))
+                content = content.slice(0,startIndex)+content.slice(startIndex).replace(ref[0],replacementXref)
+                if (debug) {console.log(replacementXref); throw "STOPO"}
             }
         })
         page.contents = Buffer.from(content)
