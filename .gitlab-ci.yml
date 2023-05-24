@@ -1,6 +1,7 @@
 image: node:10.14.2-stretch
 stages: [pages, trigger]
-build_pages:
+
+build_pages:          # Create updated documentation with Antora when changes were made to main branch or the pipeline was triggered externally.
   stage: pages
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
@@ -17,7 +18,7 @@ build_pages:
     paths:
       - public/
 
-pages:
+pages:                # Upload new documentation to pages.
   stage: pages
   image: busybox
   rules:
@@ -35,7 +36,7 @@ pages:
     - job: build_pages
       artifacts: true
 
-trigger_ui:
+trigger_ui:       # Trigger the ui repo to update their documentation. Only run when triggered by a push to the default branch to prevent circularly triggered pipeline runs!
   stage: trigger
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
