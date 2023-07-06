@@ -118,9 +118,14 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
             const tempStyle = (match[5] && validStyles.includes(match[5])) ? match[5] : style
             if (debug) {console.log("tempStyle", tempStyle)}
             const targetPath = ContentAnalyzer.getSrcPathFromFileId(match[1])
-            if (!targetPath.module) { targetPath.module = file.src.module }            
-            if (!targetPath.version) { targetPath.version = file.src.version }
-            let xrefTarget = targetPath.component ? mapInput.contentCatalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative && x.src.component === targetPath.component && x.src.version === targetPath.version) : catalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative)
+            if (!targetPath.module) { targetPath.module = file.src.module }
+            // if (!targetPath.version) { targetPath.version = file.src.version }
+            if (!targetPath.version) {
+                const componentName = targetPath.component ? targetPath.component : file.src.component
+                const targetComponent = mapInput.fullContentCatalog.getComponents().find(x => x.name === componentName)
+                targetPath.version = targetComponent.latest ? targetComponent.latest.version : targetComponent.versions[0].version
+             }
+            let xrefTarget = targetPath.component ? mapInput.fullContentCatalog.findBy({ component: targetPath.component, version: targetPath.version, family: 'page' }).find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative && x.src.component === targetPath.component && x.src.version === targetPath.version) : catalog.find(x => x.src.module === targetPath.module && x.src.relative === targetPath.relative)
             // if (debug) {console.log("targetPath", targetPath)}
             // if (debug) {console.log("xrefTarget", xrefTarget)}
             // if (debug) {console.log("src", file.src)}
