@@ -113,6 +113,10 @@ function getAnchorsFromPageOrPartial(mapInput, catalog, thisFile, componentAttri
     let results = []
     let ignoreLine = false,
         ignoreBlock = { sourceBlock: false, exampleBlock: false, inlineSource: false, commentBlock: false };
+    if(!thisFile.contents) {
+        console.warn(`Empty file provided for anchor analysis: ${thisFile.src.path}`)
+        return resultMap
+    }
     const splitContent = thisFile.contents.toString().split("\n")
     // let lineOffset = 0
     let allowInclude = (tags.length > 0) ? false : true
@@ -252,8 +256,8 @@ function getAnchorsFromPageOrPartial(mapInput, catalog, thisFile, componentAttri
 
 /**
  * Determine target of include from complete collection.
- * @param {*} includeSearchResult - 
- * @param {Object} thisFile - 
+ * @param {*} includeSearchResult -
+ * @param {Object} thisFile -
  * @param {Object} mapInput - A set of configuration parameters. Must contain 'contentCatalog'.
  * @returns {Object} The found file
  */
@@ -580,7 +584,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     else {
         returnValue = getAltTextFromTitle(page, content);
     }
-    returnValue = preventLatexMathConversion(replaceAllAttributesInLine(componentAttributes, inheritedAttributes, returnValue))    
+    returnValue = preventLatexMathConversion(replaceAllAttributesInLine(componentAttributes, inheritedAttributes, returnValue))
     return (returnValue)
 
     function useShortRefRule(entryIndex, caption, type) {
@@ -717,9 +721,9 @@ function lintAnchors(anchor, page, resultAnchorType, countLineBreaks, content, i
 
 /**
  * Helper function to determine the correct index from the anchorPageMap for an anchor
- * @param {*} anchorPageMap 
- * @param {*} entryIndex 
- * @param {*} filterType 
+ * @param {*} anchorPageMap
+ * @param {*} entryIndex
+ * @param {*} filterType
  * @returns {Integer} Determiend lenth.
  */
 function getAnchorPageMapEntryValue(anchorPageMap, entryIndex, filterType) {
@@ -1081,9 +1085,9 @@ function indexifyAnchorMap(anchorPageMap, mergedNavContents) {
             value.usedIn = [value.source].concat(value.usedIn)
             let sortedEntries = value.usedIn.map((v, i) => { return [v, value.allIndices[i]] })
             sortedEntries.sort((a, b) => {
-                if (a[1][0] === b[1][0]) { return a[1][1] - b[1][1]} 
-                if (a[1][0] === -1) { return 1} 
-                if (b[1][0] === -1) { return -1} 
+                if (a[1][0] === b[1][0]) { return a[1][1] - b[1][1]}
+                if (a[1][0] === -1) { return 1}
+                if (b[1][0] === -1) { return -1}
                 return a[1][0] - b[1][0]
             })
             value.usedIn = sortedEntries.map(v => v[0])
