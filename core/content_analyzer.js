@@ -220,7 +220,7 @@ function getAnchorsFromPageOrPartial(mapInput, catalog, thisFile, componentAttri
             }
             else {
                 console.warn("could not find", includeSearchResult[0])
-                if (includeSearchResult[0].includes("terms_and_definitions")) {console.log(mapInput.contentCatalog.find(x => x.src.stem.includes("terms_and_definitions_opendrive"))); throw "STOPO "}
+                // if (includeSearchResult[0].includes("terms_and_definitions")) {console.log(mapInput.contentCatalog.find(x => x.src.stem.includes("terms_and_definitions_opendrive"))); throw "STOPO "}
             }
         }
         else {
