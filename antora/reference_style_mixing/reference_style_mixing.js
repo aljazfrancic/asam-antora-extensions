@@ -192,14 +192,14 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
                 }
                 const parentPage = xrefTarget === anchorSource ? {} : xrefTarget
                 xrefLabel = ContentAnalyzer.getReferenceNameFromSource(relevantMapInput.componentAttributes, relevantAnchorPageMap, relevantMapInput.catalog, anchorSource, match[2].slice(1), tempStyle, parentPage)
-                if (true) { console.log("xrefLabel", xrefLabel); console.log("tempStyle", tempStyle) }
+                if (debug) { console.log("xrefLabel", xrefLabel); console.log("tempStyle", tempStyle) }
             } else if (match[1]) {
                 const appendixRefsig = componentAttributes['appendix-caption'] ? componentAttributes['appendix-caption'] : "Appendix"
                 const sectionRefsig = componentAttributes['section-refsig'] ? componentAttributes['section-refsig'] : "Section"
                 let { returnValue, title, reftext, prefix } = ContentAnalyzer.getTopAnchorValues(xrefTarget, xrefTarget.contents.toString(), tempStyle)
-                if(true) {console.log(JSON.stringify({appendixRefsig, sectionRefsig, returnValue, title, reftext, prefix}))}
+                if (debug) {console.log(JSON.stringify({appendixRefsig, sectionRefsig, returnValue, title, reftext, prefix}))}
                 xrefLabel = ContentAnalyzer.applyStyleForXrefLabel(tempStyle, returnValue, reftext, prefix, "top", appendixRefsig, title, sectionRefsig)
-                if (true) { console.log("xrefLabel", xrefLabel) }
+                if (debug) { console.log("xrefLabel", xrefLabel) }
             }
 
             if (match[6] || (match[2] && (match[2].startsWith("#fig-") || match[2].startsWith("#tab-")))) { }
