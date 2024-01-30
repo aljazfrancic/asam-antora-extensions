@@ -1298,6 +1298,23 @@ function isExampleBlock(file, anchor) {
     return (content.slice(start, start + end).split("\n").length === 3)
 }
 
+/**
+ *
+ * @param {*} mapInput
+ * @param {*} source
+ * @param {*} target
+ * @param {*} text
+ * @returns
+ */
+function applyComponentDefinitionsFromSourceFile(mapInput, source, target, text) {
+    if (source.src.component !== target.src.component || source.src.version !== target.src.component) {
+        let sourceComponentAttributes = mapInput.fullContentCatalog.getComponents().filter(x => x.name === source.src.component)[0].versions.filter(x => x.version === source.src.version)[0].asciidoc.attributes
+        let updatedText = replaceAllAttributesInLine(sourceComponentAttributes, {}, text)
+        return updatedText
+    }
+    return text
+}
+
 module.exports = {
     determineTargetPageFromIncludeMacro,
     getAllKeywordsAsArray,
@@ -1324,5 +1341,6 @@ module.exports = {
     preventLatexMathConversion,
     indexifyAnchorMap,
     getTopAnchorValues,
-    applyStyleForXrefLabel
+    applyStyleForXrefLabel,
+    applyComponentDefinitionsFromSourceFile
 }

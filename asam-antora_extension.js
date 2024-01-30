@@ -68,7 +68,7 @@ module.exports.register = function ({ config }) {
         console.log("Reacting on contentClassified")
 
         //-------------
-        // Execute all features for each component-version-combination
+        // Execute all independent features for each component-version-combination
         //-------------
         contentCatalog.getComponents().forEach(({ versions }) => {
             versions.forEach(({ name: component, version, url: defaultUrl }) => {
@@ -170,6 +170,49 @@ module.exports.register = function ({ config }) {
                     ConsistentNumbering.applySectionAndTitleNumbers(mapInput, mapInput.contentCatalog, pages, navFiles, parsedConfig.sectionNumberStyle, contentCatalog, component, version)
                     console.log("-".repeat(50)+"\n")
                 }
+            })
+        })
+      //-------------
+        // Execute all dependent features for each component-version-combination
+        //-------------
+        contentCatalog.getComponents().forEach(({ versions }) => {
+            versions.forEach(({ name: component, version, url: defaultUrl }) => {
+                console.log("#".repeat(50))
+                console.log(`Processing ${component} (${version}) for final steps`)
+                console.log("#".repeat(50))
+                //-------------
+                // For each component-version-combo, get all pages and all nav files.
+                //-------------
+                let pages = contentCatalog.findBy({ component, version, family: 'page'})
+                let navFiles = contentCatalog.findBy({ component, version, family: 'nav'}).sort((a,b) => {
+                    return a.nav.index - b.nav.index
+                })
+                //-------------
+                // Addon AsciiNav: Parse files and create navigation if attribute "antora_mapping" is used.
+                //-------------
+                console.log("Check if Asciidoctor mapping page needs to be converted to Antora navigation file...\n"+"-".repeat(50))
+                AsciiNav.createAntoraNavigationFromIndex(pages, navFiles)
+                navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
+                let catalog =  contentCatalog.findBy({ component, version})
+                const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].versions.filter(x => x.version === version)[0].asciidoc.attributes
+                console.log("-".repeat(50)+"\n")
+                //-------------
+                // Analyze the pages and create maps for the addons.
+                //-------------
+                let mapInput = {
+                    contentCatalog: contentCatalog.findBy({ family: 'page' }).concat(contentCatalog.findBy({ family: 'partial' })),
+                    catalog: catalog,
+                    useKeywords: parsedConfig.useKeywords,
+                    pages: pages,
+                    navFiles: navFiles,
+                    componentAttributes: componentAttributes,
+                    fullContentCatalog: contentCatalog,
+                    component: component,
+                    version: version
+                }
+                console.log("Generating content overview maps...\n"+"-".repeat(50))
+                let { keywordPageMap, rolePageMap, anchorPageMap } = ContentAnalyzer.generateMapsForPages( mapInput )
+                console.log("-".repeat(50)+"\n")
                 //-------------
                 // Addon CrossrefReplacement: Replace Asciidoctor local references ("<<ref>>") where the anchor is now located on a different page.
                 // Note that only in case at least one valid anchor could be found and added to the map, the addon actually runs.
@@ -177,7 +220,7 @@ module.exports.register = function ({ config }) {
                 //-------------
                 if (anchorPageMap.size > 0 && parsedConfig.localToGlobalReferences) {
                     console.log("Replace local references to global anchors with xref macro...\n"+"-".repeat(50))
-                    pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorPageMap, pages, parsedConfig.alternateXrefStyle )
+                    pages = CrossrefReplacement.findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorPageMap, pages, mapInput, parsedConfig.alternateXrefStyle )
                     console.log("-".repeat(50)+"\n")
                 }
                 //-------------

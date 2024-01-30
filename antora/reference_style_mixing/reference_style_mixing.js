@@ -145,7 +145,7 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
             }
             if (xrefTarget.src.stem === "_config.adoc") { continue }
             if (match[2]) {
-                if (file.src.component !== xrefTarget.src.component && !relevantAnchorPageMap.get(match[2].slice(1))) {
+                if ((file.src.component !== xrefTarget.src.component) && !relevantAnchorPageMap.get(match[2].slice(1))) {
                     const newMapInput = JSON.parse(JSON.stringify(mapInput))
                     const component = xrefTarget.src.component
                     const version = xrefTarget.src.version
@@ -191,22 +191,20 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
                     continue
                 }
                 const parentPage = xrefTarget === anchorSource ? {} : xrefTarget
-                // if (debug) {console.log("parentPage",parentPage); console.log("anchorSource",anchorSource)}
-                // if (debug) { console.log(JSON.stringify({ anchor: match[2].slice(1), relevantMap: Array.from(relevantAnchorPageMap.keys()), anchorSource: anchorSource.src.abspath, file: file.src.abspath })) }
                 xrefLabel = ContentAnalyzer.getReferenceNameFromSource(relevantMapInput.componentAttributes, relevantAnchorPageMap, relevantMapInput.catalog, anchorSource, match[2].slice(1), tempStyle, parentPage)
-                if (debug) { console.log("xrefLabel", xrefLabel) }
+                if (true) { console.log("xrefLabel", xrefLabel); console.log("tempStyle", tempStyle) }
             } else if (match[1]) {
                 const appendixRefsig = componentAttributes['appendix-caption'] ? componentAttributes['appendix-caption'] : "Appendix"
                 const sectionRefsig = componentAttributes['section-refsig'] ? componentAttributes['section-refsig'] : "Section"
                 let { returnValue, title, reftext, prefix } = ContentAnalyzer.getTopAnchorValues(xrefTarget, xrefTarget.contents.toString(), tempStyle)
-                if(debug) {console.log(JSON.stringify({appendixRefsig, sectionRefsig, returnValue, title, reftext, prefix}))}
+                if(true) {console.log(JSON.stringify({appendixRefsig, sectionRefsig, returnValue, title, reftext, prefix}))}
                 xrefLabel = ContentAnalyzer.applyStyleForXrefLabel(tempStyle, returnValue, reftext, prefix, "top", appendixRefsig, title, sectionRefsig)
-                if (debug) { console.log("xrefLabel", xrefLabel) }
+                if (true) { console.log("xrefLabel", xrefLabel) }
             }
 
             if (match[6] || (match[2] && (match[2].startsWith("#fig-") || match[2].startsWith("#tab-")))) { }
-            // if (match[6] || (match[2] && (match[2].startsWith("#fig-")||match[2].startsWith("#tab-")))) {if (debug){throw "MISTAKES WERE MADE"}}
             else if (xrefLabel) {
+                xrefLabel = ContentAnalyzer.applyComponentDefinitionsFromSourceFile(mapInput, xrefTarget, file, xrefLabel)
                 const start = newLine.indexOf("[", match.index) + 1
                 if ((xrefTarget === file && match[5]) || (["", null].includes(xrefLabel) && match[5])) { }
                 else if (xrefTarget === file || ["", null].includes(xrefLabel)) {

@@ -20,7 +20,7 @@ const ContentAnalyzer = require("../../core/content_analyzer.js")
  * @param {String} alternateXrefStyle - (Optional) A string with an alternate xref style when using the xref style replacement.
  * @returns {Array <Object>} The updated array of pages.
  */
-function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorMap, pages, alternateXrefStyle=null ) {
+function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anchorMap, pages, mapInput, alternateXrefStyle=null ) {
     if (anchorMap.size === 0) {return pages}
     const re = /<<([^>,]+)(,\s*(.+))?>>/gm
     const reAlt = /xref:[^#\[]+#([^\[]+)\[(([^\]]*))\]/gm
@@ -54,7 +54,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                 }
                 if (debug) {console.log(referencePage)}
                 const tempStyle = componentAttributes.xrefstyle ? componentAttributes.xrefstyle.replace("@","") : ""
-                let autoAltText = ref[1].startsWith("top-") ? "" : ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" ? "" : ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], tempStyle )
+                let autoAltText = ref[1].startsWith("top-") || (ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "") ? "" : ContentAnalyzer.applyComponentDefinitionsFromSourceFile(mapInput, referencePage, page, ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], tempStyle ))
                 // Workaround in case Section shall also be used on references without numbers
                 // if (ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" && referencePage === page) {autoAltText = ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], alternateXrefStyle)}
                 const altText = ref[3] ? ContentAnalyzer.preventLatexMathConversion(ref[3]) : autoAltText
