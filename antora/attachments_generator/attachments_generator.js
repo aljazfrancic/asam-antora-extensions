@@ -50,9 +50,10 @@ function generateAttachments(contentAggregate) {
                     f.basename = newBasename
                     f.src.basename = f.basename
                     f.stem = newStem
-                    f.src.stem = f.stem                    
+                    f.src.stem = f.stem
                 } else {
                     files.forEach(file => {
+                        inputPath.family = file.src.path.includes(`/assets/${inputPath.family}`) ? `assets/${inputPath.family}` : inputPath.family
                         const relativePath = path.relative(`modules/${inputPath.module}/${inputPath.family}/${inputPath.relative}`,file.src.path)
                         if (relativePath) { zip.addFile(relativePath,file.contents,"") }
                         else { zip.addFile(file.src.basename,file.contents,"") }
