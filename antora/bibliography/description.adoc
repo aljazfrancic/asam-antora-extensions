@@ -37,7 +37,7 @@ asamBibliography: "module:path/to/file.bib"
 ----
 asciidoc:
   attributes:
-    asamBibliography: 'standard:bibliography/asambib.bib'
+    asamBibliography: 'ROOT:bibliography/asambib.bib'
 ----
 ====
 
