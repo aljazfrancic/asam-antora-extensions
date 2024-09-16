@@ -314,13 +314,13 @@ function getAllKeywordsAsArray(page) {
 
 /**
  * Returns the content of a file after merging all includes into it.
- * @param {Array <Object>} pages - An array of pages.
+ * @param {Array <Object>} pagesAndPartials - An array of pages and (optionally) partials.
  * @param {Object} page - The current page.
  * @param {String} targetStop - Optional: If set, finds a specific anchor of type [#anchor].
  * @param {Integer} addOffsetToSection - Optional: Adds an offset to all sections. Used for included file content.
  * @returns {Array <String,Integer>} The merged content and the offset for the provided targetStop, if any.
  */
-function getMergedFileContent(pages, page, targetStop = undefined, addOffsetToSection = 0) {
+function getMergedFileContent(pagesAndPartials, page, targetStop = undefined, addOffsetToSection = 0) {
     const reSectionStart = /^(=+)\s[^\n]+/
     const reIncludeStart = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/
     let targetLevelOffset = 0
@@ -338,10 +338,14 @@ function getMergedFileContent(pages, page, targetStop = undefined, addOffsetToSe
         }
         if (includeSearchResult && includeSearchResult.length > 0) {
             const leveloffset = includeSearchResult[3] ? parseInt(includeSearchResult[3]) : 0
-            const targetPage = determineTargetPageFromIncludeMacro(pages, page, includeSearchResult[1])
+            let targetPage = determineTargetPageFromIncludeMacro(pagesAndPartials, page, includeSearchResult[1])
+            if (!targetPage && includeSearchResult[1].search(/partial\$/) > -1) {
+                const pathParts = includeSearchResult[1].split("$")
+                targetPage = determineTargetPartialFromIncludeMacro(pagesAndPartials, page, pathParts[0], pathParts[1])
+            }
             if (targetPage) {
                 let includedContent, includedOffset
-                [includedContent, includedOffset] = getMergedFileContent(pages, targetPage, targetStop, addOffsetToSection + leveloffset)
+                [includedContent, includedOffset] = getMergedFileContent(pagesAndPartials, targetPage, targetStop, addOffsetToSection + leveloffset)
                 newContent = newContent.concat(includedContent)
                 if (targetStop && includedContent.includes(targetStop)) {
                     targetLevelOffset += leveloffset + includedOffset
@@ -461,7 +465,7 @@ function getActivePageAttributesAtLine(catalog, componentAttributes, inheritedAt
  * Retrieves the name associated with an anchor so it can be used as label when linking to other pages.
  * @param {Object} componentAttributes - An object containing all attributes of the component.
  * @param {Map <String, Object>} anchorPageMap - A map containing all found anchors and their pages.
- * @param {Array <Object>} pages - An array of all pages.
+ * @param {Array <Object>} pagesAndPartials - An array of all pages and (optionally) partials.
  * @param {Object} page - The current page where the xref points to.
  * @param {String} anchor - The anchor in question.
  * @param {String} style - Optional: A specific reference style to be returned. Options: "full", "short", or "basic".
@@ -469,7 +473,7 @@ function getActivePageAttributesAtLine(catalog, componentAttributes, inheritedAt
 
  * @returns {String} The extracted alt text.
  */
-function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, page, anchor, style = "", parentPage = {}) {
+function getReferenceNameFromSource(componentAttributes, anchorPageMap, pagesAndPartials, page, anchor, style = "", parentPage = {}) {
     // console.log("Start func")
     const reSectionEqualSigns = /^\s*(=+)\s+(.*)$/m
     const reCaptionLabel = /^\.(\S.+)$/m
@@ -479,9 +483,10 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     const reAltAnchor = new RegExp(`\\[\\[${regexAltAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAltAnchor}(,([^\\]]*))?\\]|anchor:${regexAltAnchor}(,([^\\]]*))?`, 'm')
     let inheritedAttributes = {}
-    let content = page.contents.toString()
+    let [content, _] = getMergedFileContent(pagesAndPartials, page)
+    // let content = page.contents.toString()
     const contentSplit = content.split("\n")
-    getActivePageAttributesAtLine(pages, componentAttributes, inheritedAttributes, contentSplit.length, page)
+    getActivePageAttributesAtLine(pagesAndPartials, componentAttributes, inheritedAttributes, contentSplit.length, page)
     for (let line of contentSplit) {
         updatePageAttributes(inheritedAttributes, line)
         const index = contentSplit.indexOf(line)
@@ -494,7 +499,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
     else if (!content.match(reAnchor)) { console.warn(`${anchor} could not be found in file ${page.src.abspath}`); return null }
     const indexOfAnchor = content.match(reAnchor).index | null
     if (indexOfAnchor !== null && indexOfAnchor > -1) {
-        getActivePageAttributesAtLine(pages, componentAttributes, inheritedAttributes, indexOfAnchor, page)
+        getActivePageAttributesAtLine(pagesAndPartials, componentAttributes, inheritedAttributes, indexOfAnchor, page)
     }
     else {
         console.warn(`cannot operate on ${anchor} in file ${page.src.abspath}`)
@@ -548,11 +553,11 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pages, p
                 let relativeSectionNumber
                 if (Object.entries(parentPage).length > 0) {
                     pageNumber = getAttributeFromFile(parentPage, "titleoffset")
-                    relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages, parentPage, result[1].split("=").length - 1, anchor, true);
+                    relativeSectionNumber = getRelativeSectionNumberWithIncludes(pagesAndPartials, parentPage, result[1].split("=").length - 1, anchor, true);
                 }
                 else {
                     pageNumber = getAttributeFromFile(page, "titleoffset")
-                    relativeSectionNumber = getRelativeSectionNumberWithIncludes(pages, page, result[1].split("=").length - 1, anchor);
+                    relativeSectionNumber = getRelativeSectionNumberWithIncludes(pagesAndPartials, page, result[1].split("=").length - 1, anchor);
                 }
                 // let pageNumber = getAttributeFromFile(page, "titleoffset");
                 if (!pageNumber) { pageNumber = ""; }
@@ -1251,8 +1256,8 @@ function getSrcPathFromFileId(fileId) {
     function fullPath(self) {
         const version = self.version ? self.version + "/" : ""
         const component = self.component ? self.component + "/" : ""
-        const module = self.module ? self.module * "/" : ""
-        const type = self.type ? self.type * "/" : ""
+        const module = self.module ? self.module + "/" : ""
+        const type = self.type ? self.type + "/" : ""
         return component + version + module + self.relative
     }
     return { version: version, component: component, module: antoraModule, type: type, relative: relative }
