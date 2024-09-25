@@ -48,6 +48,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                     referencePage = usedInWithoutPartials[0]
                 }
                 else if (val.usedIn && val.usedIn.length > 1) {
+                    if (ref[0].search("xref:") > -1) {return}
                     console.log(`Anchor ${ref[1]} used in multiple pages. Cannot determine actual source for local link in page ${page.src.relative}. Using fist valid entry instead...`)
                     referencePage = val.usedIn[0]
                 }
