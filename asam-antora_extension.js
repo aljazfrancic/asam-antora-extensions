@@ -187,12 +187,6 @@ module.exports.register = function ({ config }) {
                 let navFiles = contentCatalog.findBy({ component, version, family: 'nav'}).sort((a,b) => {
                     return a.nav.index - b.nav.index
                 })
-                //-------------
-                // Addon AsciiNav: Parse files and create navigation if attribute "antora_mapping" is used.
-                //-------------
-                console.log("Check if Asciidoctor mapping page needs to be converted to Antora navigation file...\n"+"-".repeat(50))
-                AsciiNav.createAntoraNavigationFromIndex(pages, navFiles)
-                navFiles = contentCatalog.findBy({ component, version, family: 'nav'})
                 let catalog =  contentCatalog.findBy({ component, version})
                 const componentAttributes = contentCatalog.getComponents().filter(x => x.name === component)[0].versions.filter(x => x.version === version)[0].asciidoc.attributes
                 console.log("-".repeat(50)+"\n")
