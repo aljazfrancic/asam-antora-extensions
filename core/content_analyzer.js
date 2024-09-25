@@ -320,16 +320,25 @@ function getAllKeywordsAsArray(page) {
  * @param {Integer} addOffsetToSection - Optional: Adds an offset to all sections. Used for included file content.
  * @returns {Array <String,Integer>} The merged content and the offset for the provided targetStop, if any.
  */
-function getMergedFileContent(pagesAndPartials, page, targetStop = undefined, addOffsetToSection = 0) {
+function getMergedFileContent(pagesAndPartials, page, targetStop = undefined, addOffsetToSection = 0, componentAttributes = {}, inheritedAttributes = {}) {
+    const debug = false
     const reSectionStart = /^(=+)\s[^\n]+/
-    const reIncludeStart = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/
+    const reIncludeStart = /^\s*include::([^\[]+)\[.*,?(leveloffset=\+(\d+))?\]/
     let targetLevelOffset = 0
     const content = page.contents.toString()
     let newContent = []
-    for (let line of content.split("\n")) {
-        const sectionSearchResult = line.match(reSectionStart)
-        const includeSearchResult = line.match(reIncludeStart)
-        if (targetStop && line.includes(targetStop)) {
+    const contentSplit = content.split("\n")
+    for (let line of contentSplit) {
+        let lineWithReplacedAttributes = line
+        if (line.search(/\{.+\}/) > -1) {
+            if (debug) {console.log("-_-replacing attribute in line-_-")}
+            getActivePageAttributesAtLine(pagesAndPartials, componentAttributes, inheritedAttributes, contentSplit.length, page)
+            lineWithReplacedAttributes = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
+            if (debug) {console.log(line), console.log(lineWithReplacedAttributes)}
+        }
+        const sectionSearchResult = lineWithReplacedAttributes.match(reSectionStart)
+        const includeSearchResult = lineWithReplacedAttributes.match(reIncludeStart)
+        if (targetStop && lineWithReplacedAttributes.includes(targetStop)) {
             newContent.push(line)
             break;
         }
@@ -337,26 +346,30 @@ function getMergedFileContent(pagesAndPartials, page, targetStop = undefined, ad
             line = "=".repeat(parseInt(addOffsetToSection)) + line
         }
         if (includeSearchResult && includeSearchResult.length > 0) {
+            if (debug) {console.log(includeSearchResult)}
             const leveloffset = includeSearchResult[3] ? parseInt(includeSearchResult[3]) : 0
             let targetPage = determineTargetPageFromIncludeMacro(pagesAndPartials, page, includeSearchResult[1])
             if (!targetPage && includeSearchResult[1].search(/partial\$/) > -1) {
                 const pathParts = includeSearchResult[1].split("$")
                 targetPage = determineTargetPartialFromIncludeMacro(pagesAndPartials, page, pathParts[0], pathParts[1])
             }
+            if (debug) {console.log(targetPage)}
             if (targetPage) {
                 let includedContent, includedOffset
                 [includedContent, includedOffset] = getMergedFileContent(pagesAndPartials, targetPage, targetStop, addOffsetToSection + leveloffset)
-                newContent = newContent.concat(includedContent)
+                newContent = newContent.concat(includedContent.split("\n"))
                 if (targetStop && includedContent.includes(targetStop)) {
                     targetLevelOffset += leveloffset + includedOffset
                     break;
                 }
+                if (debug) {console.log("newContent:", newContent)}
             }
         }
         else {
             newContent.push(line)
         }
     }
+    // if (debug) {console.log(newContent); console.log(inheritedAttributes); throw "TEST"}
     return [newContent.join("\n"), targetLevelOffset]
 }
 
@@ -483,7 +496,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pagesAnd
     const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     const reAltAnchor = new RegExp(`\\[\\[${regexAltAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAltAnchor}(,([^\\]]*))?\\]|anchor:${regexAltAnchor}(,([^\\]]*))?`, 'm')
     let inheritedAttributes = {}
-    let [content, _] = getMergedFileContent(pagesAndPartials, page)
+    let [content, _] = getMergedFileContent(pagesAndPartials, page, componentAttributes=componentAttributes, inheritedAttributes=inheritedAttributes)
     // let content = page.contents.toString()
     const contentSplit = content.split("\n")
     getActivePageAttributesAtLine(pagesAndPartials, componentAttributes, inheritedAttributes, contentSplit.length, page)
@@ -681,7 +694,7 @@ function lintAnchors(anchor, page, resultAnchorType, countLineBreaks, content, i
         case "code":
             if (countLineBreaks > 2) {
                 anchorWarningEntry.type = "title"
-                if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: No title found in next line after ${anchor}!\nFile: ${page.src.abspath}`); anchorWarnings.push(anchorWarningEntry) }
+                if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: No title found in next line after ${anchor}!\nFile: ${page.src.abspath ? page.src.abspath : page.src.path}`); anchorWarnings.push(anchorWarningEntry) }
                 break
             }
             else {
@@ -689,11 +702,11 @@ function lintAnchors(anchor, page, resultAnchorType, countLineBreaks, content, i
                 let matchSource = content.slice(indexOfAnchor).match(reSourceBlock)
                 if (!(matchExample && content.slice(indexOfAnchor, indexOfAnchor + matchExample.index).split("\n").length === 3) && !(matchSource && content.slice(indexOfAnchor, indexOfAnchor + matchSource.index).split("\n").length === 3)) {
                     anchorWarningEntry.type = "block"
-                    if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: Code anchor ${anchor} not immediately followed by block after title!\nFile: ${page.src.abspath ? page.src.abspath : page.src}`); anchorWarnings.push(anchorWarningEntry) }
+                    if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`ASAM rule violation: Code anchor ${anchor} not immediately followed by block after title!\nFile: ${page.src.abspath ? page.src.abspath : page.src.path}`); anchorWarnings.push(anchorWarningEntry) }
                 }
                 if (matchExample && content.slice(indexOfAnchor, indexOfAnchor + matchExample.index).split("\n").length === 3) {
                     anchorWarningEntry.type = "exAsCode"
-                    if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`INFO: Code anchor ${anchor} used with example block!\nFile: ${page.src.abspath}`); anchorWarnings.push(anchorWarningEntry) }
+                    if (!anchorWarnings.find(x => (x.anchor === anchorWarningEntry.anchor && x.page === anchorWarningEntry.page && x.type === anchorWarningEntry.type))) { console.warn(`INFO: Code anchor ${anchor} used with example block!\nFile: ${page.src.abspath ? page.src.abspath : page.src.path}`); anchorWarnings.push(anchorWarningEntry) }
                 }
                 break
             }

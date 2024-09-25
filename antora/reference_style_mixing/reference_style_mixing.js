@@ -53,7 +53,7 @@ function addXrefStyleToSectionAndPageXrefs(mapInput, catalog, componentAttribute
  * @param {String} appendixCaption - The set value of the appendix caption attribute.
  * @param {Object} inheritedAttributes - Optional: An object containing all aggregated page attributes.
  */
-function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, file, style, appendixCaption, inheritedAttributes = {}) {
+function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, file, style, appendixCaption, inheritedAttributes = {"page-version": mapInput.version, "page-component-name": mapInput.component}) {
     if (file.src.stem === "_config") {return}
     let relevantAnchorPageMap = anchorPageMap
     let relevantMapInput = mapInput
