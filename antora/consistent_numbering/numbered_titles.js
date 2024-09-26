@@ -120,7 +120,8 @@ function generateConsistentNumbersBasedOnNavigation(mapInput, catalog, pages, co
                     currentRole  = handlePreface(mapInput, nav, catalog, pages, componentAttributes, navFiles, line, indices)
                     break;
                 case "default":
-                    [content, generateNumbers,currentRole] = tryApplyingPageAndSectionNumberValuesToPage(mapInput, nav, catalog, pages, componentAttributes, navFiles, content, line, generateNumbers, startLevel, indices, style)
+                default:
+                    [content, generateNumbers, currentRole] = tryApplyingPageAndSectionNumberValuesToPage(mapInput, nav, catalog, pages, componentAttributes, navFiles, content, line, generateNumbers, startLevel, indices, style)
                     break;
             }
         }
