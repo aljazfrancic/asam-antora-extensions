@@ -37,11 +37,11 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
         const ignoreLines = [...content.matchAll(reIgnoreLine)]
         references.forEach(ref => {
             let debug = false
-            // if(ref[1] === "top-conditions-and-triggers") {console.log("top-conditions-and-triggers"); debug = true}
+            // if(ref[1] === "sec-10.2-datatype---datatypes-class-enumeration") {console.log("sec-10.2-datatype---datatypes-class-enumeration"); debug = true}
             const indexOfPreviousLineBreak = ref.input.slice(0,ref.index).lastIndexOf("\n") + 1
             if (!ignoreLines.filter(x => x[1] === ref[0] || x[2] === ref[0] || x[3] === ref[1] || x[4] === ref[1] ).map(x => x.index).includes(indexOfPreviousLineBreak) && exceptions.filter(x => x.index < ref.index).length % 2 === 0 && anchorMap.get(ref[1])) {
                 const val = anchorMap.get(ref[1])
-                if (debug) {console.log(val)}
+                if (debug) {console.log("alternateXrefStyle", alternateXrefStyle, "\nval", val)}
                 let referencePage
                 const usedInWithoutPartials = val.usedIn.filter((x) => x.src.family === "page")
                 if (usedInWithoutPartials.length === 1) {
@@ -58,14 +58,16 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                 else {
                     referencePage = val.source
                 }
-                if (debug) {console.log(referencePage)}
+                if (debug) {console.log("referencePage", referencePage)}
                 const tempStyle = componentAttributes.xrefstyle ? componentAttributes.xrefstyle.replace("@","") : ""
                 let autoAltText = ref[1].startsWith("top-") || (ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "") ? "" : ContentAnalyzer.applyComponentDefinitionsFromSourceFile(mapInput, referencePage, page, ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pagesAndPartials, referencePage, ref[1], tempStyle ))
                 // Workaround in case Section shall also be used on references without numbers
                 // if (ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" && referencePage === page) {autoAltText = ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], alternateXrefStyle)}
                 const altText = ref[3] ? ContentAnalyzer.preventLatexMathConversion(ref[3]) : autoAltText
+                if (debug) {console.log("ref[3]", ref[3], "\nautoAltText", autoAltText, "\ntempStyle", tempStyle, "\nreferenceNameFromSource", ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pagesAndPartials, referencePage, ref[1], tempStyle ))}
                 const anchorLink = referencePage !== page  || !ref[1].startsWith("top-")? "#" + ref[1] : ""
-                const replacementXref = "xref:" + referencePage.src.version + "@" + referencePage.src.component + ":" + referencePage.src.module + ":" + referencePage.src.relative + anchorLink + "[" + altText + "]"
+                const baseLink = "xref:" + referencePage.src.version + "@" + referencePage.src.component + ":" + referencePage.src.module + ":" + referencePage.src.relative + anchorLink
+                const replacementXref = altText ? baseLink + "[" + altText + "]" : baseLink + "[]"
                 const startIndex = content.indexOf(ref.input.slice(ref.index))
                 content = content.slice(0,startIndex)+content.slice(startIndex).replace(ref[0],replacementXref)
                 if (debug) {console.log(replacementXref); throw "STOPO"}
