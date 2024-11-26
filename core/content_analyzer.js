@@ -103,7 +103,7 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
  * @returns {Map <String,Object>} A map of anchors and the page(s) where they were found (source: the original source; usedIn: the page(s) where it is used in).
  */
 function getAnchorsFromPageOrPartial(mapInput, catalog, thisFile, componentAttributes, navFiles, inheritedAttributes = {}, tags = [], lineOffset = { line: 0 }) {
-    const re = /(?<!(`|\/\/.*))\[\[{1,2}([^\],]+)(,([^\]]*))?\]\]|(?<!(`|\/\/.*))\[#([^\]]*)(,([^\]]*))?\]|(?<!(`|\/\/.*))anchor:([^\[]+)(,([^\]]*))?\[/
+    const re = /(?<!(`|\/\/.*))\[\[{1,2}([^\],]+)(?:,([^\]]*))?\]\]|(?<!(`|\/\/.*))\[#([^\],]*)(?:,([^\]]*))?\]|(?<!(`|\/\/.*))anchor:([^\[,]+)(?:,([^\]]*))?\[/
     const reInclude = /^\s*include::(\S*partial\$|\S*page\$)?([^\[]+\.adoc)\[(.+)?\]/m;
     const reTags = /.*,?tags?=([^,]+)/m;
     const reTaggedStart = /\/\/\s*tag::(.+)\[\]/m
@@ -237,16 +237,20 @@ function getAnchorsFromPageOrPartial(mapInput, catalog, thisFile, componentAttri
     if (results) {
         for (let entry of results) {
             const e1 = entry[2]
-            const e2 = entry[6]
+            const e2 = entry[5]
             const e3 = entry[8]
+            const r1 = entry[3]
+            const r2 = entry[6]
+            const r3 = entry[9]
             const line = entry.line
 
             const resultValue = e1 ? e1 : e2 ? e2 : e3
+            const refText = r1 ? r1 : r2 ? r2 : r3 ? r3 : null
             if (resultMap.has(resultValue)) {
-                updateAnchorMapEntry(resultMap, resultValue, thisFile, line, navFiles)
+                updateAnchorMapEntry(resultMap, resultValue, thisFile, line, navFiles, refText)
             }
             else {
-                resultMap.set(resultValue, { source: thisFile, line: line })
+                resultMap.set(resultValue, { source: thisFile, line: line, refText: refText })
             }
         }
     }
@@ -278,7 +282,7 @@ function getTargetFileOverAllContent(includeAddress, thisFile, mapInput) {
  * @param {Integer} line - The line index at which the entry was found.
  * @param {Object} navFiles - An object containing all navigation files.
  */
-function updateAnchorMapEntry(inputMap, key, addedValue, line, navFiles) {
+function updateAnchorMapEntry(inputMap, key, addedValue, line, navFiles, refText = null) {
     let entry = inputMap.get(key)
     if (entry.usedIn) {
         entry.usedIn.push(addedValue)
@@ -287,6 +291,10 @@ function updateAnchorMapEntry(inputMap, key, addedValue, line, navFiles) {
     else {
         entry.usedIn = [addedValue]
         entry.usedInLine = [line]
+    }
+    if (entry.refText) {
+        console.warn(`Multiple reftexts defined for anchor ${key}: changed from ${entry.refText} to ${refText}`)
+        entry.refText = refText
     }
     // entry.line = line
 }
