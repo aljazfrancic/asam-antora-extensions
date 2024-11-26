@@ -69,6 +69,7 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
     let i = 0
     let debug = false
     // if (debug) {console.log(line)}
+    // console.log(componentAttributes)
     while ((m = reAttributeApplied.exec(newLine)) !== null) {
         // if (debug) {console.log(m)}
         if (m[1]) { break; }
@@ -77,6 +78,7 @@ function replaceAllAttributesInLine(componentAttributes, pageAttributes, line) {
             i = 0;
         }
         else if (m.index === reAttributeApplied.lastIndex) { i++; }
+        // console.log(`'${m[2]}' - ${componentAttributes[`'${m[2]}'`]}`)
         const replacement = componentAttributes[`'${m[2]}'`] ? componentAttributes[`'${m[2]}'`].trim() : componentAttributes[m[2]] ? componentAttributes[m[2]].trim() : (pageAttributes[m[2]] ? pageAttributes[m[2]].trim() : undefined)
         if (replacement) {
             newLine = newLine.replace(m[0], replacement)
@@ -316,14 +318,18 @@ function getAllKeywordsAsArray(page) {
  * Returns the content of a file after merging all includes into it.
  * @param {Array <Object>} pagesAndPartials - An array of pages and (optionally) partials.
  * @param {Object} page - The current page.
- * @param {String} targetStop - Optional: If set, finds a specific anchor of type [#anchor].
+ * @param {RegExp} targetStop - Optional: If set, the regex pattern to search for regarding a stop.
  * @param {Integer} addOffsetToSection - Optional: Adds an offset to all sections. Used for included file content.
+ * @param {} componentAttributes - Optional: A list of component attributes to use for replacing attributes in a line.
+ * @param {} inheritedAttributes - Optional: Attributes from a parent page or previous lines to be included in addition to componentAttributes.
  * @returns {Array <String,Integer>} The merged content and the offset for the provided targetStop, if any.
  */
 function getMergedFileContent(pagesAndPartials, page, targetStop = undefined, addOffsetToSection = 0, componentAttributes = {}, inheritedAttributes = {}) {
-    const debug = false
+    let debug = false
+    // debug = targetStop
+    // if (debug) {console.log("targetStop", targetStop)}
     const reSectionStart = /^(=+)\s[^\n]+/
-    const reIncludeStart = /^\s*include::([^\[]+)\[.*,?(leveloffset=\+(\d+))?\]/
+    const reIncludeStart = /^\s*include::([^\[]+)\[(?:(?:[^,\]]+,\s*)?(leveloffset=\+(\d+))(?:,.+)?)?\]/
     let targetLevelOffset = 0
     const content = page.contents.toString()
     let newContent = []
@@ -331,14 +337,15 @@ function getMergedFileContent(pagesAndPartials, page, targetStop = undefined, ad
     for (let line of contentSplit) {
         let lineWithReplacedAttributes = line
         if (line.search(/\{.+\}/) > -1) {
-            if (debug) {console.log("-_-replacing attribute in line-_-")}
+            // if (debug) {console.log("-_-replacing attribute in line-_-")}
             getActivePageAttributesAtLine(pagesAndPartials, componentAttributes, inheritedAttributes, contentSplit.length, page)
             lineWithReplacedAttributes = replaceAllAttributesInLine(componentAttributes, inheritedAttributes, line)
-            if (debug) {console.log(line), console.log(lineWithReplacedAttributes)}
+            // if (debug) {console.log(line), console.log(lineWithReplacedAttributes)}
         }
         const sectionSearchResult = lineWithReplacedAttributes.match(reSectionStart)
         const includeSearchResult = lineWithReplacedAttributes.match(reIncludeStart)
-        if (targetStop && lineWithReplacedAttributes.includes(targetStop)) {
+        if (targetStop && targetStop.test(lineWithReplacedAttributes)) {
+            if (debug) {console.log("found break:", lineWithReplacedAttributes)}
             newContent.push(line)
             break;
         }
@@ -346,23 +353,25 @@ function getMergedFileContent(pagesAndPartials, page, targetStop = undefined, ad
             line = "=".repeat(parseInt(addOffsetToSection)) + line
         }
         if (includeSearchResult && includeSearchResult.length > 0) {
-            if (debug) {console.log(includeSearchResult)}
+            // if (debug) {console.log(includeSearchResult)}
             const leveloffset = includeSearchResult[3] ? parseInt(includeSearchResult[3]) : 0
+            // if (debug) {console.log("lineWithReplacedAttributes", lineWithReplacedAttributes, "\nincludeSearchResult", includeSearchResult, "\nleveloffset", leveloffset)}
             let targetPage = determineTargetPageFromIncludeMacro(pagesAndPartials, page, includeSearchResult[1])
             if (!targetPage && includeSearchResult[1].search(/partial\$/) > -1) {
                 const pathParts = includeSearchResult[1].split("$")
                 targetPage = determineTargetPartialFromIncludeMacro(pagesAndPartials, page, pathParts[0], pathParts[1])
             }
-            if (debug) {console.log(targetPage)}
+            // if (debug) {console.log(targetPage)}
             if (targetPage) {
                 let includedContent, includedOffset
-                [includedContent, includedOffset] = getMergedFileContent(pagesAndPartials, targetPage, targetStop, addOffsetToSection + leveloffset)
+                [includedContent, includedOffset] = getMergedFileContent(pagesAndPartials, targetPage, targetStop, addOffsetToSection + leveloffset, componentAttributes = componentAttributes)
                 newContent = newContent.concat(includedContent.split("\n"))
-                if (targetStop && includedContent.includes(targetStop)) {
+                if (targetStop && targetStop.test(includedContent)) {
                     targetLevelOffset += leveloffset + includedOffset
+                    if(debug) {console.log("leveloffset", leveloffset, "includedOffset", includedOffset)}
                     break;
                 }
-                if (debug) {console.log("newContent:", newContent)}
+                // if (debug) {console.log("newContent:", newContent)}
             }
         }
         else {
@@ -370,21 +379,22 @@ function getMergedFileContent(pagesAndPartials, page, targetStop = undefined, ad
         }
     }
     // if (debug) {console.log(newContent); console.log(inheritedAttributes); throw "TEST"}
+    if (debug) {console.log("targetLevelOffset", targetLevelOffset)}
     return [newContent.join("\n"), targetLevelOffset]
 }
 
 /**
  * Determines the number of relevant sections up to a maximum section value.
  * This function also parses all included files that may be relevant depending on their accumulated leveloffset value.
- * @param {Array <Object>} pages - An array of pages.
+ * @param {Array <Object>} pagesAndPartials - An array of pages and partials.
  * @param {Object} page - The current page.
  * @param {Integer} targetSectionLevel - The sectionlevel that is currently relevant.
  * @param {String} startText - Optional: If set, finds a specific anchor of type [#anchor] or [[anchor]].
  * @returns {Array <Integer>} The determined number of sections for the targetSectionLevel and below.
  */
-function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, startText = "", isFromInclude = false) {
+function getRelativeSectionNumberWithIncludes(pagesAndPartials, page, targetSectionLevel, startText = "", isFromInclude = false, componentAttributes = {}) {
     const reSectionStart = /^(=+)\s[^\n]+/
-    const reIncludeStart = /^\s*include::([^\[]+)\[(leveloffset=\+(\d+))?\]/
+    const reIncludeStart = /^\s*include::([^\[]+)\[(?:(?:[^,\]]+,\s*)?(leveloffset=\+(\d+))(?:,.+)?)?\]/
 
     let currentTargetSectionLevel = targetSectionLevel
     let relativeIndex = startText ? [1] : [0]
@@ -394,7 +404,8 @@ function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, s
         // update currentTargetSectionLevel according to accumulated leveloffset
         // TBD: Update relativeIndex?
         let targetLevelOffset
-        [content, targetLevelOffset] = getMergedFileContent(pages, page, `[#${startText}]`)
+        const reStartText = new RegExp(`\\[(?:#|\\[)${escapeRegExp(startText)}`, 'g');
+        [content, targetLevelOffset] = getMergedFileContent(pagesAndPartials, page, reStartText, 0, componentAttributes)
         currentTargetSectionLevel += targetLevelOffset
     }
     //-------------
@@ -423,11 +434,11 @@ function getRelativeSectionNumberWithIncludes(pages, page, targetSectionLevel, s
         // NOTE: This does NOT handle included files with tags correctly!
         //-------------
         if (includeSearchResult && includeSearchResult.length > 0) {
-            const leveloffset = includeSearchResult[3] ? targetSectionLevel - includeSearchResult[3] : targetSectionLevel
+            const leveloffset = includeSearchResult[3] ? targetSectionLevel - parseInt(includeSearchResult[3]) : targetSectionLevel
             if (leveloffset > 0) {
-                const targetPage = determineTargetPageFromIncludeMacro(pages, page, includeSearchResult[1])
+                const targetPage = determineTargetPageFromIncludeMacro(pagesAndPartials, page, includeSearchResult[1])
                 if (targetPage) {
-                    let includedSectionNumbers = getRelativeSectionNumberWithIncludes(pages, targetPage, leveloffset)
+                    let includedSectionNumbers = getRelativeSectionNumberWithIncludes(pagesAndPartials, targetPage, leveloffset, componentAttributes = componentAttributes)
                     for (let i in includedSectionNumbers) {
                         relativeIndex[i] += includedSectionNumbers[i]
                     }
@@ -496,7 +507,7 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pagesAnd
     const reAnchor = new RegExp(`\\[\\[{1,2}${regexAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAnchor}(,([^\\]]*))?\\]|anchor:${regexAnchor}(,([^\\]]*))?`, 'm')
     const reAltAnchor = new RegExp(`\\[\\[${regexAltAnchor}(,([^\\]]*))?\\]\\]|\\[\#${regexAltAnchor}(,([^\\]]*))?\\]|anchor:${regexAltAnchor}(,([^\\]]*))?`, 'm')
     let inheritedAttributes = {}
-    let [content, _] = getMergedFileContent(pagesAndPartials, page, componentAttributes=componentAttributes, inheritedAttributes=inheritedAttributes)
+    let [content, _] = getMergedFileContent(pagesAndPartials, page, undefined, 0,componentAttributes, inheritedAttributes)
     // let content = page.contents.toString()
     const contentSplit = content.split("\n")
     getActivePageAttributesAtLine(pagesAndPartials, componentAttributes, inheritedAttributes, contentSplit.length, page)
@@ -560,17 +571,23 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pagesAnd
                 ({ title, reftext, prefix, returnValue } = getTopAnchorValues(page, content, style))
                 break;
             case "sec":
+                let debug = false
+                // debug = parentPage && page.src.path.includes("10.2 datatype - datatypes_class_enumeration.adoc")
                 result = resultForNextHeading ? resultForNextHeading : content.match(/^(=) (.*)$/m);
+                // if (debug) {console.log("\n\n\nresultForNextHeading",resultForNextHeading, "\nresult:",result,"\nanchor",anchor,"\n\n\n")}
                 // if (verbose)  {console.log(result)}
                 let pageNumber
                 let relativeSectionNumber
                 if (Object.entries(parentPage).length > 0) {
                     pageNumber = getAttributeFromFile(parentPage, "titleoffset")
-                    relativeSectionNumber = getRelativeSectionNumberWithIncludes(pagesAndPartials, parentPage, result[1].split("=").length - 1, anchor, true);
+                    if (debug) {console.log("componentAttributes BEFORE", componentAttributes)}
+                    relativeSectionNumber = getRelativeSectionNumberWithIncludes(pagesAndPartials, parentPage, result[1].split("=").length - 1, anchor, true, componentAttributes = componentAttributes);
+                    if (debug) {console.log("\n\n\pageNumber:",pageNumber,"\nrelativeSectionNumber",relativeSectionNumber,"\n\n\n")}
+                    if (debug) {console.log("parentPage", parentPage)}
                 }
                 else {
                     pageNumber = getAttributeFromFile(page, "titleoffset")
-                    relativeSectionNumber = getRelativeSectionNumberWithIncludes(pagesAndPartials, page, result[1].split("=").length - 1, anchor);
+                    relativeSectionNumber = getRelativeSectionNumberWithIncludes(pagesAndPartials, page, result[1].split("=").length - 1, anchor, componentAttributes = componentAttributes);
                 }
                 // let pageNumber = getAttributeFromFile(page, "titleoffset");
                 if (!pageNumber) { pageNumber = ""; }
@@ -1333,6 +1350,10 @@ function applyComponentDefinitionsFromSourceFile(mapInput, source, target, text)
     return text
 }
 
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
 module.exports = {
     determineTargetPageFromIncludeMacro,
     getAllKeywordsAsArray,
@@ -1360,5 +1381,6 @@ module.exports = {
     indexifyAnchorMap,
     getTopAnchorValues,
     applyStyleForXrefLabel,
-    applyComponentDefinitionsFromSourceFile
+    applyComponentDefinitionsFromSourceFile,
+    getActivePageAttributesAtLine
 }

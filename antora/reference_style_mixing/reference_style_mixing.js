@@ -21,19 +21,19 @@ var anchorErrors = []
  * @param {Array <Object>} catalog - The filtered content catalog for the current component-version combination.
  * @param {Object} componentAttributes - The attributes of the component.
  * @param {Map <String, Object>} anchorPageMap - A map containing anchors and their associated pages.
- * @param {String} style - The chosen xref style. Valid values: "full", "short", and "basic".
+ * @param {String} alternateXrefStyle - The chosen xref style. Valid values: "full", "short", and "basic".
  */
-function addXrefStyleToSectionAndPageXrefs(mapInput, catalog, componentAttributes, anchorPageMap, style) {
+function addXrefStyleToSectionAndPageXrefs(mapInput, catalog, componentAttributes, anchorPageMap, alternateXrefStyle) {
     const appendixCaption = Object.keys(componentAttributes).indexOf("appendix-caption") > -1 ? componentAttributes["appendix-caption"] : "Appendix"
     // const pages = catalog.filter(x => x.src.family === "page")
-    const pages = catalog.filter(x => (x.src.mediaType === "text/asciidoc" && (x.src.family === "page" || x.src.family === "partial")))
-    switch (style) {
+    const pagesAndPartials = catalog.filter(x => (x.src.mediaType === "text/asciidoc" && (x.src.family === "page" || x.src.family === "partial")))
+    switch (alternateXrefStyle) {
         case 'full':
         case 'short':
         case 'basic':
-            pages.forEach((page) => {
+            pagesAndPartials.forEach((p) => {
                 // console.log("Check c", page.src.abspath)
-                applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, page, style, appendixCaption)
+                applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, p, alternateXrefStyle, appendixCaption, pagesAndPartials)
             })
             break;
         default:
@@ -53,7 +53,7 @@ function addXrefStyleToSectionAndPageXrefs(mapInput, catalog, componentAttribute
  * @param {String} appendixCaption - The set value of the appendix caption attribute.
  * @param {Object} inheritedAttributes - Optional: An object containing all aggregated page attributes.
  */
-function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, file, style, appendixCaption, inheritedAttributes = {"page-version": mapInput.version, "page-component-name": mapInput.component}) {
+function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, file, style, appendixCaption, pagesAndPartials, inheritedAttributes = {"page-version": mapInput.version, "page-component-name": mapInput.component}) {
     if (file.src.stem === "_config") {return}
     let relevantAnchorPageMap = anchorPageMap
     let relevantMapInput = mapInput
@@ -64,10 +64,9 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
     const reExceptions = /(^-{4}) *|(^\/{4}) *|(^\+{4}) *$|(^\.{4}) *$|(^_{4}) */gm
     // const reIgnoreLine = /^.*\/{2}.*(xref:[^#\[]+)#.*|^.*`[^`\n]*(xref:[^#\[]+)#[^`\n]*`/gm
     const validStyles = ["full", "short", "basic"]
-    const debugName = "qweuipoqwueiprüü"
     let skip = Array(6).fill(false)
     let debug = false
-    // debug = file.contents.toString().includes("= Crossings and cross path")
+    // debug = file.contents.toString().includes("Each enumeration element assigns a unique name to a unique IntegerLiteral, so that the name can be used as an")
     if (debug) { console.log("####\n####\nSTART TEST\n####\n####") }
     if (!file.contents) {
         return
@@ -87,8 +86,10 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
     }
     // if (debug) {console.log("reftext:",reftext);console.log(inheritedAttributes.reftext);console.log("style:",style)}
     if (reftext) { ContentManipulator.updateAttributeWithValueOnPage(file, "reftext", reftext) }
+
     const content = file.contents.toString().split("\n")
     let contentUpdated = content
+
     for (const [index, line] of content.entries()) {
         // console.log("Check d", line)
         const wasTrue = skip.includes(true)
@@ -129,6 +130,8 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
             // if (debug) {console.log("targetPath", targetPath)}
             // if (debug) {console.log("xrefTarget", xrefTarget)}
             // if (debug) {console.log("src", file.src)}
+
+            // Target file for xref not found
             if (!xrefTarget) {
                 if (!ContentAnalyzer.getTargetFileOverAllContent(match[1], file, mapInput)) {
                     const p = file.src.abspath ? file.src.abspath : file.src.path
@@ -143,7 +146,11 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
                     console.warn("consider improving this xref")
                 }
             }
+
+            // Exception for _config.adoc
             if (xrefTarget.src.stem === "_config.adoc") { continue }
+
+            // Xref contains anchor
             if (match[2]) {
                 if ((file.src.component !== xrefTarget.src.component) && !relevantAnchorPageMap.get(match[2].slice(1))) {
                     const newMapInput = JSON.parse(JSON.stringify(mapInput))
@@ -165,6 +172,7 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
                     relevantAnchorPageMap = anchorPageMap
                     relevantMapInput = mapInput
                 }
+
                 anchorSource = relevantAnchorPageMap.get(match[2].slice(1)) ? relevantAnchorPageMap.get(match[2].slice(1)).source : xrefTarget
                 if (!relevantAnchorPageMap.get(match[2].slice(1)) && targetPath.component === file.src.component) {
                     if (!anchorErrors.find(x => (x.file === file && x.anchors.includes(match[2].slice(1))))) {
@@ -193,7 +201,10 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
                 const parentPage = xrefTarget === anchorSource ? {} : xrefTarget
                 xrefLabel = ContentAnalyzer.getReferenceNameFromSource(relevantMapInput.componentAttributes, relevantAnchorPageMap, relevantMapInput.catalog, anchorSource, match[2].slice(1), tempStyle, parentPage)
                 if (debug) { console.log("xrefLabel", xrefLabel); console.log("tempStyle", tempStyle) }
-            } else if (match[1]) {
+            }
+
+            // Xref contains no anchor but path to file
+            else if (match[1]) {
                 const appendixRefsig = componentAttributes['appendix-caption'] ? componentAttributes['appendix-caption'] : "Appendix"
                 const sectionRefsig = componentAttributes['section-refsig'] ? componentAttributes['section-refsig'] : "Section"
                 let { returnValue, title, reftext, prefix } = ContentAnalyzer.getTopAnchorValues(xrefTarget, xrefTarget.contents.toString(), tempStyle)
@@ -226,7 +237,7 @@ function applyXrefStyle(mapInput, catalog, componentAttributes, anchorPageMap, f
         // if (debug && newLine.includes("adoc#sec-modal-verbs")) {console.log(newLine); throw "CHECKIN"}
         let targetFile = ContentAnalyzer.checkForIncludedFileFromLine(catalog, file, newLine)
         if (targetFile) {
-            applyXrefStyle(mapInput, catalog, componentAttributes, relevantAnchorPageMap, targetFile, style, appendixCaption, inheritedAttributes)
+            applyXrefStyle(mapInput, catalog, componentAttributes, relevantAnchorPageMap, targetFile, style, appendixCaption, pagesAndPartials, inheritedAttributes)
         }
     }
     if (debug) { throw "STOP" }
