@@ -73,7 +73,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                 if (debug) {console.log(replacementXref); throw "STOPO"}
             }
         })
-        page.contents = Buffer.from(content)
+        p.contents = Buffer.from(content)
     })
     return pages
 }
