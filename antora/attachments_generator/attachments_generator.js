@@ -39,6 +39,8 @@ function generateAttachments(contentAggregate) {
                     inputPath.version = v.version
                     inputPath.family = inputPath.type+"s"
                 }
+                else {console.log(files)}
+                console.log("Working with inputPath",inputPath)
                 v.asciidoc.attributes['page-download-links'].find(x => x[0].includes(entry[1]))[0] = `${name}`
                 if (files.length === 1 && [".zip"].includes(files[0].src.extname))  {
                     const f = files[0]
@@ -66,6 +68,7 @@ function generateAttachments(contentAggregate) {
                     const zipFile = new File({ path: `modules/${inputPath.module}/${typeFolder}/${name}`, contents: zipBuffer, src: {}})
                     Object.assign(zipFile.src, { path: zipFile.path, basename: zipFile.basename, stem: zipFile.stem, extname: zipFile.extname, origin: {url: 'generated', startPath: 'generated', refname: 'generated', reftype: 'generated', refhash: 'generated'} })
                     v.files.push(zipFile)
+                    console.log("Created new virtual file", zipFile.src)
                 }
             })
         }

@@ -519,8 +519,8 @@ function getReferenceNameFromSource(componentAttributes, anchorPageMap, pagesAnd
     content = contentSplit.join("\n")
 
     let resultAnchorType = anchor.match(reAnchorType)
-    if (!content.match(reAnchor) && content.match(reAltAnchor)) { console.warn(`${anchor} could not be found in file ${page.src.abspath}, but found similar match instead! Please check file`); return null }
-    else if (!content.match(reAnchor)) { console.warn(`${anchor} could not be found in file ${page.src.abspath}`); return null }
+    if (!content.match(reAnchor) && content.match(reAltAnchor)) { console.warn(`${anchor} could not be found in file ${page.src.path}, but found similar match instead! Please check file`); return null }
+    else if (!content.match(reAnchor)) { console.warn(`${anchor} could not be found in file ${page.src.path}`); return null }
     const indexOfAnchor = content.match(reAnchor).index | null
     if (indexOfAnchor !== null && indexOfAnchor > -1) {
         getActivePageAttributesAtLine(pagesAndPartials, componentAttributes, inheritedAttributes, indexOfAnchor, page)
