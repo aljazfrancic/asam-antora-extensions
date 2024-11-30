@@ -37,7 +37,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
         const ignoreLines = [...content.matchAll(reIgnoreLine)]
         references.forEach(ref => {
             let debug = false
-            // if(ref[1] === "sec-10.2-datatype---datatypes-class-enumeration") {console.log("sec-10.2-datatype---datatypes-class-enumeration"); debug = true}
+            // if(ref[1] === "sec-10.2-datatype---datatypes-class-resourcelocation") {console.log("sec-10.2-datatype---datatypes-class-resourcelocation"); debug = true}
             const indexOfPreviousLineBreak = ref.input.slice(0,ref.index).lastIndexOf("\n") + 1
             if (!ignoreLines.filter(x => x[1] === ref[0] || x[2] === ref[0] || x[3] === ref[1] || x[4] === ref[1] ).map(x => x.index).includes(indexOfPreviousLineBreak) && exceptions.filter(x => x.index < ref.index).length % 2 === 0 && anchorMap.get(ref[1])) {
                 const val = anchorMap.get(ref[1])
@@ -63,7 +63,7 @@ function findAndReplaceLocalReferencesToGlobalAnchors( componentAttributes, anch
                 let autoAltText = ref[1].startsWith("top-") || (ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "") ? "" : ContentAnalyzer.applyComponentDefinitionsFromSourceFile(mapInput, referencePage, p, ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pagesAndPartials, referencePage, ref[1], tempStyle ))
                 // Workaround in case Section shall also be used on references without numbers
                 // if (ref[1].startsWith("sec-") && alternateXrefStyle && alternateXrefStyle !== "" && referencePage === page) {autoAltText = ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pages, referencePage, ref[1], alternateXrefStyle)}
-                const altText = ref[3] ? ContentAnalyzer.preventLatexMathConversion(ref[3]) : autoAltText
+                const altText = ref[3] ? ContentAnalyzer.preventLatexMathConversion(ref[3]) : val.refText ? val.refText : autoAltText
                 if (debug) {console.log("ref[3]", ref[3], "\nautoAltText", autoAltText, "\ntempStyle", tempStyle, "\nreferenceNameFromSource", ContentAnalyzer.getReferenceNameFromSource( componentAttributes, anchorMap, pagesAndPartials, referencePage, ref[1], tempStyle ))}
                 const anchorLink = referencePage !== p  || !ref[1].startsWith("top-")? "#" + ref[1] : ""
                 const baseLink = "xref:" + referencePage.src.version + "@" + referencePage.src.component + ":" + referencePage.src.module + ":" + referencePage.src.relative + anchorLink
