@@ -10,7 +10,7 @@
 // Author: Dan Allen
 //-------------
 //-------------
-const Vinyl = require('/usr/src/app/node_modules/vinyl')
+const Vinyl = require('vinyl')
 
 class File extends Vinyl {
   get path () {
