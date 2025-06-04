@@ -32,12 +32,6 @@ fs.lstatSync = function (path) {
 };
 // ----  END: “guarded” fs patch  ----
 
-// …now require the rest of the extension as before:
-const doxygenConverter = require('./antora/doxygen_converter/doxygen_extension.js');
-const bibliographyCsl = require('./antora/bibliography/bibliography_csl.js');
-// etc.
-
-
 'use strict'
 //-------------
 //-------------
