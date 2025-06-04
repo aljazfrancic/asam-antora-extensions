@@ -1,3 +1,43 @@
+// ---- BEGIN: “guarded” fs patch ----
+const fs = require('fs');
+// Keep a reference to the original rmSync and lstatSync
+const _origRmSync = fs.rmSync;
+const _origLstatSync = fs.lstatSync;
+// Override rmSync so it only runs if the path exists
+fs.rmSync = function (path, options) {
+  try {
+    if (fs.existsSync(path)) {
+      return _origRmSync(path, options);
+    }
+    // if path doesn’t exist, do nothing
+  } catch (err) {
+    // In case existsSync itself throws (unlikely), swallow the error
+  }
+};
+// Override lstatSync so it only runs if the path exists
+fs.lstatSync = function (path) {
+  try {
+    if (fs.existsSync(path)) {
+      return _origLstatSync(path);
+    }
+    // If it doesn’t exist, return a dummy object with minimal properties.
+    return {
+      isDirectory: () => false,
+      isFile: () => false,
+      // You can add other methods if some code expects them.
+    };
+  } catch (err) {
+    return { isDirectory: () => false, isFile: () => false };
+  }
+};
+// ----  END: “guarded” fs patch  ----
+
+// …now require the rest of the extension as before:
+const doxygenConverter = require('./antora/doxygen_converter/doxygen_extension.js');
+const bibliographyCsl = require('./antora/bibliography/bibliography_csl.js');
+// etc.
+
+
 'use strict'
 //-------------
 //-------------
